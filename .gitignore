@@ -1,0 +1,9 @@
+# output-location
+*/out
+
+# CMake-generated files
+/build
+!*.cmake
+!*.in
+
+.vscode
