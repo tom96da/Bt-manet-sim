@@ -8,15 +8,26 @@
 #ifndef DEVICE_HPP
 #define DEVICE_HPP
 
+#include <string>
+#include <vector>
+using namespace std;
+
+const int MAX_CONNECTIONS = 6;
+
 class Device
 {
 private:
     const int id_;
+    const string name_;
+    const int max_connections_;
 
 public:
-    Device(int id);
+    Device(int id, int max_connections = MAX_CONNECTIONS);
 
     int getId() const;
+    string getName() const;
+
+    void hello() const;
 };
 
 #endif
