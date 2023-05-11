@@ -51,8 +51,8 @@ CMakeは分割されたソースファイルからビルドを自動で行って
 2. 拡張機能のインストール  
     VScode の拡張機能 `CMake Tools` が必要となる。
 
-3. CMakeLists.txt の作成
-    プログラムファイルと同じディレクトリに `CMakeLists.txt` を作成する。
+3. CMakeLists.txt の作成  
+    プログラムファイルと同じディレクトリに `CMakeLists.txt` を作成する。  
     Git の追跡対象に含めるため、クローンした場合は作成不要。
     ```
     cmake_minimum_required(VERSION 3.22)  # CMake version check
@@ -68,8 +68,10 @@ CMakeは分割されたソースファイルからビルドを自動で行って
     分割されたソースファイルを `set(SOURCE main.cpp hege.cpp foo.cpp)` と羅列する。
 
 4. コマンドパレットから、CMakeクイックスタートを実行する  
+    このとき、エディタは `main.cpp` にカーソルがある状態にしておくこと。  
+    参照する `CMakeLists.txt` を提示されるので、作成したものを選択する。  
     使用するコンパイラなどを選択し、プロジェクト作成を進める。
-    このプロジェクトでは、`GCC12.x` を選択する。
+    このプロジェクトでは、`GCC12.x` を選択する。  
     `CMakeLists.txt` のパスを選択とプロジェクト名の名称を入力すれば、作成が終わる。
 
 5. ビルドを実行する
