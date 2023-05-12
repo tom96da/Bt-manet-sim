@@ -21,11 +21,19 @@ private:
     const string name_;
     const int max_connections_;
 
+    pair<double, double> velocity_;
+
+    vector<Device *> pairedDevices_;
+    vector<Device *> connectedDevices_;
+
 public:
     Device(int id, int max_connections = MAX_CONNECTIONS);
 
     int getId() const;
     string getName() const;
+
+    pair<double, double> getVelocity();
+    void setVelocity();
 
     void hello() const;
 };

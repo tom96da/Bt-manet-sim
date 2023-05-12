@@ -23,3 +23,11 @@ void Device::hello() const
 {
     cout << getName() << " hello!" << endl;
 }
+pair<double, double> Device::getVelocity()
+{
+    return velocity_;
+}
+void Device::setVelocity()
+{
+    velocity_ = {0.0, 0.0};
+}
