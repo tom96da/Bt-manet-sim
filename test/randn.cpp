@@ -13,25 +13,34 @@ using namespace std;
 
 int main()
 {
+    double x = 0.0;
+    double y = 0.0;
+
     random_device rnd; // 非決定的な乱数生成器
     mt19937 mt(rnd()); // メルセンヌ・ツイスタ
 
-    // 一様実数分布
-    // [-1.0, 1.0)の値の範囲で、等確率に実数を生成する
-    uniform_real_distribution<> random(-1.0, 1.0);
-
     // 正規分布
-    // 平均1.0、標準偏差0.5で分布させる
-    normal_distribution<> randn(1.0, 0.5);
+    // 平均0.0、標準偏差1.8で分布させる
+    normal_distribution<> randn(0.0, 1.8);
 
-    ofstream file("output/random.csv");
+    auto f1 = ofstream("out/randn.csv");
+    auto f2 = ofstream("out/randnrun.csv");
     for (size_t i = 0; i < 10000; ++i)
     {
         // 各分布法に基いて乱数を生成
-        double r1 = randn(mt);
-        double r2 = randn(mt);
-
-        file << r1 << "," << r2 << "\n";
+        x += [&f1, &randn, &mt]() -> double
+        {
+            double x_ = randn(mt);
+            f1 << x_ << ",";
+            return x_;
+        }();
+        y += [&f1, &randn, &mt]() -> double
+        {
+            double y_ = randn(mt);
+            f1 << y_ << "\n";
+            return y_;
+        }();
+        f2 << x << "," << y << "\n";
     }
 
     return 0;
