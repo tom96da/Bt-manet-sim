@@ -5,16 +5,32 @@
  * @date 2023-05-11
  */
 
+#include <iostream>
+#include <vector>
 #include "Device.hpp"
 
 using namespace std;
 
 int main(void)
 {
-    int id = 0;
-    auto d = Device(id);
+    int num = 4;
+    vector<Device> d;
+    for (int id = 0; id < num; id++)
+        d.emplace_back(id);
 
-    d.hello();
+    d[0].pairing(d[1]);
+    d[0].pairing(d[2]);
+    d[0].pairing(d[3]);
+    d[0].pairing(d[1]);
+
+    vector<int> ids = d[0].getPairedDeviceId();
+    for (int id : ids)
+    {
+        cout << id << " " << flush;
+    }
+    cout << endl;
+
+    d[0].sendMessage(d[3], "hello!");
 
     return 0;
 }

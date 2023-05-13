@@ -14,6 +14,7 @@ using namespace std;
 
 const int MAX_CONNECTIONS = 6;
 
+// Bluetooth デバイス
 class Device
 {
 private:
@@ -23,8 +24,8 @@ private:
 
     pair<double, double> velocity_;
 
-    vector<Device *> pairedDevices_;
-    vector<Device *> connectedDevices_;
+    vector<Device *> paired_devices_;
+    vector<int *> connected_devices_;
 
 public:
     Device(int id, int max_connections = MAX_CONNECTIONS);
@@ -32,10 +33,22 @@ public:
     int getId() const;
     string getName() const;
 
-    pair<double, double> getVelocity();
     void setVelocity();
+    pair<double, double> getVelocity();
+
+    int getNumPaired() const;
+    vector<int> getPairedDeviceId() const;
+    bool isPaired(const Device &otherDevice) const;
+
+    vector<int> getConnectedDeviceId();
 
     void hello() const;
+    void pairing(Device &otherDevice);
+    void removePairing(); //**
+    void connect(Device &otherDevice);
+    void disconnect(); //**
+    void sendMessage(Device &receiver, string message);
+    void receiveMessage(Device &sender, string message);
 };
 
 #endif
