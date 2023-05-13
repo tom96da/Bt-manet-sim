@@ -1,9 +1,8 @@
 # output-location
-*/out
+out
 
 # CMake-generated files
-/build
-!*.cmake
-!*.in
+build
 
+# local setting
 .vscode

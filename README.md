@@ -7,9 +7,9 @@ Bluetooth MANET を C++ でシミュレーションする。
 |         |  rigil   | AINCRAD  |
 | ------- | :------: | :------: |
 |  C++    |    20    |    20    |
-|  g++    |  12.1.0  |    --    |
-|  CMake  |  3.22.1  |    --    |
-|  Git    |  2.34.1  |    --    |
+|  g++    |  12.1.0  |  12.2.0  |
+|  CMake  |   3.22   |   3.22   |
+|  Git    |  2.34.1  |  2.40.0  |
 
 
 
@@ -31,7 +31,7 @@ Bluetooth MANET を C++ でシミュレーションする。
 
 ```
 # output-location
-/out
+out
 ```
 
 
@@ -82,15 +82,13 @@ CMakeは分割されたソースファイルからビルドを自動で行って
 `.gitignore` にCMakeによって生成されるファイルの記述を追加する。
 ```
 # CMake-generated files
-/build
-!*.cmake
-!*.in
+build
 
-# setting.json
-/.vscode
+# local setting
+.vscode
 ```
 
-追跡対象とするファイルを以下に示す。
-- CMakeLists.txt：プロジェクトのビルド手順を記述するためのファイル
-- .cmakeファイル：CMakeLists.txtファイルで使用されるサブモジュールのようなファイル
-- .inファイル：ビルドプロセス中に変数を埋め込むためのテンプレートファイル
+~~追跡対象とするファイルを以下に示す。~~
+- ~~CMakeLists.txt：プロジェクトのビルド手順を記述するためのファイル~~
+- ~~.cmakeファイル：CMakeLists.txtファイルで使用されるサブモジュールのようなファイル~~
+- ~~.inファイル：ビルドプロセス中に変数を埋め込むためのテンプレートファイル~~
