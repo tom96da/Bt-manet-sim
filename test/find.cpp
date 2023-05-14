@@ -22,4 +22,6 @@ int main()
     {
         std::cout << "found: " << *it << std::endl;
     }
+
+    return 0;
 }
