@@ -25,7 +25,7 @@ private:
     pair<double, double> velocity_;
 
     vector<Device *> paired_devices_;
-    vector<int *> connected_devices_;
+    vector<int> connected_devices_;
 
 public:
     Device(int id, int max_connections = MAX_CONNECTIONS);

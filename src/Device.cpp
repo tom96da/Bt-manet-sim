@@ -92,11 +92,29 @@ int Device::getNumConnected() const { return connected_devices_.size(); }
 // 接続中のデバイス数のIDを取得
 vector<int> Device::getConnectedDeviceId() const
 {
-    // vector<int> connected_devices_id;
+    vector<int> connected_devices_id;
+    for (const int connected_device_id : connected_devices_)
+        connected_devices_id.emplace_back(connected_device_id);
     // for (const int *connected_device_id : connected_devices_)
     //     connected_devices_id.emplace_back(*connected_device_id);
 
-    // return connected_devices_id;
+    return connected_devices_id;
+}
+
+bool Device::isConnected(const Device &another_device) const
+{
+    if (isSelf(another_device))
+        return false;
+
+    auto itr = find_if(connected_devices_.begin(), connected_devices_.end(),
+                       [&](const int connected_device_id)
+                       {
+                           return connected_device_id == another_device.getId();
+                       });
+    if (itr == connected_devices_.end())
+        return false;
+    else
+        return true;
 }
 
 void Device::hello() const
@@ -116,7 +134,7 @@ void Device::pairing(Device &another_device)
         return;
 
     this->paired_devices_.emplace_back(&another_device);
-    another_device.paired_devices_.emplace_back(this);
+    another_device.pairing(*this);
 }
 
 /*!
@@ -133,7 +151,9 @@ void Device::connect(Device &another_device)
         return;
 
     this->connected_devices_.emplace_back(another_device.getId());
-    another_device.connected_devices_.emplace_back(this->getId());
+    another_device.connect(*this);
+    // this->getConnectedDeviceId().emplace_back(&(another_device.getId()));
+    // another_device.connected_devices_.emplace_back(&(this->getId()));
 }
 
 /*!
