@@ -34,21 +34,28 @@ public:
     string getName() const;
 
     void setVelocity();
-    pair<double, double> getVelocity();
+    pair<double, double> getVelocity() const;
+
+    bool isSelf(const Device &another_device) const;
 
     int getNumPaired() const;
     vector<int> getPairedDeviceId() const;
-    bool isPaired(const Device &otherDevice) const;
+    bool isPaired(const Device &another_device) const;
 
-    vector<int> getConnectedDeviceId();
+    int getNumConnected() const;
+    vector<int> getConnectedDeviceId() const;
+    bool isConnected(const Device &another_device) const;
 
     void hello() const;
-    void pairing(Device &otherDevice);
-    void removePairing(); //**
-    void connect(Device &otherDevice);
-    void disconnect(); //**
+
+    void pairing(Device &another_device);
+    void removePairing(Device &another_device);
+    void connect(Device &another_device);
+    void disconnect(Device &another_device);
     void sendMessage(Device &receiver, string message);
     void receiveMessage(Device &sender, string message);
+
+    static const Device findDevice(Device &another_device);
 };
 
 #endif

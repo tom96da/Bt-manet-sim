@@ -21,9 +21,10 @@ int main(void)
     d[0].pairing(d[1]);
     d[0].pairing(d[2]);
     d[0].pairing(d[3]);
-    d[0].pairing(d[1]);
+    d[0].pairing(d[0]);
+    d[0].connect(d[1]);
 
-    vector<int> ids = d[0].getPairedDeviceId();
+    vector<int> ids = d[0].getConnectedDeviceId();
     for (int id : ids)
     {
         cout << id << " " << flush;
