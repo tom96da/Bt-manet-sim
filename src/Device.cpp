@@ -86,6 +86,19 @@ bool Device::isPaired(const Device &another_device) const
 //     // };
 // }
 
+// 接続中のデバイス数を取得
+int Device::getNumConnected() const { return connected_devices_.size(); }
+
+// 接続中のデバイス数のIDを取得
+vector<int> Device::getConnectedDeviceId() const
+{
+    // vector<int> connected_devices_id;
+    // for (const int *connected_device_id : connected_devices_)
+    //     connected_devices_id.emplace_back(*connected_device_id);
+
+    // return connected_devices_id;
+}
+
 void Device::hello() const
 {
     cout << getName() << " hello!" << endl;
@@ -112,16 +125,15 @@ void Device::pairing(Device &another_device)
  */
 void Device::connect(Device &another_device)
 {
-    // if (isPaired(otherDevice))
-    //     connected_devices_.emplace_back((otherDevice).getId());
+    if (!this->isPaired(another_device))
+        return;
+    if (this->isConnected(another_device))
+        return;
+    if (this->isSelf(another_device))
+        return;
 
-    // auto *device = reduce(paired_devices_.begin(), paired_devices_.end(),
-    //                       static_cast<Device *>(nullptr),
-    //                       [&otherDevice](Device &a, Device &b)
-    //                       {
-    //                           return b.getId() == otherDevice.getId() ? b : a;
-    //                       });
-    // connected_devices_.emplace_back(device->getId());
+    this->connected_devices_.emplace_back(another_device.getId());
+    another_device.connected_devices_.emplace_back(this->getId());
 }
 
 /*!
@@ -134,6 +146,12 @@ void Device::sendMessage(Device &receiver, string message)
     cout << "ID_" << this->getId() << " -> " << flush;
     receiver.receiveMessage(*this, message);
 }
+
+/*!
+ * @brief 接続中デバイスから文字列を受信する
+ * @param sender 送信元デバイス
+ * @param message 受信する文字列
+ */
 void Device::receiveMessage(Device &sender, string message)
 {
     cout << message << " -> ID_" << this->getId() << endl;
