@@ -9,7 +9,7 @@
 #include <algorithm>
 #include "Device.hpp"
 
-// コンストラクタ
+/* コンストラクタ */
 Device::Device(int id, int max_connections)
     : id_(id),
       max_connections_(max_connections),
@@ -18,31 +18,31 @@ Device::Device(int id, int max_connections)
 {
 }
 
-// デバイスID 取得
+/* デバイスID 取得 */
 int Device::getId() const { return id_; }
 
-// デバイスIDのポインタ 取得
+/* デバイスIDのポインタ 取得 */
 const int *Device::getIdPtr() const { return &id_; }
 
-// デバイス名 取得
+/* デバイス名 取得 */
 string Device::getName() const { return name_; }
 
-// デバイス速度 更新
+/* デバイス速度 更新 */
 void Device::setVelocity()
 {
     velocity_ = {0.0, 0.0};
 }
 
-// デバイス速度 取得
+/* デバイス速度 取得 */
 pair<double, double> Device::getVelocity() const { return velocity_; }
 
-// ペアリング済みデバイス数 取得
+/* ペアリング済みデバイス数 取得 */
 int Device::getNumPaired() const
 {
     return paired_devices_.size();
 }
 
-// ペアリング済みデバイスID 取得
+/* ペアリング済みデバイスID 取得 */
 vector<int> Device::getPairedDeviceId() const
 {
     vector<int> paired_devices_id;
@@ -52,10 +52,10 @@ vector<int> Device::getPairedDeviceId() const
     return paired_devices_id;
 }
 
-// 接続中のデバイス数を取得
+/* 接続中のデバイス数を取得 */
 int Device::getNumConnected() const { return connected_devices_.size(); }
 
-// 接続中のデバイス数のIDを取得
+/* 接続中のデバイス数のIDを取得 */
 vector<int> Device::getConnectedDeviceId() const
 {
     vector<int> connected_devices_id;
@@ -70,7 +70,7 @@ void Device::hello() const
     cout << getName() << " hello!" << endl;
 }
 
-// デバイスが自身が取得
+/* デバイスが自身が取得 */
 bool Device::isSelf(const Device &another_device) const
 {
     return this->getId() == another_device.getId();

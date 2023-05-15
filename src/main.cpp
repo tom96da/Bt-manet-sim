@@ -8,39 +8,36 @@
 #include <iostream>
 #include <vector>
 #include "Device.hpp"
+#include "DeviceManager.hpp"
 
 using namespace std;
 
 int main(void)
 {
-    int num = 4;
+    int num = 100;
+    MGR mgr;
+
+    mgr.addDevice(num);
+    mgr.pairDevices(0, 1);
+    mgr.pairDevices(0, 2);
+    mgr.pairDevices(0, 3);
+    mgr.conectDevices(0, 1);
+
     vector<Device> d;
+    cout << mgr.getNumDevices() << endl;
     for (int id = 0; id < num; id++)
-        d.emplace_back(id);
-
-    d[0].pairing(d[1]);
-    d[0].pairing(d[2]);
-    d[0].pairing(d[3]);
-    d[0].connect(d[1]);
-    d[0].connect(d[2]);
-    d[0].connect(d[3]);
-    d[2].removePairing(d[0]);
-
-    // cout << d[0].isPaired(d[1]) << " ";
-    // cout << d[1].isPaired(d[0]) << endl;
-    // cout << d[0].isConnected(d[2]) << " ";
-    // cout << d[2].isConnected(d[0]) << endl;
+        d.push_back(*(mgr.getDeviceById(id)));
 
     vector<int> ids = d[0].getPairedDeviceId();
     for (int id : ids)
     {
-        cout << id << " " << flush;
+        cout << id << " ";
     }
     cout << endl;
     ids = d[0].getConnectedDeviceId();
     for (int id : ids)
     {
-        cout << id << " " << flush;
+        cout << id << " ";
     }
     cout << endl;
 
