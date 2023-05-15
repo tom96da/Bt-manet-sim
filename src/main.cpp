@@ -21,14 +21,15 @@ int main(void)
     d[0].pairing(d[1]);
     d[0].pairing(d[2]);
     d[0].pairing(d[3]);
-    d[0].pairing(d[0]);
     d[0].connect(d[1]);
+    d[0].connect(d[2]);
     d[0].connect(d[3]);
+    d[2].removePairing(d[0]);
 
-    cout << d[0].isPaired(d[1]) << " ";
-    cout << d[1].isPaired(d[0]) << endl;
-    cout << d[0].isConnected(d[1]) << " ";
-    cout << d[1].isConnected(d[0]) << endl;
+    // cout << d[0].isPaired(d[1]) << " ";
+    // cout << d[1].isPaired(d[0]) << endl;
+    // cout << d[0].isConnected(d[2]) << " ";
+    // cout << d[2].isConnected(d[0]) << endl;
 
     vector<int> ids = d[0].getPairedDeviceId();
     for (int id : ids)
