@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <string>
 #include "Device.hpp"
 #include "DeviceManager.hpp"
 
@@ -15,21 +16,26 @@ using namespace std;
 
 int main(void)
 {
-    int num = 125;
+    int num = 100;
     MGR mgr(num);
+    vector<ofstream> fs;
 
-    auto f = ofstream("../out/positions.csv");
     for (int id = 0; id < num; id++)
     {
-        auto [x, y] = *mgr.getPositon(id);
-        f << x << ", " << y << endl;
+        string fname = "../out/positions" + to_string(id) + ".csv";
+        fs.emplace_back(fname);
+        fs[id] << "x,y" << endl;
     }
-    // for (int i = 0; i < 10000; i++)
-    // {
-    //     auto [x, y] = *mgr.getPositon(0);
-    //     f << x << ", " << y << endl;
-    //     mgr.updatePisition(0);
-    // }
+
+    for (int i = 0; i < 100; i++)
+    {
+        for (int id = 0; id < num; id++)
+        {
+            auto [x, y] = *mgr.getPositon(id);
+            fs[id] << x << ", " << y << endl;
+            mgr.updatePisition(id);
+        }
+    }
 
     // mgr.addDevices(num);
     // mgr.pairDevices(0, 1);
