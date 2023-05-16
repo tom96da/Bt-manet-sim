@@ -22,7 +22,7 @@ private:
     const string name_;
     const int max_connections_;
 
-    pair<double, double> velocity_;
+    pair<double, double> position_;
 
     vector<Device *> paired_devices_;
     vector<const int *> connected_devices_;
@@ -34,8 +34,8 @@ public:
     const int *getIdPtr() const;
     string getName() const;
 
-    void setVelocity();
-    pair<double, double> getVelocity() const;
+    void setPosition();
+    pair<double, double> getPosition() const;
 
     int getNumPaired() const;
     vector<int> getPairedDeviceId() const;

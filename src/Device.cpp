@@ -11,10 +11,11 @@
 
 /* コンストラクタ */
 Device::Device(int id, int max_connections)
-    : id_(id),
-      max_connections_(max_connections),
-      name_([&]() -> string
-            { return "device[" + to_string(id) + "]"; }())
+    : id_{id},
+      max_connections_{max_connections},
+      name_{[&]() -> string
+            { return "device[" + to_string(id) + "]"; }()},
+      position_{0.0, 0.0}
 {
 }
 
@@ -28,13 +29,13 @@ const int *Device::getIdPtr() const { return &id_; }
 string Device::getName() const { return name_; }
 
 /* デバイス速度 更新 */
-void Device::setVelocity()
+void Device::setPosition()
 {
-    velocity_ = {0.0, 0.0};
+    position_ = {0.0, 0.0};
 }
 
 /* デバイス速度 取得 */
-pair<double, double> Device::getVelocity() const { return velocity_; }
+pair<double, double> Device::getPosition() const { return position_; }
 
 /* ペアリング済みデバイス数 取得 */
 int Device::getNumPaired() const
