@@ -24,8 +24,8 @@ int main()
     /* 正規分布 */
     normal_distribution<> randn(2.0, 0.7);
 
-    auto f1 = ofstream("out/donut.csv");
-    auto f2 = ofstream("out/donutrun.csv");
+    auto f1 = ofstream("tmp/donut.csv");
+    auto f2 = ofstream("tmp/donutrun.csv");
     for (size_t i = 0; i < 10000; ++i)
     {
         // 各分布法に基いて乱数を生成

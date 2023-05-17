@@ -23,8 +23,8 @@ int main()
     // 平均0.0、標準偏差1.8で分布させる
     normal_distribution<> randn(0.0, 1.8);
 
-    auto f1 = ofstream("out/randn.csv");
-    auto f2 = ofstream("out/randnrun.csv");
+    auto f1 = ofstream("tmp/randn.csv");
+    auto f2 = ofstream("tmp/randnrun.csv");
     for (size_t i = 0; i < 10000; ++i)
     {
         // 各分布法に基いて乱数を生成
