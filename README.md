@@ -32,6 +32,7 @@ Bluetooth MANET を C++ でシミュレーションする。
 ```
 # output-file
 *.out
+*.exe
 ```
 
 
