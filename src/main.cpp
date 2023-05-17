@@ -20,24 +20,27 @@ int main(void)
     MGR mgr(num);
     vector<ofstream> fs;
 
-    for (int id = 0; id < num; id++)
-    {
-        string fname = "../tmp/positions" + to_string(id) + ".csv";
-        fs.emplace_back(fname);
-        fs[id] << "x,y" << endl;
-    }
-
-    for (int i = 0; i < 100; i++)
+    auto makeSCV = [&]()
     {
         for (int id = 0; id < num; id++)
         {
-            auto [x, y] = *mgr.getPositon(id);
-            fs[id] << x << ", " << y << endl;
-            mgr.updatePisition(id);
+            string fname = "../tmp/dev_pos" + to_string(id) + ".csv";
+            fs.emplace_back(fname);
+            fs[id] << "x,y" << endl;
         }
-    }
 
-    // mgr.addDevices(num);
+        for (int i = 0; i < 100; i++)
+        {
+            for (int id = 0; id < num; id++)
+            {
+                auto [x, y] = *mgr.getPositon(id);
+                fs[id] << x << ", " << y << endl;
+                mgr.updatePisition(id);
+            }
+        }
+    };
+
+        // mgr.addDevices(num);
     // mgr.pairDevices(0, 1);
     // mgr.pairDevices(0, 2);
     // mgr.pairDevices(0, 3);
