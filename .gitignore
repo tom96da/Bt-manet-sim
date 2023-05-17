@@ -1,8 +1,18 @@
 # output-location
 out
 
+# temporary data
+tmp/*.csv
+tmp/*.ngp
+
 # CMake-generated files
-build
+*.cmake
+CMakeFiles
+Testing
+CMakeCache.txt
+compile_commands.json
+Makefile
+Bt_manet_sim
 
 # local setting
 .vscode

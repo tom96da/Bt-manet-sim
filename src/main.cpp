@@ -22,7 +22,7 @@ int main(void)
 
     for (int id = 0; id < num; id++)
     {
-        string fname = "../out/positions" + to_string(id) + ".csv";
+        string fname = "../tmp/positions" + to_string(id) + ".csv";
         fs.emplace_back(fname);
         fs[id] << "x,y" << endl;
     }
