@@ -30,14 +30,17 @@ Bluetooth MANET を C++ でシミュレーションする。
 また、`.gitignore`は以下のように設定する。
 
 ```
-# output-location
-out
+# output-file
+*.out
 ```
 
 
 拡張機能を用いてコンパイルおよび実行するときの、実行ファイルの出力先を `out/` に指定し、  
-Git の追跡対象外としている。  
+実行ファイルの拡張子を指定し Git の追跡対象外としている。  
 ~~のちで設定する CMake によって生成される `build/` 以下のファイルは自動的に追跡対象外になる模様。~~
+
+### 追記（2023.5.17）
+以前より `.gitignore` 自身を追跡対象に含めたため、リポジトリをクローンした際に新たに作成する必要はなくなった。
 
 ## CMake の設定事項
 CMakeは分割されたソースファイルからビルドを自動で行ってくれる。
@@ -82,7 +85,15 @@ CMakeは分割されたソースファイルからビルドを自動で行って
 `.gitignore` にCMakeによって生成されるファイルの記述を追加する。
 ```
 # CMake-generated files
-build
+*.cmake
+CMakeFiles
+Testing
+CMakeCache.txt
+compile_commands.json
+Makefile
+
+# CMake project
+Bt_manet_sim　　
 
 # local setting
 .vscode
