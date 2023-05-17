@@ -1,9 +1,11 @@
-# output-location
-out
+# output-file
+*.out
 
 # temporary data
 tmp/*.csv
 tmp/*.ngp
+test/tmp/*.csv
+test/tmp/*.ngp
 
 # CMake-generated files
 *.cmake
