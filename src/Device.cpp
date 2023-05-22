@@ -223,13 +223,13 @@ void Device::receiveMessage(Device &sender, string message)
 
 Device *Device::getPairedDevice(const int id)
 {
-    auto itr = find_if(*paired_devices_.begin(), *paired_devices_.end(),
-                       [&](const Device device)
+    auto itr = find_if(paired_devices_.begin(), paired_devices_.end(),
+                       [&](Device *device)
                        {
-                           return device.getId() == id;
+                           return device->getId() == id;
                        });
-    if (itr == *paired_devices_.end())
+    if (itr == paired_devices_.end())
         return nullptr;
 
-    return &(*itr);
+    return *itr;
 }
