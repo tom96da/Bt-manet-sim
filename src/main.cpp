@@ -40,6 +40,13 @@ int main(void)
         }
     };
 
+    mgr.pairDevices(0, 1);
+    mgr.pairDevices(1, 2);
+    auto d0 = mgr.getDeviceById(0);
+    cout << d0->getNumPaired() << endl;
+    auto d1 = d0->getPairedDevice(1);
+    cout << d1->getNumPaired() << endl;
+
     // mgr.addDevices(num);
     // mgr.pairDevices(0, 1);
     // mgr.pairDevices(0, 2);
