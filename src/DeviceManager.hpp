@@ -13,6 +13,8 @@
 #include "Device.hpp"
 using namespace std;
 
+const double MAX_COM_DISTANCE = 10.0;
+
 /* デバイスマネージャー クラス */
 class DeviceManager
 {
@@ -35,14 +37,16 @@ public:
     int getNumDevices() const;
     Device *getDeviceById(const int id);
 
-    // pair<double, double> *getPositon(int id);
-    void updatePisition(int id);
-    pair<double, double> *getPositon(int id);
+    pair<double, double> *getPositon(const int id);
+    void updatePisition(const int id);
+    double getDistance(const int id_1, const int id_2);
 
     void addDevices(int num_devices);
 
-    void pairDevices(const int d1_id, const int d2_id);
-    void conectDevices(const int d1_id, const int d2_id);
+    void pairDevices(const int id_1, const int id_2);
+    void conectDevices(const int id_1, const int id_2);
+
+    static double getMaxComDistance() { return MAX_COM_DISTANCE; }
 };
 
 /* デバイスマネージャー クラス */

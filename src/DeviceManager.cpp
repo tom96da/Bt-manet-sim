@@ -32,9 +32,9 @@ int DeviceManager::getNumDevices() const { return devices_.size(); };
 Device *DeviceManager::getDeviceById(const int id)
 {
     auto itr = find_if(devices_.begin(), devices_.end(),
-                       [&](const Device devise)
+                       [&](const Device device)
                        {
-                           return devise.getId() == id;
+                           return device.getId() == id;
                        });
     if (itr == devices_.end())
         return nullptr;
@@ -47,12 +47,12 @@ Device *DeviceManager::getDeviceById(const int id)
  * @param id デバイスID
  * @return デバイスの座標のポインタ
  */
-pair<double, double> *DeviceManager::getPositon(int id)
+pair<double, double> *DeviceManager::getPositon(const int id)
 {
     auto itr = find_if(devices_.begin(), devices_.end(),
-                       [&](const Device devise)
+                       [&](const Device device)
                        {
-                           return devise.getId() == id;
+                           return device.getId() == id;
                        });
     if (itr == devices_.end())
         return nullptr;
@@ -64,7 +64,7 @@ pair<double, double> *DeviceManager::getPositon(int id)
  * @brief 座標の更新
  * @param id デバイスID
  */
-void DeviceManager::updatePisition(int id)
+void DeviceManager::updatePisition(const int id)
 {
     double radius = move_randn_(mt_);
     double theta = move_random_(mt_);
@@ -75,10 +75,23 @@ void DeviceManager::updatePisition(int id)
 }
 
 /*!
+ * @brief デバイス間距離の取得
+ * @param id_1 デバイスID1
+ * @param id_2 デバイスID2
+ * @return
+ */
+double DeviceManager::getDistance(const int id_1, const int id_2)
+{
+    auto pos_1 = getPositon(id_1);
+    auto pos_2 = getPositon(id_2);
+
+    return hypot(pos_1->first - pos_2->first, pos_1->second - pos_2->second);
+}
+
+/*!
  * @brief デバイスを追加する
  * @param num_devices デバイス数
  */
-
 void DeviceManager::addDevices(int num_devices)
 {
     int pre_num_devices = devices_.size();
@@ -91,20 +104,20 @@ void DeviceManager::addDevices(int num_devices)
 
 /*!
  * @brief デバイス同士をペアリング登録させる
- * @param d1_id デバイス1
- * @param d2_id デバイス2
+ * @param d1_id デバイスID1
+ * @param d2_id デバイスID2
  */
-void DeviceManager::pairDevices(const int d1_id, const int d2_id)
+void DeviceManager::pairDevices(const int id_1, const int id_2)
 {
-    getDeviceById(d1_id)->pairing(*getDeviceById(d2_id));
+    getDeviceById(id_1)->pairing(*getDeviceById(id_2));
 }
 
 /*!
  * @brief デバイス同士を接続する
- * @param d1_id デバイス1
- * @param d2_id デバイス2
+ * @param d1_id デバイスID1
+ * @param d2_id デバイスID2
  */
-void DeviceManager::conectDevices(const int d1_id, const int d2_id)
+void DeviceManager::conectDevices(const int id_1, const int id_2)
 {
-    getDeviceById(d1_id)->connect(*getDeviceById(d2_id));
+    getDeviceById(id_1)->connect(*getDeviceById(id_2));
 }

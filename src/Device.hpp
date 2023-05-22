@@ -12,19 +12,23 @@
 #include <vector>
 using namespace std;
 
+/* 最大接続数 */
 const int MAX_CONNECTIONS = 6;
 
 /* Bluetooth デバイス */
 class Device
 {
 private:
+    /* デバイスID */
     const int id_;
+    /* デバイス名 */
     const string name_;
+    /* 最大接続台数 */
     const int max_connections_;
 
-    pair<double, double> position_;
-
+    /* ペアリング登録済みデバイス */
     vector<Device *> paired_devices_;
+    /* 接続中デバイス */
     vector<const int *> connected_devices_;
 
 public:
@@ -33,9 +37,6 @@ public:
     int getId() const;
     const int *getIdPtr() const;
     string getName() const;
-
-    void setPosition();
-    pair<double, double> getPosition() const;
 
     int getNumPaired() const;
     vector<int> getPairedDeviceId() const;
@@ -58,7 +59,7 @@ public:
     void sendMessage(Device &receiver, string message);
     void receiveMessage(Device &sender, string message);
 
-    static const Device findDevice(Device &another_device);
+    Device *getPairedDevice(const int id);
 };
 
 #endif

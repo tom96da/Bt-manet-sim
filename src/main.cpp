@@ -20,7 +20,7 @@ int main(void)
     MGR mgr(num);
     vector<ofstream> fs;
 
-    auto makeSCV = [&]()
+    auto makeCSV = [&]()
     {
         for (int id = 0; id < num; id++)
         {
@@ -40,7 +40,7 @@ int main(void)
         }
     };
 
-        // mgr.addDevices(num);
+    // mgr.addDevices(num);
     // mgr.pairDevices(0, 1);
     // mgr.pairDevices(0, 2);
     // mgr.pairDevices(0, 3);

@@ -14,8 +14,7 @@ Device::Device(int id, int max_connections)
     : id_{id},
       max_connections_{max_connections},
       name_{[&]() -> string
-            { return "device[" + to_string(id) + "]"; }()},
-      position_{0.0, 0.0}
+            { return "device[" + to_string(id) + "]"; }()}
 {
 }
 
@@ -27,15 +26,6 @@ const int *Device::getIdPtr() const { return &id_; }
 
 /* デバイス名 取得 */
 string Device::getName() const { return name_; }
-
-/* デバイス速度 更新 */
-void Device::setPosition()
-{
-    position_ = {0.0, 0.0};
-}
-
-/* デバイス速度 取得 */
-pair<double, double> Device::getPosition() const { return position_; }
 
 /* ペアリング済みデバイス数 取得 */
 int Device::getNumPaired() const
@@ -229,4 +219,17 @@ void Device::sendMessage(Device &receiver, string message)
 void Device::receiveMessage(Device &sender, string message)
 {
     cout << message << " -> ID_" << this->getId() << endl;
+}
+
+Device *Device::getPairedDevice(const int id)
+{
+    auto itr = find_if(*paired_devices_.begin(), *paired_devices_.end(),
+                       [&](const Device device)
+                       {
+                           return device.getId() == id;
+                       });
+    if (itr == *paired_devices_.end())
+        return nullptr;
+
+    return &(*itr);
 }
