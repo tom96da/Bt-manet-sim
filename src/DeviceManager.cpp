@@ -9,11 +9,15 @@
 #include "Device.hpp"
 #include "DeviceManager.hpp"
 
-DeviceManager::DeviceManager(int init_num_devices)
-    : mt_{random_device{}()},
-      position_random_(0.0, 100),
+double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
+
+DeviceManager::DeviceManager(double field_size, int init_num_devices)
+    : field_size_{field_size},
+      mt_{random_device{}()},
+      position_random_(0.0, field_size_),
       move_random_(0.0, 2 * M_PI),
-      move_randn_(2.0, 0.7)
+      move_randn_(0, 0.3),
+      bias_random_(-0.4, 0.4)
 {
     addDevices(init_num_devices);
 }
@@ -61,17 +65,57 @@ pair<double, double> *DeviceManager::getPositon(const int id)
 }
 
 /*!
+ * @brief IDに合致するバイアスを取得
+ * @param id デバイスID
+ * @return デバイスのバイアスのポインタ
+ */
+pair<double, double> *DeviceManager::getBias(const int id)
+{
+    auto itr = find_if(devices_.begin(), devices_.end(),
+                       [&](const Device device)
+                       {
+                           return device.getId() == id;
+                       });
+    if (itr == devices_.end())
+        return nullptr;
+
+    return &bias_[distance(devices_.begin(), itr)];
+}
+
+/*!
  * @brief 座標の更新
  * @param id デバイスID
  */
 void DeviceManager::updatePisition(const int id)
 {
+    double tmp;
     double radius = move_randn_(mt_);
     double theta = move_random_(mt_);
+    double dx = move_randn_(mt_);
+    double dy = move_randn_(mt_);
 
     auto position = getPositon(id);
-    position->first += radius * cos(theta);
-    position->second += radius * sin(theta);
+    auto bias = getBias(id);
+    // tmp = position->first + radius * cos(theta) + bias->first;
+    tmp = position->first + dx + bias->first;
+    if (tmp > 0 & tmp < field_size_)
+        position->first = tmp;
+    else
+    {
+        position->first -= (radius * cos(theta) + bias->first);
+        bias->first = -bias->first;
+    }
+
+    // tmp = position->second + radius * sin(theta) + bias->second;
+    tmp = position->second + dy + bias->second;
+    if (tmp > 0 & tmp < field_size_)
+        position->second = tmp;
+    else
+    {
+        // position->second -= (radius * sin(theta) + bias->second);
+        position->second -= (dy + bias->second);
+        bias->second = -bias->second;
+    }
 }
 
 /*!
@@ -99,6 +143,7 @@ void DeviceManager::addDevices(int num_devices)
     {
         devices_.emplace_back(id);
         positions_.emplace_back(position_random_(mt_), position_random_(mt_));
+        bias_.emplace_back(bias_random_(mt_), bias_random_(mt_));
     }
 }
 
@@ -109,6 +154,9 @@ void DeviceManager::addDevices(int num_devices)
  */
 void DeviceManager::pairDevices(const int id_1, const int id_2)
 {
+    if (getDistance(id_1, id_2) > max_com_distance_)
+        return;
+
     getDeviceById(id_1)->pairing(*getDeviceById(id_2));
 }
 
@@ -117,7 +165,18 @@ void DeviceManager::pairDevices(const int id_1, const int id_2)
  * @param d1_id デバイスID1
  * @param d2_id デバイスID2
  */
-void DeviceManager::conectDevices(const int id_1, const int id_2)
+void DeviceManager::connectDevices(const int id_1, const int id_2)
 {
+    if (getDistance(id_1, id_2) > max_com_distance_)
+        return;
+
     getDeviceById(id_1)->connect(*getDeviceById(id_2));
+}
+
+void DeviceManager::disconnectDevices(const int id_1, const int id_2)
+{
+    if (getDistance(id_1, id_2) <= max_com_distance_)
+        return;
+
+    getDeviceById(id_1)->disconnect(*getDeviceById(id_2));
 }

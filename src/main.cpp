@@ -16,60 +16,77 @@ using namespace std;
 
 int main(void)
 {
-    int num = 100;
-    MGR mgr(num);
+    double field_size = 60.0;
+    int num_dev = 100;
+    MGR mgr(field_size, num_dev);
     vector<ofstream> fs;
 
-    auto makeCSV = [&]()
+    auto manageDistance = [&](const int base_id)
     {
-        for (int id = 0; id < num; id++)
+        for (int id = 0; id < num_dev; id++)
+        {
+            mgr.pairDevices(base_id, id);
+            mgr.connectDevices(base_id, id);
+            mgr.disconnectDevices(base_id, id);
+        }
+    };
+
+    auto newCsv = [&]()
+    {
+        for (int id = 0; id < num_dev; id++)
         {
             string fname = "../tmp/dev_pos" + to_string(id) + ".csv";
             fs.emplace_back(fname);
             fs[id] << "x,y" << endl;
         }
+    };
 
-        for (int i = 0; i < 100; i++)
+    auto writeCsv = [&]()
+    {
+        for (int id = 0; id < num_dev; id++)
         {
-            for (int id = 0; id < num; id++)
-            {
-                auto [x, y] = *mgr.getPositon(id);
-                fs[id] << x << ", " << y << endl;
-                mgr.updatePisition(id);
-            }
+            auto [x, y] = *mgr.getPositon(id);
+            fs[id] << x << ", " << y << endl;
         }
     };
 
-    mgr.pairDevices(0, 1);
-    mgr.pairDevices(1, 2);
-    auto d0 = mgr.getDeviceById(0);
-    cout << d0->getNumPaired() << endl;
-    auto d1 = d0->getPairedDevice(1);
-    cout << d1->getNumPaired() << endl;
+    auto nextPos = [&]()
+    {
+        for (int id = 0; id < num_dev; id++)
+        {
+            mgr.updatePisition(id);
+        }
+    };
 
-    // mgr.addDevices(num);
-    // mgr.pairDevices(0, 1);
-    // mgr.pairDevices(0, 2);
-    // mgr.pairDevices(0, 3);
-    // mgr.conectDevices(0, 1);
+    auto doSim = [&](const int frames)
+    {
+        newCsv();
 
-    // vector<Device> d;
-    // cout << mgr.getNumDevices() << endl;
-    // for (int id = 0; id < num; id++)
-    //     d.push_back(*(mgr.getDeviceById(id)));
+        for (int f = 0; f < frames; f++)
+        {
+            for (int id = 0; id < num_dev; id++)
+            {
+                manageDistance(id);
+            }
 
-    // vector<int> ids = d[0].getPairedDeviceId();
-    // for (int id : ids)
-    // {
-    //     cout << id << " ";
-    // }
-    // cout << endl;
-    // ids = d[0].getConnectedDeviceId();
-    // for (int id : ids)
-    // {
-    //     cout << id << " ";
-    // }
-    // cout << endl;
+            writeCsv();
+            nextPos();
+        }
+    };
+
+    doSim(1);
+
+    for (int id = 0; id < num_dev; id++)
+    {
+        auto dev = mgr.getDeviceById(id);
+        auto cntds = dev->getConnectedDeviceId();
+        cout << "device" << dev->getId() << " connected with ";
+        for (auto cntd : cntds)
+        {
+            cout << cntd << " ";
+        }
+        cout << endl;
+    }
 
     return 0;
 }

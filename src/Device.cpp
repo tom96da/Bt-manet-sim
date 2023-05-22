@@ -170,6 +170,8 @@ void Device::connect(Device &another_device)
         return;
     if (this->isConnected(another_device))
         return;
+    if (getNumConnected() >= max_connections_)
+        return;
 
     this->connected_devices_.emplace_back(another_device.getIdPtr());
     another_device.connect(*this);

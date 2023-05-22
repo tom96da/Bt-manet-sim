@@ -19,8 +19,13 @@ const double MAX_COM_DISTANCE = 10.0;
 class DeviceManager
 {
 private:
+    static double max_com_distance_;
+
+    const double field_size_;
+
     vector<Device> devices_;
     vector<pair<double, double>> positions_;
+    vector<pair<double, double>> bias_;
 
     /* メルセンヌ・ツイスタ */
     mt19937 mt_;
@@ -30,23 +35,27 @@ private:
     uniform_real_distribution<> move_random_;
     /* 正規分布 移動距離 */
     normal_distribution<> move_randn_;
+    /* 一様実数分布 バイアス */
+    uniform_real_distribution<> bias_random_;
 
 public:
-    DeviceManager(int init_num_devices = 0);
+    DeviceManager(double field_size, int init_num_devices = 0);
 
     int getNumDevices() const;
     Device *getDeviceById(const int id);
 
     pair<double, double> *getPositon(const int id);
+    pair<double, double> *getBias(const int id);
     void updatePisition(const int id);
     double getDistance(const int id_1, const int id_2);
 
     void addDevices(int num_devices);
 
     void pairDevices(const int id_1, const int id_2);
-    void conectDevices(const int id_1, const int id_2);
+    void connectDevices(const int id_1, const int id_2);
+    void disconnectDevices(const int id_1, const int id_2);
 
-    static double getMaxComDistance() { return MAX_COM_DISTANCE; }
+    static double getMaxComDistance() { return max_com_distance_; }
 };
 
 /* デバイスマネージャー クラス */
