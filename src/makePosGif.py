@@ -26,7 +26,8 @@ red = [0]
 green = []
 
 for i in range(num_dev):
-    fname.append("tmp/dev_pos" + str(i) +".csv")
+    # fname.append("tmp/dev_pos" + str(i) +".csv")
+    fname.append("../tmp/dev_pos" + str(i) +".csv")
     data = pd.read_csv(fname[i])
 
     dev_x.append(data['x'])

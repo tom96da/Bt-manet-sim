@@ -70,7 +70,7 @@ int main(void)
             }
 
             writeCsv();
-            nextPos();
+            // nextPos();
         }
     };
 
