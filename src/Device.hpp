@@ -31,13 +31,6 @@ private:
     /* 接続中デバイス */
     vector<const int *> connected_devices_;
 
-    class Packet
-    {
-    private:
-        const int id_;
-        const size_t seq_;
-    };
-
 public:
     Device(int id, int max_connections = MAX_CONNECTIONS);
 

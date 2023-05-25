@@ -11,6 +11,11 @@
 
 double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
 
+/*!
+ * @brief コンストラクタ
+ * @param field_size フィールドサイズ
+ * @param init_num_devices デバイス数 デフォルト値: 0
+ */
 DeviceManager::DeviceManager(double field_size, int init_num_devices)
     : field_size_{field_size},
       mt_{random_device{}()},
@@ -89,8 +94,8 @@ pair<double, double> *DeviceManager::getBias(const int id)
 void DeviceManager::updatePisition(const int id)
 {
     double tmp;
-    double radius = move_randn_(mt_);
-    double theta = move_random_(mt_);
+    // double radius = move_randn_(mt_);
+    // double theta = move_random_(mt_);
     double dx = move_randn_(mt_);
     double dy = move_randn_(mt_);
 
@@ -102,7 +107,8 @@ void DeviceManager::updatePisition(const int id)
         position->first = tmp;
     else
     {
-        position->first -= (radius * cos(theta) + bias->first);
+        // position->first -= (radius * cos(theta) + bias->first);
+        position->first -= (dx + bias->first);
         bias->first = -bias->first;
     }
 
@@ -122,7 +128,7 @@ void DeviceManager::updatePisition(const int id)
  * @brief デバイス間距離の取得
  * @param id_1 デバイスID1
  * @param id_2 デバイスID2
- * @return
+ * @return　デバイス間距離
  */
 double DeviceManager::getDistance(const int id_1, const int id_2)
 {
