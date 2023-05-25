@@ -11,6 +11,7 @@
 #include <string>
 #include "Device.hpp"
 #include "DeviceManager.hpp"
+#include "pbar.hpp"
 
 using namespace std;
 
@@ -61,14 +62,18 @@ int main(void)
     auto doSim = [&](const int frames)
     {
         newCsv();
+        int id = 0;
+        auto pbar = thread([&]()
+                           { auto p = PBar(num_dev, id); 
+                             p.erase(); });
 
         for (int f = 0; f < frames; f++)
         {
-            for (int id = 0; id < num_dev; id++)
+            for (id = 0; id < num_dev; id++)
             {
                 runDevice(id);
             }
-
+            pbar.join();
             writeCsv();
             // nextPos();
         }

@@ -8,6 +8,7 @@ set(SOURCE
         Device.cpp
         DeviceManager.cpp
         routingTable.cpp
+        pbar.cpp
 )
 
 # Add executable target with source files listed in SOURCE_FILES variable
