@@ -28,6 +28,7 @@ private:
         bool isValid_;
 
     public:
+        Entry() = default;
         Entry(int nextHop, double distance = -1.0);
 
         int getNextHop() const;
@@ -40,11 +41,11 @@ private:
     map<int, Entry> table_;
 
 public:
-    void updateEntry(int destination, int nextHop, double distance = -1.0);
-
     int getNextHop(int destination) const;
-
     vector<int> getDestinations() const;
+
+    void updateEntry(int destination, int nextHop, double distance = -1.0);
+    void markEntryInvalid(int destination);
 };
 
 /* ルーティングテーブルクラス */

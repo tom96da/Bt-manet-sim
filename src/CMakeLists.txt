@@ -7,7 +7,7 @@ set(SOURCE
         main.cpp 
         Device.cpp
         DeviceManager.cpp
-        olsr.cpp
+        routingTable.cpp
 )
 
 # Add executable target with source files listed in SOURCE_FILES variable

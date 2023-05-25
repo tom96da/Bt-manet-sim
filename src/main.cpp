@@ -21,7 +21,7 @@ int main(void)
     MGR mgr(field_size, num_dev);
     vector<ofstream> fs;
 
-    auto manageDistance = [&](const int base_id)
+    auto runDevice = [&](const int base_id)
     {
         for (int id = 0; id < num_dev; id++)
         {
@@ -66,7 +66,7 @@ int main(void)
         {
             for (int id = 0; id < num_dev; id++)
             {
-                manageDistance(id);
+                runDevice(id);
             }
 
             writeCsv();
@@ -76,17 +76,17 @@ int main(void)
 
     doSim(1);
 
-    for (int id = 0; id < num_dev; id++)
-    {
-        auto dev = mgr.getDeviceById(id);
-        auto cntds = dev->getConnectedDeviceId();
-        cout << "device" << dev->getId() << " connected with ";
-        for (auto cntd : cntds)
-        {
-            cout << cntd << " ";
-        }
-        cout << endl;
-    }
+    // for (int id = 0; id < num_dev; id++)
+    // {
+    //     auto dev = mgr.getDeviceById(id);
+    //     auto cntds = dev->getConnectedDeviceId();
+    //     cout << "device" << dev->getId() << " connected with ";
+    //     for (auto cntd : cntds)
+    //     {
+    //         cout << cntd << " ";
+    //     }
+    //     cout << endl;
+    // }
 
     return 0;
 }

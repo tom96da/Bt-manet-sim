@@ -11,7 +11,7 @@
  * @brief コンストラクタ
  * @param nextHop 次のホップデバイスID
  */
-RoutingTable::Entry::Entry(int nextHop, double distance = -1.0)
+RoutingTable::Entry::Entry(int nextHop, double distance)
     : nextHop_{nextHop},
       distance_{distance},
       isValid_{true}
@@ -49,22 +49,6 @@ void RoutingTable::Entry::markInvalid() { isValid_ = false; }
 bool RoutingTable::Entry::isValid() const { return isValid_; }
 
 /*!
- * @brief エントリの更新
- * @param destination 宛先デバイスID
- * @param nextHop 次ホップデバイスのID
- * @param distance 次ホップデバイスの距離
- */
-void RoutingTable::updateEntry(int destination, int nextHop, double distance)
-{
-    if (table_.count(destination))
-        // エントリが存在しない場合は、新たに作成する
-        table_.emplace(destination, Entry(nextHop, distance));
-    else
-        // 既にエントリが存在する場合は、更新する
-        table_[destination].updateEntry(nextHop, distance);
-}
-
-/*!
  * @brief 宛先に対する次ホップデバイスIDを取得
  * @param destination 宛先デバイスID
  * @return 次ホップデバイスID
@@ -87,8 +71,33 @@ vector<int> RoutingTable::getDestinations() const
 {
     vector<int> destinations;
     for (const auto &entry : table_)
-    {
         destinations.push_back(entry.first);
-    }
+
     return destinations;
+}
+
+/*!
+ * @brief エントリの更新
+ * @param destination 宛先デバイスID
+ * @param nextHop 次ホップデバイスのID
+ * @param distance 次ホップデバイスの距離
+ */
+void RoutingTable::updateEntry(int destination, int nextHop, double distance)
+{
+    if (table_.count(destination))
+        // 既にエントリが存在する場合は、更新する
+        table_[destination].updateEntry(nextHop, distance);
+    else
+        // エントリが存在しない場合は、新たに作成する
+        table_.emplace(destination, Entry(nextHop, distance));
+}
+
+/*!
+ * @brief 宛先に対するエントリを無効にする
+ * @param destination
+ */
+void RoutingTable::markEntryInvalid(int destination)
+{
+    if (table_.count(destination))
+        table_.at(destination).markInvalid();
 }
