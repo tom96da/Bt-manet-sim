@@ -11,11 +11,9 @@
 #include <iostream>
 #include <string>
 #include <thread>
-#include <chrono>
 #include <iomanip>
 
 using namespace std;
-using namespace chrono_literals;
 
 const int PBAR_LENGTH = 20;
 

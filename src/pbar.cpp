@@ -36,8 +36,6 @@ void ProgressBar::set(const int num_task, int &num_done)
 
     do
     {
-        this_thread::sleep_for(50ms);
-
         if (num_done > num_task)
             num_done = num_task;
 

@@ -10,7 +10,7 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.patches as patches
 import pandas as pd
 
-plt.rcParams['font.family'] = 'Source Han Code JP'
+plt.rcParams['font.family'] = 'sans-serif'
 
 num_dev = 100
 num_frame = 0
@@ -23,10 +23,10 @@ pos_x = []
 pos_y = []
 
 red = [0]
-green = []
+orange = [11, 14, 23, 24, 32, 33, 36, 40, 42, 51, 62, 65, 72, 77, 81]
+green = [11, 14, 23, 24, 32, 33]
 
 for i in range(num_dev):
-    # fname.append("tmp/dev_pos" + str(i) +".csv")
     fname.append("../tmp/dev_pos" + str(i) +".csv")
     data = pd.read_csv(fname[i])
 
@@ -50,19 +50,24 @@ ax.set_aspect('equal')
 
 def update(frame):
     ax.cla()
-    ax.set_title("デバイス frame:" +str(frame), size=15)
-    ax.set_xlabel("x", size=10)
-    ax.set_ylabel("y", size=10)
+    ax.set_title("Device frame:" +str(frame), size=18, fontweight='bold')
+    ax.set_xlabel("x", size=18, fontweight='bold')
+    ax.set_ylabel("y", size=18, fontweight='bold')
     ax.set_xlim(0, field_size)
     ax.set_ylim(0, field_size)
+    ax.tick_params(labelsize=12,)
     ax.plot(pos_x[frame], pos_y[frame], "o", c='k', ms=2)
     for id in red:
         ax.plot(pos_x[frame][id],pos_y[frame][id], "o", c='r', ms=5)
         c = patches.Circle(xy=(pos_x[frame][id], pos_y[frame][id]), radius=10, ec='k', fill=False)
         ax.add_patch(c)
+    for id in orange:
+        ax.plot(pos_x[frame][id],pos_y[frame][id], "o", c='y', ms=3)
     for id in green:
-        ax.plot(pos_x[frame][id],pos_y[frame][id], "o", c='g', ms=5)
-    
+        ax.plot(pos_x[frame][id],pos_y[frame][id], "o", c='g', ms=3)
+    ax.plot(-1, -1, "o", c='y', ms=3, label='paired')
+    ax.plot(-1, -1, "o", c='g', ms=3, label='connected')
+    plt.legend(fontsize=12, prop={"weight":"bold"}, loc="lower right")
 
 anim = FuncAnimation(fig, update, frames=range(num_frame), interval=200)
 

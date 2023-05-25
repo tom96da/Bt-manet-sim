@@ -54,44 +54,54 @@ int main(void)
     auto nextPos = [&]()
     {
         for (int id = 0; id < num_dev; id++)
-        {
             mgr.updatePisition(id);
-        }
     };
 
     auto doSim = [&](const int frames)
     {
         newCsv();
-        int id = 0;
-        auto pbar = thread([&]()
-                           { auto p = PBar(num_dev, id); 
-                             p.erase(); });
 
         for (int f = 0; f < frames; f++)
         {
+            int id = 0;
+            auto pbar = thread([&]()
+                               { auto p = PBar(num_dev, id);
+                             p.erase(); });
             for (id = 0; id < num_dev; id++)
             {
                 runDevice(id);
             }
             pbar.join();
             writeCsv();
-            // nextPos();
+            nextPos();
         }
     };
 
     doSim(1);
 
-    // for (int id = 0; id < num_dev; id++)
-    // {
-    //     auto dev = mgr.getDeviceById(id);
-    //     auto cntds = dev->getConnectedDeviceId();
-    //     cout << "device" << dev->getId() << " connected with ";
-    //     for (auto cntd : cntds)
-    //     {
-    //         cout << cntd << " ";
-    //     }
-    //     cout << endl;
-    // }
+    for (int id = 0; id < 1; id++)
+    {
+        auto dev = mgr.getDeviceById(id);
+        auto pards = dev->getPairedDeviceId();
+        cout << "device" << dev->getId() << " paired with ";
+        for (auto pard : pards)
+        {
+            cout << pard << ", ";
+        }
+        cout << endl;
+    }
+
+    for (int id = 0; id < 1; id++)
+    {
+        auto dev = mgr.getDeviceById(id);
+        auto cntds = dev->getConnectedDeviceId();
+        cout << "device" << dev->getId() << " connected with ";
+        for (auto cntd : cntds)
+        {
+            cout << cntd << ", ";
+        }
+        cout << endl;
+    }
 
     return 0;
 }
