@@ -32,6 +32,7 @@ private:
     vector<const int *> connected_devices_;
 
 public:
+    Device() = default;
     Device(int id, int max_connections = MAX_CONNECTIONS);
 
     int getId() const;

@@ -5,11 +5,54 @@
  * @date 2023-05-15
  */
 
+#include <iostream>
 #include <algorithm>
 #include "Device.hpp"
 #include "DeviceManager.hpp"
 
+/* 接続可能距離 */
 double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
+
+/**
+ *  DeviceManager::Node
+ */
+
+/*!
+ * @brief コンストラクタ
+ * @param id デバイスID
+ */
+DeviceManager::Node::Node(const int id)
+    : device_{id},
+      bias_{0.0, 0.0},
+      position_{0.0, 0.0}
+{
+    cout << id << endl;
+}
+
+/* デバイスのオブジェクトを取得 */
+Device *DeviceManager::Node::getDevice() { return &device_; }
+
+/* 移動バイアスを取得 */
+pair<double, double> *DeviceManager::Node::getBias() { return &bias_; }
+
+/* 座標を取得 */
+pair<double, double> *DeviceManager::Node::getPosition() { return &position_; }
+
+/* バイアスを設定 */
+void DeviceManager::Node::setBias(double bias_x, double bias_y)
+{
+    bias_ = {bias_x, bias_y};
+}
+
+/* 座標を更新 */
+void DeviceManager::Node::setPositon(double pos_x, double pos_y)
+{
+    position_ = {pos_x, pos_y};
+}
+
+/**
+ *  DeviceManager
+ */
 
 /*!
  * @brief コンストラクタ
@@ -40,15 +83,10 @@ int DeviceManager::getNumDevices() const { return devices_.size(); };
  */
 Device *DeviceManager::getDeviceById(const int id)
 {
-    auto itr = find_if(devices_.begin(), devices_.end(),
-                       [&](const Device device)
-                       {
-                           return device.getId() == id;
-                       });
-    if (itr == devices_.end())
+    if (devices_.count(id))
         return nullptr;
 
-    return &(*itr);
+    return devices_.at(id).getDevice();
 }
 
 /*!
@@ -58,15 +96,10 @@ Device *DeviceManager::getDeviceById(const int id)
  */
 pair<double, double> *DeviceManager::getPositon(const int id)
 {
-    auto itr = find_if(devices_.begin(), devices_.end(),
-                       [&](const Device device)
-                       {
-                           return device.getId() == id;
-                       });
-    if (itr == devices_.end())
+    if (devices_.count(id))
         return nullptr;
 
-    return &positions_[distance(devices_.begin(), itr)];
+    return devices_.at(id).getPosition();
 }
 
 /*!
@@ -76,15 +109,10 @@ pair<double, double> *DeviceManager::getPositon(const int id)
  */
 pair<double, double> *DeviceManager::getBias(const int id)
 {
-    auto itr = find_if(devices_.begin(), devices_.end(),
-                       [&](const Device device)
-                       {
-                           return device.getId() == id;
-                       });
-    if (itr == devices_.end())
+    if (devices_.count(id))
         return nullptr;
 
-    return &bias_[distance(devices_.begin(), itr)];
+    return devices_.at(id).getBias();
 }
 
 /*!
@@ -147,9 +175,9 @@ void DeviceManager::addDevices(int num_devices)
     int pre_num_devices = devices_.size();
     for (int id = pre_num_devices; id < pre_num_devices + num_devices; id++)
     {
-        devices_.emplace_back(id);
-        positions_.emplace_back(position_random_(mt_), position_random_(mt_));
-        bias_.emplace_back(bias_random_(mt_), bias_random_(mt_));
+        devices_.emplace(id, Node(id));
+        devices_.at(id).setBias(bias_random_(mt_), bias_random_(mt_));
+        devices_.at(id).setPositon(position_random_(mt_), position_random_(mt_));
     }
 }
 

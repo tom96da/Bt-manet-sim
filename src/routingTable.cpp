@@ -7,9 +7,14 @@
 
 #include "routingTable.hpp"
 
+/**
+ *  RoutingTable::Entry
+ */
+
 /*!
  * @brief コンストラクタ
- * @param nextHop 次のホップデバイスID
+ * @param nextHop 次ホップデバイスのID
+ * @param nextHop 次ホップデバイスの距離
  */
 RoutingTable::Entry::Entry(int nextHop, double distance)
     : nextHop_{nextHop},
@@ -19,8 +24,8 @@ RoutingTable::Entry::Entry(int nextHop, double distance)
 }
 
 /*!
- * @brief 次のポップデバイスのIDを取得
- * @return 次のホップデバイスのID
+ * @brief 次ポップデバイスのIDを取得
+ * @return 次ホップデバイスのID
  */
 int RoutingTable::Entry::getNextHop() const { return nextHop_; }
 
@@ -47,6 +52,10 @@ void RoutingTable::Entry::markInvalid() { isValid_ = false; }
  * @retval false 無効
  */
 bool RoutingTable::Entry::isValid() const { return isValid_; }
+
+/**
+ *  RoutingTable
+ */
 
 /*!
  * @brief 宛先に対する次ホップデバイスIDを取得

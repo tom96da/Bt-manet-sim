@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <random>
+#include <map>
 #include "Device.hpp"
 using namespace std;
 
@@ -23,9 +24,26 @@ private:
 
     const double field_size_;
 
-    vector<Device> devices_;
-    vector<pair<double, double>> positions_;
-    vector<pair<double, double>> bias_;
+    class Node
+    {
+    private:
+        Device device_;
+        pair<double, double> bias_;
+        pair<double, double> position_;
+
+    public:
+        Node() = default;
+        Node(const int id);
+
+        Device *getDevice();
+        pair<double, double> *getBias();
+        pair<double, double> *getPosition();
+
+        void setBias(double bias_x, double bias_y);
+        void setPositon(double pos_x, double pos_y);
+    };
+
+    map<int, Node> devices_;
 
     /* メルセンヌ・ツイスタ */
     mt19937 mt_;
