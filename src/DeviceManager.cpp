@@ -26,7 +26,6 @@ DeviceManager::Node::Node(const int id)
       bias_{0.0, 0.0},
       position_{0.0, 0.0}
 {
-    cout << id << endl;
 }
 
 /* デバイスのオブジェクトを取得 */
@@ -84,9 +83,9 @@ int DeviceManager::getNumDevices() const { return devices_.size(); };
 Device *DeviceManager::getDeviceById(const int id)
 {
     if (devices_.count(id))
-        return nullptr;
+        return devices_.at(id).getDevice();
 
-    return devices_.at(id).getDevice();
+    return nullptr;
 }
 
 /*!
@@ -97,9 +96,9 @@ Device *DeviceManager::getDeviceById(const int id)
 pair<double, double> *DeviceManager::getPositon(const int id)
 {
     if (devices_.count(id))
-        return nullptr;
+        return devices_.at(id).getPosition();
 
-    return devices_.at(id).getPosition();
+    return nullptr;
 }
 
 /*!
@@ -110,9 +109,9 @@ pair<double, double> *DeviceManager::getPositon(const int id)
 pair<double, double> *DeviceManager::getBias(const int id)
 {
     if (devices_.count(id))
-        return nullptr;
+        return devices_.at(id).getBias();
 
-    return devices_.at(id).getBias();
+    return nullptr;
 }
 
 /*!
@@ -122,31 +121,25 @@ pair<double, double> *DeviceManager::getBias(const int id)
 void DeviceManager::updatePisition(const int id)
 {
     double tmp;
-    // double radius = move_randn_(mt_);
-    // double theta = move_random_(mt_);
     double dx = move_randn_(mt_);
     double dy = move_randn_(mt_);
 
     auto position = getPositon(id);
     auto bias = getBias(id);
-    // tmp = position->first + radius * cos(theta) + bias->first;
     tmp = position->first + dx + bias->first;
     if (tmp > 0 & tmp < field_size_)
         position->first = tmp;
     else
     {
-        // position->first -= (radius * cos(theta) + bias->first);
         position->first -= (dx + bias->first);
         bias->first = -bias->first;
     }
 
-    // tmp = position->second + radius * sin(theta) + bias->second;
     tmp = position->second + dy + bias->second;
     if (tmp > 0 & tmp < field_size_)
         position->second = tmp;
     else
     {
-        // position->second -= (radius * sin(theta) + bias->second);
         position->second -= (dy + bias->second);
         bias->second = -bias->second;
     }

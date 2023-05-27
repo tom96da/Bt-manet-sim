@@ -21,8 +21,6 @@ class Device
 private:
     /* デバイスID */
     const int id_;
-    /* デバイス名 */
-    const string name_;
     /* 最大接続台数 */
     const int max_connections_;
 
@@ -33,7 +31,7 @@ private:
 
 public:
     Device() = default;
-    Device(int id, int max_connections = MAX_CONNECTIONS);
+    Device(const int id, int max_connections = MAX_CONNECTIONS);
 
     int getId() const;
     const int *getIdPtr() const;
@@ -60,6 +58,8 @@ public:
     void sendMessage(Device &receiver, string message);
     void receiveMessage(Device &sender, string message);
 
+private:
+    string setName(const int id) const;
     Device *getPairedDevice(const int id);
 };
 
