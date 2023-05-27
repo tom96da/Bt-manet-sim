@@ -10,11 +10,9 @@
 #include "Device.hpp"
 
 /* コンストラクタ */
-Device::Device(int id, int max_connections)
+Device::Device(const int id, int max_connections)
     : id_{id},
-      max_connections_{max_connections},
-      name_{[&]() -> string
-            { return "device[" + to_string(id) + "]"; }()}
+      max_connections_{max_connections}
 {
 }
 
@@ -23,9 +21,6 @@ int Device::getId() const { return id_; }
 
 /* デバイスIDのポインタ 取得 */
 const int *Device::getIdPtr() const { return &id_; }
-
-/* デバイス名 取得 */
-string Device::getName() const { return name_; }
 
 /* ペアリング済みデバイス数 取得 */
 int Device::getNumPaired() const
@@ -58,7 +53,7 @@ vector<int> Device::getConnectedDeviceId() const
 
 void Device::hello() const
 {
-    cout << getName() << " hello!" << endl;
+    cout << "device[" << getId() << "] hello!" << endl;
 }
 
 /* デバイスが自身が取得 */

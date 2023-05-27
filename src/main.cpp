@@ -57,6 +57,26 @@ int main(void)
             mgr.updatePisition(id);
     };
 
+    auto showPaired = [&](int id)
+    {
+        auto dev = mgr.getDeviceById(id);
+        auto pards = dev->getPairedDeviceId();
+        cout << "device" << dev->getId() << " paired with ";
+        for (auto pard : pards)
+            cout << pard << ", ";
+        cout << endl;
+    };
+
+    auto showConnected = [&](int id)
+    {
+        auto dev = mgr.getDeviceById(id);
+        auto cntds = dev->getConnectedDeviceId();
+        cout << "device" << dev->getId() << " connected with ";
+        for (auto cntd : cntds)
+            cout << cntd << ", ";
+        cout << endl;
+    };
+
     auto doSim = [&](const int frames)
     {
         newCsv();
@@ -65,8 +85,7 @@ int main(void)
         {
             int id = 0;
             auto pbar = thread([&]()
-                               { auto p = PBar(num_dev, id);
-                             p.erase(); });
+                               { auto p = PBar(num_dev, id); p.erase(); });
             for (id = 0; id < num_dev; id++)
             {
                 runDevice(id);
@@ -81,26 +100,8 @@ int main(void)
 
     for (int id = 0; id < 1; id++)
     {
-        auto dev = mgr.getDeviceById(id);
-        auto pards = dev->getPairedDeviceId();
-        cout << "device" << dev->getId() << " paired with ";
-        for (auto pard : pards)
-        {
-            cout << pard << ", ";
-        }
-        cout << endl;
-    }
-
-    for (int id = 0; id < 1; id++)
-    {
-        auto dev = mgr.getDeviceById(id);
-        auto cntds = dev->getConnectedDeviceId();
-        cout << "device" << dev->getId() << " connected with ";
-        for (auto cntd : cntds)
-        {
-            cout << cntd << ", ";
-        }
-        cout << endl;
+        showPaired(id);
+        showConnected(id);
     }
 
     return 0;
