@@ -33,13 +33,14 @@ ProgressBar::ProgressBar(const int num_task, int &num_done, int length)
 void ProgressBar::set(const int num_task, int &num_done)
 {
     cout << "\e[?25l";
+    auto start = chrono::system_clock::now();
 
     do
     {
         if (num_done > num_task)
             num_done = num_task;
 
-        percent_ = num_done * 100 / num_task;
+        percent_ = static_cast<int>(num_done * 100.0 / num_task);
         if (percent_ > 100)
             percent_ = 100;
         while (percent_ > step_ * (size(progress_) + 1) - 1)
@@ -48,11 +49,16 @@ void ProgressBar::set(const int num_task, int &num_done)
         cout << "\r[" << setfill('_') << setw(length_) << left << progress_ << "]"
              << " [" << setfill(' ') << setw(digit_) << right
              << num_done << "/" << num_task << "]"
-             << setw(5) << right << percent_ << "%" << flush;
+             << setw(5) << right << percent_ << "%  " << flush;
     } while (percent_ != 100);
 
-    cout << "\e[?25h" << flush;
+    auto end = chrono::system_clock::now();
+    auto dur = end - start;
+    auto msec = chrono::duration_cast<chrono::milliseconds>(dur).count();
+    cout << msec << "ms" << flush;
+
+    cout << "\e[?25h" << endl;
 }
 
 /* プログレスバーをクリアする */
-void ProgressBar::erase() const { cout << "\r\e[2K" << flush; }
+void ProgressBar::erase() const { cout << "\e[1A\e[2K" << flush; }

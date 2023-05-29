@@ -22,6 +22,9 @@ int Device::getId() const { return id_; }
 /* デバイスIDのポインタ 取得 */
 const int *Device::getIdPtr() const { return &id_; }
 
+/* デバイス名 取得 */
+string Device::getName() const { return "device[" + to_string(getId()) + "]"; }
+
 /* ペアリング済みデバイス数 取得 */
 int Device::getNumPaired() const
 {

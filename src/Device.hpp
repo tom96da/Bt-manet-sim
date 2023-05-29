@@ -34,6 +34,7 @@ public:
 
     int getId() const;
     const int *getIdPtr() const;
+    string getName() const;
 
     int getNumPaired() const;
     vector<int> getPairedDeviceId() const;
