@@ -9,7 +9,6 @@
 #define DEVICE_HPP
 
 #include <string>
-#include <vector>
 #include <map>
 #include <set>
 using namespace std;
@@ -39,7 +38,7 @@ public:
 
     int getNumPaired() const;
     int getNumConnected() const;
-    vector<int> getPairedDeviceId() const;
+    set<int> getPairedDeviceId() const;
     set<int> getConnectedDeviceId() const;
 
     bool isPaired(const int another_device_id) const;

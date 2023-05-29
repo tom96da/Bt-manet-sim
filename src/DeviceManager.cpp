@@ -6,7 +6,6 @@
  */
 
 #include <iostream>
-#include <algorithm>
 #include "Device.hpp"
 #include "DeviceManager.hpp"
 

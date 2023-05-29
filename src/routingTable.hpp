@@ -21,7 +21,7 @@ private:
     {
     private:
         /* 次のホップデバイスのID */
-        int nextHop_;
+        int nextHop_id_;
         /* 次ポップデバイスの距離 */
         double distance_;
         /* エントリが有効かどうか */
@@ -29,23 +29,24 @@ private:
 
     public:
         Entry() = default;
-        Entry(int nextHop, double distance = -1.0);
+        Entry(int nextHop_id, double distance = -1.0);
 
         int getNextHop() const;
-        void updateEntry(int nextHop, double distance = -1.0);
-        void markInvalid();
         bool isValid() const;
+
+        void updateEntry(int nextHop_id, double distance = -1.0);
+        void markInvalid();
     };
 
     /* ルーティングテーブル */
     map<int, Entry> table_;
 
 public:
-    int getNextHop(int destination) const;
+    int getNextHop(int dest_id) const;
     vector<int> getDestinations() const;
 
-    void updateEntry(int destination, int nextHop, double distance = -1.0);
-    void markEntryInvalid(int destination);
+    void updateEntry(int dest_id, int nextHop_id, double distance = -1.0);
+    void markEntryInvalid(int dest_id);
 };
 
 /* ルーティングテーブルクラス */

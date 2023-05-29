@@ -6,7 +6,6 @@
  */
 
 #include <iostream>
-#include <algorithm>
 #include "Device.hpp"
 
 /*!
@@ -43,11 +42,11 @@ int Device::getNumConnected() const { return connected_devices_.size(); }
 /*!
  * @return ペアリング済みデバイスのIDリスト
  */
-vector<int> Device::getPairedDeviceId() const
+set<int> Device::getPairedDeviceId() const
 {
-    vector<int> paired_devices_id;
+    set<int> paired_devices_id;
     for (const auto paired_device : paired_devices_)
-        paired_devices_id.emplace_back(paired_device.first);
+        paired_devices_id.emplace(paired_device.first);
 
     return paired_devices_id;
 }
