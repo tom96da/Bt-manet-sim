@@ -8,12 +8,13 @@
 #ifndef DEVICEMANAGER_HPP
 #define DEVICEMANAGER_HPP
 
-#include <vector>
+// #include <vector>
 #include <random>
 #include <map>
 #include "Device.hpp"
 using namespace std;
 
+/* 接続可能距離 */
 const double MAX_COM_DISTANCE = 10.0;
 
 /* デバイスマネージャー クラス */
@@ -24,15 +25,18 @@ private:
 
     const double field_size_;
 
+    /* ノード クラス */
     class Node
     {
     private:
+        /* デバイス */
         Device device_;
+        /* 移動バイアス */
         pair<double, double> bias_;
+        /* 座標 */
         pair<double, double> position_;
 
     public:
-        Node() = default;
         Node(const int id);
 
         Device *getDevice();
@@ -43,6 +47,7 @@ private:
         void setPositon(double pos_x, double pos_y);
     };
 
+    /*すべてのデバイス */
     map<int, Node> devices_;
 
     /* メルセンヌ・ツイスタ */
@@ -70,6 +75,7 @@ public:
     void addDevices(int num_devices);
 
     void pairDevices(const int id_1, const int id_2);
+    void removePairingDevice(const int id_1, const int id_2);
     void connectDevices(const int id_1, const int id_2);
     void disconnectDevices(const int id_1, const int id_2);
 

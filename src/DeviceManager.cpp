@@ -13,9 +13,7 @@
 /* 接続可能距離 */
 double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
 
-/**
- *  DeviceManager::Node
- */
+/* ノード クラス */
 
 /*!
  * @brief コンストラクタ
@@ -28,13 +26,19 @@ DeviceManager::Node::Node(const int id)
 {
 }
 
-/* デバイスのオブジェクトを取得 */
+/*!
+ * @return デバイスオブジェクト
+ */
 Device *DeviceManager::Node::getDevice() { return &device_; }
 
-/* 移動バイアスを取得 */
+/*!
+ * @return 移動バイアス
+ */
 pair<double, double> *DeviceManager::Node::getBias() { return &bias_; }
 
-/* 座標を取得 */
+/*!
+ * @return 座標
+ */
 pair<double, double> *DeviceManager::Node::getPosition() { return &position_; }
 
 /* バイアスを設定 */
@@ -49,9 +53,7 @@ void DeviceManager::Node::setPositon(double pos_x, double pos_y)
     position_ = {pos_x, pos_y};
 }
 
-/**
- *  DeviceManager
- */
+/* デバイスマネージャー クラス */
 
 /*!
  * @brief コンストラクタ
@@ -126,6 +128,7 @@ void DeviceManager::updatePisition(const int id)
 
     auto position = getPositon(id);
     auto bias = getBias(id);
+
     tmp = position->first + dx + bias->first;
     if (tmp > 0 & tmp < field_size_)
         position->first = tmp;
@@ -197,13 +200,18 @@ void DeviceManager::connectDevices(const int id_1, const int id_2)
     if (getDistance(id_1, id_2) > max_com_distance_)
         return;
 
-    getDeviceById(id_1)->connect(*getDeviceById(id_2));
+    getDeviceById(id_1)->connect(id_2);
 }
 
+/*!
+ * @brief デバイス同士の接続を切る
+ * @param d1_id デバイスID1
+ * @param d2_id デバイスID2
+ */
 void DeviceManager::disconnectDevices(const int id_1, const int id_2)
 {
     if (getDistance(id_1, id_2) <= max_com_distance_)
         return;
 
-    getDeviceById(id_1)->disconnect(*getDeviceById(id_2));
+    getDeviceById(id_1)->disconnect(id_2);
 }
