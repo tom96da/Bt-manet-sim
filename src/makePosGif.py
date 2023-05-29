@@ -23,8 +23,8 @@ pos_x = []
 pos_y = []
 
 red = [0]
-orange = [11, 14, 23, 24, 32, 33, 36, 40, 42, 51, 62, 65, 72, 77, 81]
-green = [11, 14, 23, 24, 32, 33]
+orange = []
+green = []
 
 for i in range(num_dev):
     fname.append("../tmp/dev_pos" + str(i) +".csv")

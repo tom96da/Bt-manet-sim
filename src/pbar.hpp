@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <chrono>
 #include <iomanip>
 
 using namespace std;
@@ -31,7 +32,7 @@ private:
     /* バー本体 */
     string progress_;
     /* 完了パーセント */
-    double percent_;
+    int percent_;
 
     void set(const int num_task, int &num_done);
 
