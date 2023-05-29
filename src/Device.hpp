@@ -10,6 +10,8 @@
 
 #include <string>
 #include <vector>
+#include <map>
+#include <set>
 using namespace std;
 
 /* 最大接続数 */
@@ -25,42 +27,39 @@ private:
     const int max_connections_;
 
     /* ペアリング登録済みデバイス */
-    vector<Device *> paired_devices_;
+    map<int, Device *> paired_devices_;
     /* 接続中デバイス */
-    vector<const int *> connected_devices_;
+    set<int> connected_devices_;
 
 public:
-    Device() = default;
     Device(const int id, int max_connections = MAX_CONNECTIONS);
 
     int getId() const;
-    const int *getIdPtr() const;
     string getName() const;
 
     int getNumPaired() const;
-    vector<int> getPairedDeviceId() const;
-
     int getNumConnected() const;
-    vector<int> getConnectedDeviceId() const;
+    vector<int> getPairedDeviceId() const;
+    set<int> getConnectedDeviceId() const;
+
+    bool isPaired(const int another_device_id) const;
+    bool isConnected(const int another_device_id) const;
+
+    void pairing(Device &another_device);
+    void removePairing(const int another_device_id);
+
+    void connect(const int another_device_id);
+    void disconnect(const int another_device_id);
+
+    void sendMessage(const int receiver_id, string message);
+    void receiveMessage(const int sender_id, string message);
 
     void hello() const;
 
-    bool isSelf(const Device &another_device) const;
-
-    bool isPaired(const Device &another_device) const;
-    void pairing(Device &another_device);
-    void removePairing(Device &another_device);
-
-    bool isConnected(const Device &another_device) const;
-    void connect(Device &another_device);
-    void disconnect(Device &another_device);
-
-    void sendMessage(Device &receiver, string message);
-    void receiveMessage(Device &sender, string message);
-
 private:
-    string setName(const int id) const;
     Device *getPairedDevice(const int id);
+
+    bool isSelf(const int another_device_id) const;
 };
 
 #endif
