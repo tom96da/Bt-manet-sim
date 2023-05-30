@@ -52,4 +52,6 @@ public:
 /* ルーティングテーブルクラス */
 using Table = RoutingTable;
 
+#include "routingTable.cpp"
+
 #endif

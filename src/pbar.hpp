@@ -44,4 +44,6 @@ public:
 /* プログレスバークラス */
 using PBar = ProgressBar;
 
+#include "pbar.cpp"
+
 #endif

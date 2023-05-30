@@ -84,4 +84,6 @@ public:
 /* デバイスマネージャー クラス */
 using MGR = DeviceManager;
 
+#include "DeviceManager.cpp"
+
 #endif

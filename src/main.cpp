@@ -5,17 +5,16 @@
  * @date 2023-05-11
  */
 
+#include "DeviceManager.hpp"
+#include "Device.hpp"
+#include "pbar.hpp"
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
-#include "Device.hpp"
-#include "DeviceManager.hpp"
-#include "pbar.hpp"
+#include <map>
 
 using namespace std;
 
-int main(void)
+int main()
 {
     double field_size = 60.0;
     int num_dev = 100;
@@ -88,7 +87,7 @@ int main(void)
                 [&]()
                 {
                     auto p = PBar(num_dev, id);
-                    p.erase();
+                    // p.erase();
                 });
             for (id = 0; id < num_dev; id++)
             {
@@ -102,13 +101,14 @@ int main(void)
 
     doSim(1);
 
-    string masse = "hello!";
-    auto dev = mgr.getDeviceById(0);
-    Packet<int> intPacket = dev->makePacket(1);
-    // dev->sendPacket(1, dev->makePacket(1));
-
-    // showPaired(0);
-    // showConnected(0);
+    showPaired(0);
+    showConnected(0);
+    auto dev0 = mgr.getDeviceById(0);
+    auto cntds = dev0->getConnectedDeviceId();
+    for (auto cntd : cntds)
+    {
+        dev0->sendPacket(cntd, dev0->makePacket(3.14));
+    }
 
     return 0;
 }
