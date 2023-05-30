@@ -1,5 +1,6 @@
 # output-file
 *.out
+*.exe
 
 # temporary data
 tmp/*.csv

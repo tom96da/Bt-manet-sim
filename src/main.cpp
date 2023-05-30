@@ -9,57 +9,100 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include "Device.hpp"
 #include "DeviceManager.hpp"
+#include "pbar.hpp"
 
 using namespace std;
 
 int main(void)
 {
-    int num = 100;
-    MGR mgr(num);
+    double field_size = 60.0;
+    int num_dev = 100;
+    MGR mgr(field_size, num_dev);
     vector<ofstream> fs;
 
-    for (int id = 0; id < num; id++)
+    auto runDevice = [&](const int base_id)
     {
-        string fname = "../tmp/positions" + to_string(id) + ".csv";
-        fs.emplace_back(fname);
-        fs[id] << "x,y" << endl;
-    }
+        for (int id = 0; id < num_dev; id++)
+        {
+            mgr.pairDevices(base_id, id);
+            mgr.connectDevices(base_id, id);
+            mgr.disconnectDevices(base_id, id);
+        }
+    };
 
-    for (int i = 0; i < 100; i++)
+    auto newCsv = [&]()
     {
-        for (int id = 0; id < num; id++)
+        for (int id = 0; id < num_dev; id++)
+        {
+            string fname = "../tmp/dev_pos" + to_string(id) + ".csv";
+            fs.emplace_back(fname);
+            fs[id] << "x,y" << endl;
+        }
+    };
+
+    auto writeCsv = [&]()
+    {
+        for (int id = 0; id < num_dev; id++)
         {
             auto [x, y] = *mgr.getPositon(id);
             fs[id] << x << ", " << y << endl;
-            mgr.updatePisition(id);
         }
-    }
+    };
 
-    // mgr.addDevices(num);
-    // mgr.pairDevices(0, 1);
-    // mgr.pairDevices(0, 2);
-    // mgr.pairDevices(0, 3);
-    // mgr.conectDevices(0, 1);
+    auto nextPos = [&]()
+    {
+        for (int id = 0; id < num_dev; id++)
+            mgr.updatePisition(id);
+    };
 
-    // vector<Device> d;
-    // cout << mgr.getNumDevices() << endl;
-    // for (int id = 0; id < num; id++)
-    //     d.push_back(*(mgr.getDeviceById(id)));
+    auto showPaired = [&](int id)
+    {
+        auto dev = mgr.getDeviceById(id);
+        auto pards = dev->getPairedDeviceId();
+        cout << dev->getName() << " paired with ";
+        for (auto pard : pards)
+            cout << pard << ", ";
+        cout << endl;
+    };
 
-    // vector<int> ids = d[0].getPairedDeviceId();
-    // for (int id : ids)
-    // {
-    //     cout << id << " ";
-    // }
-    // cout << endl;
-    // ids = d[0].getConnectedDeviceId();
-    // for (int id : ids)
-    // {
-    //     cout << id << " ";
-    // }
-    // cout << endl;
+    auto showConnected = [&](int id)
+    {
+        auto dev = mgr.getDeviceById(id);
+        auto cntds = dev->getConnectedDeviceId();
+        cout << dev->getName() << " connected with ";
+        for (auto cntd : cntds)
+            cout << cntd << ", ";
+        cout << endl;
+    };
+
+    auto doSim = [&](const int frames)
+    {
+        newCsv();
+
+        for (int f = 0; f < frames; f++)
+        {
+            int id = 0;
+            auto pbar = thread(
+                [&]()
+                {
+                    auto p = PBar(num_dev, id);
+                    // p.erase();
+                });
+            for (id = 0; id < num_dev; id++)
+            {
+                runDevice(id);
+            }
+            pbar.join();
+            writeCsv();
+            nextPos();
+        }
+    };
+
+    doSim(1);
+
+    // showPaired(0);
+    // showConnected(0);
 
     return 0;
 }

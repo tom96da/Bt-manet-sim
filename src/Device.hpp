@@ -9,56 +9,80 @@
 #define DEVICE_HPP
 
 #include <string>
-#include <vector>
+#include <map>
+#include <set>
+#include "routingTable.hpp"
 using namespace std;
 
+/* 最大接続数 */
 const int MAX_CONNECTIONS = 6;
 
-/* Bluetooth デバイス */
+/* Bluetooth デバイスクラス */
 class Device
 {
 private:
+    /* デバイスID */
     const int id_;
-    const string name_;
+    /* 最大接続台数 */
     const int max_connections_;
 
-    pair<double, double> position_;
+    /* ペアリング登録済みデバイス */
+    map<int, Device *> paired_devices_;
+    /* 接続中デバイス */
+    set<int> connected_devices_;
 
-    vector<Device *> paired_devices_;
-    vector<const int *> connected_devices_;
+    /* パケットクラス */
+    template <typename T>
+    class Packet
+    {
+    private:
+        /* 送信元デバイスのID */
+        const int sender_id_;
+        /* パケットID */
+        const int packet_id_;
+        /* シーケンスナンバー */
+        const size_t seq_num_;
+        const T data_;
+
+    public:
+        Packet(const int sender_id, const int packet_id, size_t seq_num, T data);
+
+        int getSenderId() const;
+        int getPacketId() const;
+        size_t getSeqNum() const;
+
+        T getData() const;
+    };
 
 public:
-    Device(int id, int max_connections = MAX_CONNECTIONS);
+    Device(const int id, int max_connections = MAX_CONNECTIONS);
 
     int getId() const;
-    const int *getIdPtr() const;
     string getName() const;
 
-    void setPosition();
-    pair<double, double> getPosition() const;
-
     int getNumPaired() const;
-    vector<int> getPairedDeviceId() const;
-
     int getNumConnected() const;
-    vector<int> getConnectedDeviceId() const;
+    set<int> getPairedDeviceId() const;
+    set<int> getConnectedDeviceId() const;
+
+    bool isPaired(const int another_device_id) const;
+    bool isConnected(const int another_device_id) const;
+
+    void pairing(Device &another_device);
+    void removePairing(const int another_device_id);
+
+    void connect(const int another_device_id);
+    void disconnect(const int another_device_id);
+
+    void sendMessage(const int receiver_id, string message);
+    void receiveMessage(const int sender_id, string message);
 
     void hello() const;
 
-    bool isSelf(const Device &another_device) const;
+private:
+    Device *getPairedDevice(const int id);
 
-    bool isPaired(const Device &another_device) const;
-    void pairing(Device &another_device);
-    void removePairing(Device &another_device);
-
-    bool isConnected(const Device &another_device) const;
-    void connect(Device &another_device);
-    void disconnect(Device &another_device);
-
-    void sendMessage(Device &receiver, string message);
-    void receiveMessage(Device &sender, string message);
-
-    static const Device findDevice(Device &another_device);
+    bool isSelf(const int another_device_id) const;
 };
 
 #endif
