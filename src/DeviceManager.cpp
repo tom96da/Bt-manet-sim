@@ -6,7 +6,6 @@
  */
 
 #include <iostream>
-#include "Device.hpp"
 #include "DeviceManager.hpp"
 
 /* 接続可能距離 */

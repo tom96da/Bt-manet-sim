@@ -52,14 +52,4 @@ public:
 /* ルーティングテーブルクラス */
 using Table = RoutingTable;
 
-class Packet
-{
-private:
-    const int packet_id_;
-    const size_t seq_;
-    const int sender_id_;
-
-    Table routingTable_; // 送信元デバイスのルーティングテーブル
-};
-
 #endif

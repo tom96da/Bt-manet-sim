@@ -8,7 +8,6 @@
 #ifndef DEVICEMANAGER_HPP
 #define DEVICEMANAGER_HPP
 
-// #include <vector>
 #include <random>
 #include <map>
 #include "Device.hpp"

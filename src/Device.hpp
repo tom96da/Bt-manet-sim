@@ -11,12 +11,13 @@
 #include <string>
 #include <map>
 #include <set>
+#include "routingTable.hpp"
 using namespace std;
 
 /* 最大接続数 */
 const int MAX_CONNECTIONS = 6;
 
-/* Bluetooth デバイス */
+/* Bluetooth デバイスクラス */
 class Device
 {
 private:
@@ -29,6 +30,29 @@ private:
     map<int, Device *> paired_devices_;
     /* 接続中デバイス */
     set<int> connected_devices_;
+
+    /* パケットクラス */
+    template <typename T>
+    class Packet
+    {
+    private:
+        /* 送信元デバイスのID */
+        const int sender_id_;
+        /* パケットID */
+        const int packet_id_;
+        /* シーケンスナンバー */
+        const size_t seq_num_;
+        const T data_;
+
+    public:
+        Packet(const int sender_id, const int packet_id, size_t seq_num, T data);
+
+        int getSenderId() const;
+        int getPacketId() const;
+        size_t getSeqNum() const;
+
+        T getData() const;
+    };
 
 public:
     Device(const int id, int max_connections = MAX_CONNECTIONS);

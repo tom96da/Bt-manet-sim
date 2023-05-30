@@ -8,6 +8,51 @@
 #include <iostream>
 #include "Device.hpp"
 
+/* パケットクラス */
+
+/*!
+ * @brief コンストラクタ
+ * @tparam T データの型
+ * @param sender_id 送信元デバイスのID
+ * @param packet_id パケットID
+ * @param data 送信データ
+ */
+template <typename T>
+Device::Packet<T>::Packet(const int sender_id, const int packet_id, size_t seq_num, T data)
+    : sender_id_{sender_id},
+      packet_id_{packet_id},
+      seq_num_{seq_num},
+      data_{data}
+{
+}
+
+/*!
+ * @return 送信元デバイスのID
+ */
+template <typename T>
+int Device::Packet<T>::getSenderId() const { return sender_id_; }
+
+/*!
+ * @return パケットID
+ */
+template <typename T>
+int Device::Packet<T>::getPacketId() const { return packet_id_; }
+
+/*!
+ * @return 送信元デバイスのID
+ */
+template <typename T>
+size_t Device::Packet<T>::getSeqNum() const { return seq_num_; }
+
+/*!
+ * @tparam T 送信データの型
+ * @return 送信データ
+ */
+template <typename T>
+T Device::Packet<T>::getData() const { return data_; }
+
+/* Bluetooth デバイスクラス */
+
 /*!
  * @brief コンストラクタ
  * @param id デバイスID
