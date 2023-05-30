@@ -9,7 +9,6 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include "Device.hpp"
 #include "DeviceManager.hpp"
 #include "pbar.hpp"
 

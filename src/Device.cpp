@@ -6,230 +6,232 @@
  */
 
 #include <iostream>
-#include <algorithm>
 #include "Device.hpp"
 
-/* コンストラクタ */
+/* パケットクラス */
+
+/*!
+ * @brief コンストラクタ
+ * @tparam T データの型
+ * @param sender_id 送信元デバイスのID
+ * @param packet_id パケットID
+ * @param data 送信データ
+ */
+template <typename T>
+Device::Packet<T>::Packet(const int sender_id, const int packet_id, size_t seq_num, T data)
+    : sender_id_{sender_id},
+      packet_id_{packet_id},
+      seq_num_{seq_num},
+      data_{data}
+{
+}
+
+/*!
+ * @return 送信元デバイスのID
+ */
+template <typename T>
+int Device::Packet<T>::getSenderId() const { return sender_id_; }
+
+/*!
+ * @return パケットID
+ */
+template <typename T>
+int Device::Packet<T>::getPacketId() const { return packet_id_; }
+
+/*!
+ * @return 送信元デバイスのID
+ */
+template <typename T>
+size_t Device::Packet<T>::getSeqNum() const { return seq_num_; }
+
+/*!
+ * @tparam T 送信データの型
+ * @return 送信データ
+ */
+template <typename T>
+T Device::Packet<T>::getData() const { return data_; }
+
+/* Bluetooth デバイスクラス */
+
+/*!
+ * @brief コンストラクタ
+ * @param id デバイスID
+ * @param max_connections 最大接続数 デフォルト値: 6
+ */
 Device::Device(const int id, int max_connections)
     : id_{id},
       max_connections_{max_connections}
 {
 }
 
-/* デバイスID 取得 */
+/*!
+ * @return デバイスID
+ */
 int Device::getId() const { return id_; }
 
-/* デバイスIDのポインタ 取得 */
-const int *Device::getIdPtr() const { return &id_; }
-
-/* デバイス名 取得 */
+/*!
+ * @return デバイス名
+ */
 string Device::getName() const { return "device[" + to_string(getId()) + "]"; }
 
-/* ペアリング済みデバイス数 取得 */
-int Device::getNumPaired() const
-{
-    return paired_devices_.size();
-}
+/*!
+ * @return ペアリング済みデバイス数
+ */
+int Device::getNumPaired() const { return paired_devices_.size(); }
 
-/* ペアリング済みデバイスID 取得 */
-vector<int> Device::getPairedDeviceId() const
+/*!
+ * @return 接続中のデバイス数
+ */
+int Device::getNumConnected() const { return connected_devices_.size(); }
+
+/*!
+ * @return ペアリング済みデバイスのIDリスト
+ */
+set<int> Device::getPairedDeviceId() const
 {
-    vector<int> paired_devices_id;
-    for (const Device *paired_device : paired_devices_)
-        paired_devices_id.emplace_back(paired_device->getId());
+    set<int> paired_devices_id;
+    for (const auto paired_device : paired_devices_)
+        paired_devices_id.emplace(paired_device.first);
 
     return paired_devices_id;
 }
 
-/* 接続中のデバイス数を取得 */
-int Device::getNumConnected() const { return connected_devices_.size(); }
-
-/* 接続中のデバイス数のIDを取得 */
-vector<int> Device::getConnectedDeviceId() const
+/*!
+ * @return 接続中デバイスのIDリスト
+ */
+set<int> Device::getConnectedDeviceId() const
 {
-    vector<int> connected_devices_id;
-    for (const int *connected_id : connected_devices_)
-        connected_devices_id.emplace_back(*connected_id);
-
-    return connected_devices_id;
-}
-
-void Device::hello() const
-{
-    cout << "device[" << getId() << "] hello!" << endl;
-}
-
-/* デバイスが自身が取得 */
-bool Device::isSelf(const Device &another_device) const
-{
-    return this->getId() == another_device.getId();
+    return connected_devices_;
 }
 
 /*!
  * @brief デバイスがペアリング登録済みか取得
- * @param another_device 対象のデバイス
+ * @param another_device_id 対象デバイスのID
  * @retval true 登録済み
  * @retval false 未登録
  */
-bool Device::isPaired(const Device &another_device) const
+bool Device::isPaired(const int another_device_id) const
 {
-    if (isSelf(another_device))
-        return false;
+    return paired_devices_.count(another_device_id);
+}
 
-    auto itr =
-        find_if(this->paired_devices_.begin(),
-                this->paired_devices_.end(),
-                [&](const Device *paired_device)
-                {
-                    return paired_device->getId() == another_device.getId();
-                });
-    if (itr == paired_devices_.end())
-        return false;
-
-    return true;
+/*!
+ * @brief デバイスが接続中か取得
+ * @param another_device_id 対象デバイスのID
+ * @retval true 接続中
+ * @retval false 未接続
+ */
+bool Device::isConnected(const int another_device_id) const
+{
+    return connected_devices_.count(another_device_id);
 }
 
 /*!
  * @brief デバイスをペアリング登録
- * @param another_device ペアリング相手のデバイス
+ * @param another_device 対象デバイスのオブジェクト
  */
 void Device::pairing(Device &another_device)
 {
-    if (this->isSelf(another_device))
+    if (this->isSelf(another_device.getId()))
         return;
-    if (this->isPaired(another_device))
+    if (this->isPaired(another_device.getId()))
         return;
 
-    this->paired_devices_.emplace_back(&another_device);
+    this->paired_devices_.emplace(another_device.getId(), &another_device);
     another_device.pairing(*this);
 }
 
 /*!
  * @brief デバイスのペアリング解除
- * @param another_device
+ * @param another_device_id 相手のデバイスID
  */
-void Device::removePairing(Device &another_device)
+void Device::removePairing(const int another_device_id)
 {
-    if (this->isSelf(another_device))
-        return;
-    if (!this->isPaired(another_device))
+    if (!this->isPaired(another_device_id))
         return;
 
-    auto itr =
-        find_if(this->paired_devices_.begin(),
-                this->paired_devices_.end(),
-                [&](const Device *paired_device)
-                {
-                    return paired_device->getId() == another_device.getId();
-                });
-    if (itr == paired_devices_.end())
-        return;
-
-    this->disconnect(another_device);
-    this->paired_devices_.erase(itr);
-    another_device.removePairing(*this);
-}
-
-/*!
- * @brief デバイスが接続中か取得
- * @param another_device
- * @retval true 接続中
- * @retval false 未接続
- */
-bool Device::isConnected(const Device &another_device) const
-{
-    if (isSelf(another_device))
-        return false;
-    if (!this->isPaired(another_device))
-        return false;
-
-    auto itr =
-        find_if(this->connected_devices_.begin(),
-                this->connected_devices_.end(),
-                [&](const int *connected_device_id)
-                {
-                    return *connected_device_id == another_device.getId();
-                });
-    if (itr == connected_devices_.end())
-        return false;
-
-    return true;
+    this->disconnect(another_device_id);
+    this->paired_devices_.erase(another_device_id);
+    getPairedDevice(another_device_id)->removePairing(this->getId());
 }
 
 /*!
  * @brief 登録済みのデバイスと接続する
  * @param another_device 接続相手のデバイス
  */
-void Device::connect(Device &another_device)
+void Device::connect(const int another_device_id)
 {
-    if (this->isSelf(another_device))
+    if (!this->isPaired(another_device_id))
         return;
-    if (!this->isPaired(another_device))
-        return;
-    if (this->isConnected(another_device))
+    if (this->isConnected(another_device_id))
         return;
     if (getNumConnected() >= max_connections_)
         return;
 
-    this->connected_devices_.emplace_back(another_device.getIdPtr());
-    another_device.connect(*this);
+    this->connected_devices_.emplace(another_device_id);
+    getPairedDevice(another_device_id)->connect(this->getId());
 }
 
 /*!
  * @brief 接続中デバイスの切断
  * @param another_device
  */
-void Device::disconnect(Device &another_device)
+void Device::disconnect(const int another_device_id)
 {
-    if (isSelf(another_device))
-        return;
-    if (!isPaired(another_device))
+    if (!isConnected(another_device_id))
         return;
 
-    auto itr =
-        find_if(this->connected_devices_.begin(),
-                this->connected_devices_.end(),
-                [&](const int *connected_device_id)
-                {
-                    return *connected_device_id == another_device.getId();
-                });
-    if (itr == connected_devices_.end())
-        return;
-
-    this->connected_devices_.erase(itr);
-    another_device.disconnect(*this);
+    this->connected_devices_.erase(another_device_id);
+    getPairedDevice(another_device_id)->disconnect(this->getId());
 }
 
 /*!
  * @brief 接続中デバイスに文字列を送信する
- * @param receiver 送信先デバイス
+ * @param receiver_id 送信先デバイスのID
  * @param message 送信する文字列
  */
-void Device::sendMessage(Device &receiver, string message)
+void Device::sendMessage(const int receiver_id, string message)
 {
     cout << "ID_" << this->getId() << " -> " << flush;
-    receiver.receiveMessage(*this, message);
+    getPairedDevice(receiver_id)->receiveMessage(this->getId(), message);
 }
 
 /*!
  * @brief 接続中デバイスから文字列を受信する
- * @param sender 送信元デバイス
+ * @param sender 送信元デバイスのID
  * @param message 受信する文字列
  */
-void Device::receiveMessage(Device &sender, string message)
+void Device::receiveMessage(const int sender_id, string message)
 {
     cout << message << " -> ID_" << this->getId() << endl;
 }
 
+/* hello を出力 */
+void Device::hello() const
+{
+    cout << "device[" << getId() << "]: hello!" << endl;
+}
+
+/*!
+ * @brief デバイスが自身かどうか取得
+ * @param another_device_id 対象デバイスのID
+ * @retval true 自身
+ * @retval false 自身でない
+ */
+bool Device::isSelf(const int another_device_id) const
+{
+    return this->getId() == another_device_id;
+}
+
+/*!
+ * @brief ペアリング済みのデバイスオブジェクトを取得
+ * @param id 対象デバイスのID
+ * @return デバイスオブジェクト
+ */
 Device *Device::getPairedDevice(const int id)
 {
-    auto itr = find_if(paired_devices_.begin(), paired_devices_.end(),
-                       [&](Device *device)
-                       {
-                           return device->getId() == id;
-                       });
-    if (itr == paired_devices_.end())
+    if (!paired_devices_.count(id))
         return nullptr;
 
-    return *itr;
+    return paired_devices_.at(id);
 }
