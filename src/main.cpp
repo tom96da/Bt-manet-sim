@@ -9,6 +9,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include "Device.hpp"
 #include "DeviceManager.hpp"
 #include "pbar.hpp"
 
@@ -87,7 +88,7 @@ int main(void)
                 [&]()
                 {
                     auto p = PBar(num_dev, id);
-                    // p.erase();
+                    p.erase();
                 });
             for (id = 0; id < num_dev; id++)
             {
@@ -100,6 +101,11 @@ int main(void)
     };
 
     doSim(1);
+
+    string masse = "hello!";
+    auto dev = mgr.getDeviceById(0);
+    Packet<int> intPacket = dev->makePacket(1);
+    // dev->sendPacket(1, dev->makePacket(1));
 
     // showPaired(0);
     // showConnected(0);

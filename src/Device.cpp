@@ -18,7 +18,7 @@
  * @param data 送信データ
  */
 template <typename T>
-Device::Packet<T>::Packet(const int sender_id, const int packet_id, size_t seq_num, T data)
+Packet<T>::Packet(const int sender_id, const int packet_id, size_t seq_num, T data)
     : sender_id_{sender_id},
       packet_id_{packet_id},
       seq_num_{seq_num},
@@ -30,26 +30,26 @@ Device::Packet<T>::Packet(const int sender_id, const int packet_id, size_t seq_n
  * @return 送信元デバイスのID
  */
 template <typename T>
-int Device::Packet<T>::getSenderId() const { return sender_id_; }
+int Packet<T>::getSenderId() const { return sender_id_; }
 
 /*!
  * @return パケットID
  */
 template <typename T>
-int Device::Packet<T>::getPacketId() const { return packet_id_; }
+int Packet<T>::getPacketId() const { return packet_id_; }
 
 /*!
  * @return 送信元デバイスのID
  */
 template <typename T>
-size_t Device::Packet<T>::getSeqNum() const { return seq_num_; }
+size_t Packet<T>::getSeqNum() const { return seq_num_; }
 
 /*!
- * @tparam T 送信データの型
- * @return 送信データ
+ * @tparam T 送信するデータの型
+ * @return 送信するデータ
  */
 template <typename T>
-T Device::Packet<T>::getData() const { return data_; }
+T Packet<T>::getData() const { return data_; }
 
 /* Bluetooth デバイスクラス */
 
@@ -60,7 +60,8 @@ T Device::Packet<T>::getData() const { return data_; }
  */
 Device::Device(const int id, int max_connections)
     : id_{id},
-      max_connections_{max_connections}
+      max_connections_{max_connections},
+      num_packet_made_{0}
 {
 }
 
@@ -103,6 +104,16 @@ set<int> Device::getConnectedDeviceId() const
 {
     return connected_devices_;
 }
+
+/*!
+ * @return 累計パケット生成数
+ */
+int Device::getNumPacket() const { return num_packet_made_; }
+
+/*!
+ * @return 新規パケットのID
+ */
+int Device::getNewPacketId() { return num_packet_made_++; }
 
 /*!
  * @brief デバイスがペアリング登録済みか取得
@@ -186,7 +197,7 @@ void Device::disconnect(const int another_device_id)
 }
 
 /*!
- * @brief 接続中デバイスに文字列を送信する
+ * @brief 接続中のデバイスに文字列を送信する
  * @param receiver_id 送信先デバイスのID
  * @param message 送信する文字列
  */
@@ -197,14 +208,62 @@ void Device::sendMessage(const int receiver_id, string message)
 }
 
 /*!
- * @brief 接続中デバイスから文字列を受信する
- * @param sender 送信元デバイスのID
+ * @brief 接続中のデバイスから文字列を受信する
+ * @param sender_id 送信元デバイスのID
  * @param message 受信する文字列
  */
 void Device::receiveMessage(const int sender_id, string message)
 {
     cout << message << " -> ID_" << this->getId() << endl;
+    memory_.emplace_back(message);
 }
+
+/*!
+ * @brief 接続中のデバイスにパケットを送信する
+ * @tparam T パケットが含むデータの型
+ * @param receiver_id 送信先デバイスのID
+ * @param packet 送信するパケット
+ */
+// template <typename T>
+// void Device::sendPacket(const int receiver_id, const Packet<T> packet)
+// {
+//     getPairedDevice(receiver_id)->receivePacket(this->getId(), packet);
+// }
+// void Device::sendPacket(const int receiver_id, const Packet packet)
+// {
+//     getPairedDevice(receiver_id)->receivePacket(this->getId(), packet);
+// }
+
+/*!
+ * @brief 接続中のデバイスからパケットを受信する
+ * @tparam T パケットが含むデータの型受信する
+ * @param sender_id 送信元デバイスのID
+ * @param packet 受信するパケット
+ */
+// template <typename T>
+// void Device::receivePacket(const int sender_id, const Packet<T> packet)
+// {
+//     memory_.emplace_back(packet.getData());
+// }
+// void Device::receivePacket(const int sender_id, const Packet packet)
+// {
+//     memory_.emplace_back(packet.getData());
+// }
+
+/*!
+ * @brief パケットを生成する
+ * @tparam T 送信するデータの型
+ * @param data 送信するデータ
+ * @return 生成したパケット
+ */
+template <typename T>
+Packet<T> Device::makePacket(const T data)
+{
+    return Packet<T>(getId(), getNewPacketId(), data);
+}
+template class Packet<string>;
+template class Packet<int>;
+template class Packet<double>;
 
 /* hello を出力 */
 void Device::hello() const

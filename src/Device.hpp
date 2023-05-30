@@ -11,11 +11,37 @@
 #include <string>
 #include <map>
 #include <set>
+#include <vector>
+#include <any>
 #include "routingTable.hpp"
 using namespace std;
 
 /* 最大接続数 */
 const int MAX_CONNECTIONS = 6;
+
+/* パケットクラス */
+template <typename T>
+class Packet
+{
+private:
+    /* 送信元デバイスのID */
+    const int sender_id_;
+    /* パケットID */
+    const int packet_id_;
+    /* シーケンスナンバー */
+    const size_t seq_num_;
+    /* 送信するデータ */
+    const T data_;
+
+public:
+    Packet(const int sender_id, const int packet_id, size_t seq_num, T data);
+
+    int getSenderId() const;
+    int getPacketId() const;
+    size_t getSeqNum() const;
+
+    T getData() const;
+};
 
 /* Bluetooth デバイスクラス */
 class Device
@@ -30,29 +56,10 @@ private:
     map<int, Device *> paired_devices_;
     /* 接続中デバイス */
     set<int> connected_devices_;
-
-    /* パケットクラス */
-    template <typename T>
-    class Packet
-    {
-    private:
-        /* 送信元デバイスのID */
-        const int sender_id_;
-        /* パケットID */
-        const int packet_id_;
-        /* シーケンスナンバー */
-        const size_t seq_num_;
-        const T data_;
-
-    public:
-        Packet(const int sender_id, const int packet_id, size_t seq_num, T data);
-
-        int getSenderId() const;
-        int getPacketId() const;
-        size_t getSeqNum() const;
-
-        T getData() const;
-    };
+    /* メモリー */
+    vector<any> memory_;
+    /* 累計パケット生成数 */
+    int num_packet_made_;
 
 public:
     Device(const int id, int max_connections = MAX_CONNECTIONS);
@@ -64,6 +71,8 @@ public:
     int getNumConnected() const;
     set<int> getPairedDeviceId() const;
     set<int> getConnectedDeviceId() const;
+    int getNumPacket() const;
+    int getNewPacketId();
 
     bool isPaired(const int another_device_id) const;
     bool isConnected(const int another_device_id) const;
@@ -76,6 +85,16 @@ public:
 
     void sendMessage(const int receiver_id, string message);
     void receiveMessage(const int sender_id, string message);
+
+    // template <typename T>
+    // void sendPacket(const int receiver_id, const Packet<T> packet);
+    // void sendPacket(const int receiver_id, const Packet packet);
+    // template <typename T>
+    // void receivePacket(const int sender_id, const Packet<T> packet);
+    // void receivePacket(const int sender_id, const Packet packet);
+
+    template <typename T>
+    Packet<T> makePacket(const T data);
 
     void hello() const;
 
