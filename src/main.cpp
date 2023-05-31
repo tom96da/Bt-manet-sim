@@ -10,7 +10,6 @@
 #include "pbar.hpp"
 #include <iostream>
 #include <fstream>
-#include <map>
 
 using namespace std;
 
@@ -21,13 +20,18 @@ int main()
     MGR mgr(field_size, num_dev);
     vector<ofstream> fs;
 
-    auto runDevice = [&](const int base_id)
+    auto runDevice = [&](int &progress)
     {
-        for (int id = 0; id < num_dev; id++)
+        for (int id_1 = 0; id_1 < num_dev; id_1++)
         {
-            mgr.pairDevices(base_id, id);
-            mgr.connectDevices(base_id, id);
-            mgr.disconnectDevices(base_id, id);
+            for (int id_2 = 0; id_2 < num_dev; id_2++)
+            {
+                mgr.pairDevices(id_1, id_2);
+                mgr.connectDevices(id_1, id_2);
+                mgr.disconnectDevices(id_1, id_2);
+            }
+            mgr.getDeviceById(id_1)->sendHello();
+            progress = id_1 + 1;
         }
     };
 
@@ -76,23 +80,27 @@ int main()
         cout << endl;
     };
 
+    auto showTotalPacket = [&]()
+    {
+        cout << "total packet: " << pcnt::getTotalPacket() << endl;
+    };
+
     auto doSim = [&](const int frames)
     {
         newCsv();
 
         for (int f = 0; f < frames; f++)
         {
-            int id = 0;
+            int progress = 0;
             auto pbar = thread(
                 [&]()
                 {
-                    auto p = PBar(num_dev, id);
+                    auto p = PBar(num_dev, progress);
                     // p.erase();
                 });
-            for (id = 0; id < num_dev; id++)
-            {
-                runDevice(id);
-            }
+
+            runDevice(progress);
+
             pbar.join();
             writeCsv();
             nextPos();
@@ -103,12 +111,8 @@ int main()
 
     showPaired(0);
     showConnected(0);
-    auto dev0 = mgr.getDeviceById(0);
-    auto cntds = dev0->getConnectedDeviceId();
-    for (auto cntd : cntds)
-    {
-        dev0->sendPacket(cntd, dev0->makePacket(3.14));
-    }
+
+    showTotalPacket();
 
     return 0;
 }

@@ -32,14 +32,14 @@ private:
     /* 最大接続台数 */
     const int max_connections_;
 
+    /* 累計パケット生成数 */
+    mutable int num_packet_made_;
     /* ペアリング登録済みデバイス */
     map<int, Device *> paired_devices_;
     /* 接続中デバイス */
     set<int> connected_devices_;
     /* メモリー */
     vector<any> memory_;
-    /* 累計パケット生成数 */
-    mutable int num_packet_made_;
 
 public:
     Device(int id, int max_connections = MAX_CONNECTIONS);
@@ -58,7 +58,7 @@ public:
     bool isConnected(const int another_device_id) const;
 
     void pairing(Device &another_device);
-    void removePairing(const int another_device_id);
+    void unpairing(const int another_device_id);
     void connect(const int another_device_id);
     void disconnect(const int another_device_id);
 
@@ -72,7 +72,7 @@ public:
     template <typename T>
     void receivePacket(const Packet<T> &packet);
 
-    void hello() const;
+    void sendHello();
 
 private:
     Device *getPairedDevice(const int id);
@@ -103,6 +103,18 @@ public:
 
     T getData() const;
 };
+
+/* パケットカウンタ */
+namespace PacketCounter
+{
+    /* 累計パケット数 */
+    extern int num_total_packe;
+
+    int getTotalPacket();
+    int getNewSequenceNum();
+};
+
+namespace pcnt = PacketCounter;
 
 #include "Device.cpp"
 

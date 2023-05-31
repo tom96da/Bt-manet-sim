@@ -20,34 +20,16 @@ const double MAX_COM_DISTANCE = 10.0;
 class DeviceManager
 {
 private:
+    /* 接続可能距離 */
     static double max_com_distance_;
-
+    /* フィールドサイズ */
     const double field_size_;
 
     /* ノード クラス */
-    class Node
-    {
-    private:
-        /* デバイス */
-        Device device_;
-        /* 移動バイアス */
-        pair<double, double> bias_;
-        /* 座標 */
-        pair<double, double> position_;
-
-    public:
-        Node(const int id);
-
-        Device *getDevice();
-        pair<double, double> *getBias();
-        pair<double, double> *getPosition();
-
-        void setBias(double bias_x, double bias_y);
-        void setPositon(double pos_x, double pos_y);
-    };
+    class Node;
 
     /*すべてのデバイス */
-    map<int, Node> devices_;
+    map<int, Node> nodes_;
 
     /* メルセンヌ・ツイスタ */
     mt19937 mt_;
@@ -65,20 +47,47 @@ public:
 
     int getNumDevices() const;
     Device *getDeviceById(const int id);
-
     pair<double, double> *getPositon(const int id);
     pair<double, double> *getBias(const int id);
-    void updatePisition(const int id);
+
     double getDistance(const int id_1, const int id_2);
+
+    bool isSameDevice(const int id_1, const int id_2) const;
+    bool isPaired(const int id_1, const int id_2);
+    bool isConnected(const int id_1, const int id_2);
 
     void addDevices(int num_devices);
 
     void pairDevices(const int id_1, const int id_2);
-    void removePairingDevice(const int id_1, const int id_2);
+    void unpairDevices(const int id_1, const int id_2);
     void connectDevices(const int id_1, const int id_2);
     void disconnectDevices(const int id_1, const int id_2);
 
+    void updatePisition(const int id);
+
     static double getMaxComDistance() { return max_com_distance_; }
+};
+
+/* ノード クラス */
+class DeviceManager::Node
+{
+private:
+    /* デバイス */
+    Device device_;
+    /* 移動バイアス */
+    pair<double, double> bias_;
+    /* 座標 */
+    pair<double, double> position_;
+
+public:
+    Node(const int id);
+
+    Device *getDevice();
+    pair<double, double> *getBias();
+    pair<double, double> *getPosition();
+
+    void setBias(double bias_x, double bias_y);
+    void setPositon(double pos_x, double pos_y);
 };
 
 /* デバイスマネージャー クラス */

@@ -2,15 +2,6 @@
 #include <iostream>
 #include <string>
 
-/*!
- * @return 新規パケットのシーケンスナンバー
- */
-int getNewtSeqNum()
-{
-    static int seq_num = 0;
-    return seq_num++;
-}
-
 /* Bluetooth デバイスクラス */
 
 /*!
@@ -103,27 +94,25 @@ bool Device::isConnected(const int another_device_id) const
  */
 void Device::pairing(Device &another_device)
 {
-    if (this->isSelf(another_device.getId()))
-        return;
+    // if (this->isSelf(another_device.getId()))
+    //     return;
     if (this->isPaired(another_device.getId()))
         return;
 
     this->paired_devices_.emplace(another_device.getId(), &another_device);
-    another_device.pairing(*this);
 }
 
 /*!
  * @brief デバイスのペアリング解除
  * @param another_device_id 相手のデバイスID
  */
-void Device::removePairing(const int another_device_id)
+void Device::unpairing(const int another_device_id)
 {
     if (!this->isPaired(another_device_id))
         return;
 
     this->disconnect(another_device_id);
     this->paired_devices_.erase(another_device_id);
-    getPairedDevice(another_device_id)->removePairing(this->getId());
 }
 
 /*!
@@ -132,15 +121,12 @@ void Device::removePairing(const int another_device_id)
  */
 void Device::connect(const int another_device_id)
 {
-    if (!this->isPaired(another_device_id))
-        return;
     if (this->isConnected(another_device_id))
         return;
     if (getNumConnected() >= max_connections_)
         return;
 
     this->connected_devices_.emplace(another_device_id);
-    getPairedDevice(another_device_id)->connect(this->getId());
 }
 
 /*!
@@ -153,7 +139,6 @@ void Device::disconnect(const int another_device_id)
         return;
 
     this->connected_devices_.erase(another_device_id);
-    getPairedDevice(another_device_id)->disconnect(this->getId());
 }
 
 /*!
@@ -187,8 +172,8 @@ void Device::receiveMessage(const int sender_id, string message)
 template <typename T>
 Packet<T> Device::makePacket(T data) const
 {
-    // return Packet<T>(getId(), getNewPacketId(), getNewtSeqNum(), data);
-    return Packet<T>(getId(), getNewPacketId(), 0, data);
+    return Packet<T>(getId(), getNewPacketId(),
+                     pcnt::getNewSequenceNum(), data);
 }
 
 /*!
@@ -218,9 +203,11 @@ void Device::receivePacket(const Packet<T> &packet)
 /*!
  * @brief hello!を出力
  */
-void Device::hello() const
+void Device::sendHello()
 {
-    cout << "device[" << getId() << "]: hello!" << endl;
+    string hello = "hello!";
+    for (auto cntd : getConnectedDeviceId())
+        sendPacket(cntd, makePacket(hello));
 }
 
 /*!
@@ -290,6 +277,12 @@ int Packet<T>::getSeqNum() const { return seq_num_; }
 template <typename T>
 T Packet<T>::getData() const { return data_; }
 
-// template class Packet<string>;
-// template class Packet<int>;
-// template class Packet<double>;
+/* パケットカウンタ */
+namespace PacketCounter
+{
+    int num_total_packe = 0;
+
+    int getTotalPacket() { return num_total_packe; }
+
+    int getNewSequenceNum() { return num_total_packe++; }
+}
