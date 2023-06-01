@@ -33,7 +33,6 @@ int main()
             mgr.getDeviceById(id_1)->sendHello();
             progress = id_1 + 1;
         }
-        size_t data_id = mgr.getDeviceById(45)->flooding<string>();
     };
 
     auto newCsv = [&]()
@@ -103,6 +102,7 @@ int main()
             runDevice(progress);
 
             pbar.join();
+
             writeCsv();
             // nextPos();
         }
@@ -110,10 +110,12 @@ int main()
 
     doSim(1);
 
+    size_t data_id = mgr.getDeviceById(45)->flooding();
     // showPaired(0);
     showConnected(45);
 
     showTotalPacket();
+    cout << mgr.getNumFloodDone(data_id) << " devices have data" << endl;
 
     return 0;
 }

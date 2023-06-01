@@ -65,6 +65,9 @@ public:
 
     void updatePisition(const int id);
 
+    size_t startFlood(const int id);
+    int getNumFloodDone(size_t data_id);
+
     static double getMaxComDistance() { return max_com_distance_; }
 };
 

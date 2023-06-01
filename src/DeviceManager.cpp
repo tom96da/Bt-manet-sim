@@ -232,6 +232,24 @@ void DeviceManager::updatePisition(const int id)
     }
 }
 
+/*!
+ * @brief フラッディングを開始する
+ * @param id 開始デバイスのID
+ * @return データ識別子
+ */
+size_t DeviceManager::startFlood(const int id)
+{
+    getDeviceById(id)->flooding();
+}
+
+int DeviceManager::getNumFloodDone(size_t data_id)
+{
+    int tmp = 0;
+    for (auto node : nodes_)
+        tmp += node.second.getDevice()->hasData(data_id);
+    return tmp;
+}
+
 /* ノード クラス */
 
 /*!

@@ -13,14 +13,15 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <variant>
 #include <any>
 using namespace std;
+using Var = variant<int, double, string>;
 
 /* 最大接続数 */
 const int MAX_CONNECTIONS = 6;
 
 /* パケットクラスの前方宣言 */
-template <typename T>
 class Packet;
 
 /* Bluetooth デバイスクラス */
@@ -39,7 +40,7 @@ private:
     /* 接続中デバイス */
     set<int> connected_devices_;
     /* メモリー */
-    map<size_t, any> memory_;
+    map<size_t, Var> memory_;
     /* ルーティングテーブル */
     Table table_;
 
@@ -55,9 +56,11 @@ public:
     set<int> getConnectedDeviceId() const;
     int getNumPacket() const;
     int getNewPacketId() const;
+    Var getDataFromMemory(const size_t data_id) const;
 
     bool isPaired(const int another_device_id) const;
     bool isConnected(const int another_device_id) const;
+    bool hasData(const size_t data_id) const;
 
     void pairing(Device &another_device);
     void unpairing(const int another_device_id);
@@ -67,19 +70,13 @@ public:
     void sendMessage(const int receiver_id, string message);
     void receiveMessage(const int sender_id, string message);
 
-    template <typename T>
-    Packet<T> makePacket(T data) const;
-    template <typename T>
-    Packet<T> makePacket(pair<size_t, T> idata, const bool flood_flag = false) const;
-    template <typename T>
-    void sendPacket(const int receiver_id, const Packet<T> &packet);
-    template <typename T>
-    void receivePacket(const int sender_id, const Packet<T> &packet);
+    Packet makePacket(Var data) const;
+    Packet makePacket(pair<size_t, Var> idata, const bool flood_flag = false) const;
+    void sendPacket(const int receiver_id, const Packet &packet);
+    void receivePacket(const int sender_id, const Packet &packet);
 
-    template <typename T>
     size_t flooding();
-    template <typename T>
-    void hopping(const pair<size_t, T> idata, const int sender_id);
+    void hopping(const pair<size_t, Var> idata, const int sender_id);
 
     void sendHello();
 
@@ -88,12 +85,12 @@ private:
 
     bool isSelf(const int another_device_id) const;
 
-    template <typename T>
-    pair<size_t, T> makeSendData(const T data, const bool flood_flag = false) const;
+    pair<size_t, Var> makeSendData(const Var data, const bool flood_flag = false,
+                                   size_t data_id = 0) const;
+    pair<size_t, Var> makeSendData(const size_t data_id, const Var data) const;
 };
 
 /* パケットクラス */
-template <typename T>
 class Packet
 {
 private:
@@ -103,23 +100,21 @@ private:
     const int packet_id_;
     /* シーケンスナンバー */
     const int seq_num_;
-    /* データ識別子 */
-    // const int data_id_;
     /* 送信するデータ */
-    const pair<size_t, T> data_;
+    const pair<size_t, Var> data_;
     /* フラッディングフラグ */
     const bool flood_flag_;
 
 public:
     Packet(const int sender_id, const int packet_id, const int seq_num,
-           const pair<size_t, T> data, const bool flood_flag = false);
+           const pair<size_t, Var> data, const bool flood_flag = false);
 
     int getSenderId() const;
     int getPacketId() const;
     int getSeqNum() const;
     int getDataId() const;
 
-    pair<size_t, T> getData() const;
+    pair<size_t, Var> getData() const;
 
     bool isFloodFlag() const;
 };
