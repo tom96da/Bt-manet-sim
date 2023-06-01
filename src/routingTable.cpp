@@ -7,51 +7,10 @@
 
 #include "routingTable.hpp"
 
-/* 各デバイスのエントリクラス */
-
-/*!
- * @brief コンストラクタ
- * @param nextHop_id 次ホップデバイスのID
- * @param distance 次ホップデバイスの距離
- */
-RoutingTable::Entry::Entry(int nextHop_id, double distance)
-    : nextHop_id_{nextHop_id},
-      distance_{distance},
-      isValid_{true}
-{
-}
-
-/*!
- * @brief 次ポップデバイスのIDを取得
- * @return 次ホップデバイスのID
- */
-int RoutingTable::Entry::getNextHop() const { return nextHop_id_; }
-
-/*!
- * @brief エントリが無効か取得
- * @retval true 有効
- * @retval false 無効
- */
-bool RoutingTable::Entry::isValid() const { return isValid_; }
-
-/*!
- * @brief エントリの更新
- * @param nextHop_id 次のホップデバイスのID
- * @param distance 次ポップデバイスの距離
- */
-void RoutingTable::Entry::updateEntry(int nextHop_id, double distance)
-{
-    nextHop_id_ = nextHop_id;
-    distance_ = distance;
-    isValid_ = true;
-}
-
-/*!
- * @brief エントリを無効にする
- */
-void RoutingTable::Entry::markInvalid() { isValid_ = false; }
-
 /* ルーティングテーブルクラス */
+
+/* コンストラクタ */
+RoutingTable::RoutingTable() {}
 
 /*!
  * @brief 宛先に対する次ホップデバイスIDを取得
@@ -106,3 +65,47 @@ void RoutingTable::markEntryInvalid(int dest_id)
     if (table_.count(dest_id))
         table_.at(dest_id).markInvalid();
 }
+
+/* 各デバイスのエントリクラス */
+
+/*!
+ * @brief コンストラクタ
+ * @param nextHop_id 次ホップデバイスのID
+ * @param distance 次ホップデバイスの距離
+ */
+RoutingTable::Entry::Entry(int nextHop_id, double distance)
+    : nextHop_id_{nextHop_id},
+      distance_{distance},
+      isValid_{true}
+{
+}
+
+/*!
+ * @brief 次ポップデバイスのIDを取得
+ * @return 次ホップデバイスのID
+ */
+int RoutingTable::Entry::getNextHop() const { return nextHop_id_; }
+
+/*!
+ * @brief エントリが無効か取得
+ * @retval true 有効
+ * @retval false 無効
+ */
+bool RoutingTable::Entry::isValid() const { return isValid_; }
+
+/*!
+ * @brief エントリの更新
+ * @param nextHop_id 次のホップデバイスのID
+ * @param distance 次ポップデバイスの距離
+ */
+void RoutingTable::Entry::updateEntry(int nextHop_id, double distance)
+{
+    nextHop_id_ = nextHop_id;
+    distance_ = distance;
+    isValid_ = true;
+}
+
+/*!
+ * @brief エントリを無効にする
+ */
+void RoutingTable::Entry::markInvalid() { isValid_ = false; }

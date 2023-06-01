@@ -153,18 +153,17 @@ void Device::sendMessage(const int receiver_id, string message)
 }
 
 /*!
- * @brief 接続中のデバイスから文字列を受信する
+ * @brief 接続中のデバイスから文字列を受信する (保存しない)
  * @param sender_id 送信元デバイスのID
  * @param message 受信する文字列
  */
 void Device::receiveMessage(const int sender_id, string message)
 {
     cout << message << " -> ID_" << this->getId() << endl;
-    memory_.emplace_back(message);
 }
 
 /*!
- * @brief パケットを生成する
+ * @brief データからパケットを生成する
  * @tparam T 送信するデータの型
  * @param data 送信するデータ
  * @return 生成したパケット
@@ -173,7 +172,20 @@ template <typename T>
 Packet<T> Device::makePacket(T data) const
 {
     return Packet<T>(getId(), getNewPacketId(),
-                     pcnt::getNewSequenceNum(), data);
+                     pcnt::getNewSequenceNum(), makeSendData(data));
+}
+
+/*!
+ * @brief 識別子付きデータパケットを生成する
+ * @tparam T 送信するデータの型
+ * @param ddata 送信する識別子付きデータ
+ * @return 生成したパケット
+ */
+template <typename T>
+Packet<T> Device::makePacket(pair<size_t, T> idata, const bool flood_flag) const
+{
+    return Packet<T>(getId(), getNewPacketId(),
+                     pcnt::getNewSequenceNum(), idata, flood_flag);
 }
 
 /*!
@@ -185,7 +197,7 @@ Packet<T> Device::makePacket(T data) const
 template <typename T>
 void Device::sendPacket(const int receiver_id, const Packet<T> &packet)
 {
-    getPairedDevice(receiver_id)->receivePacket(packet);
+    getPairedDevice(receiver_id)->receivePacket(this->getId(), packet);
 }
 
 /*!
@@ -195,19 +207,53 @@ void Device::sendPacket(const int receiver_id, const Packet<T> &packet)
  * @param packet 受信するパケット
  */
 template <typename T>
-void Device::receivePacket(const Packet<T> &packet)
+void Device::receivePacket(const int sender_id, const Packet<T> &packet)
 {
-    memory_.emplace_back(packet.getData());
+    pair<size_t, T> idata = packet.getData();
+
+    if (!memory_.count(idata.first))
+        memory_.insert(idata);
+
+    // if (packet.isFloodFlag())
+    //     hopping(idata, sender_id);
+
+    return;
 }
 
 /*!
- * @brief hello!を出力
+ * @brief フラッディングを始める
+ * @return フラッディングしたデータ識別子
+ */
+template <typename T>
+size_t Device::flooding()
+{
+    pair<size_t, T> idata = makeSendData(static_cast<string>("hello!"), true);
+    for (auto cntd : getConnectedDeviceId())
+        sendPacket(cntd, makePacket(idata, true));
+
+    return idata.first;
+}
+
+/*!
+ * @brief フラッディングデータをホップする
+ * @tparam T パケットが含むデータの型
+ * @param ddata 送信する識別子付きデータ
+ */
+template <typename T>
+void Device::hopping(const pair<size_t, T> idata, const int sender_id)
+{
+    for (auto cntd : getConnectedDeviceId())
+        if (cntd != sender_id)
+            sendPacket(cntd, makePacket(idata, true));
+}
+
+/*!
+ * @brief 接続中のデバイスにhello!を送信
  */
 void Device::sendHello()
 {
-    string hello = "hello!";
     for (auto cntd : getConnectedDeviceId())
-        sendPacket(cntd, makePacket(hello));
+        sendPacket(cntd, makePacket(static_cast<string>("hello!")));
 }
 
 /*!
@@ -234,6 +280,30 @@ Device *Device::getPairedDevice(const int id)
     return paired_devices_.at(id);
 }
 
+/*!
+ * @brief データにデータ識別子を付与する
+ * @tparam T データの型
+ * @param data データ
+ * @return 識別子が付与されたデータ
+ */
+template <typename T>
+pair<size_t, T> Device::makeSendData(const T data,
+                                     const bool flood_flag) const
+{
+    string s_id = to_string(getId()),
+           s_packet = to_string(getNumPacket());
+    size_t data_id;
+    if (!flood_flag)
+        data_id = stoul(
+            "8" + string(3 - s_id.length(), '0') + s_id +
+            string(6 - s_packet.length(), '0') + s_packet);
+    else
+        data_id = stoul(
+            "9" + string(3 - s_id.length(), '0') + s_id +
+            string(6 - s_packet.length(), '0') + s_packet);
+    return {data_id, data};
+}
+
 /* パケットクラス */
 
 /*!
@@ -244,11 +314,13 @@ Device *Device::getPairedDevice(const int id)
  * @param data 送信データ
  */
 template <typename T>
-Packet<T>::Packet(const int sender_id, const int packet_id, int seq_num, T data)
+Packet<T>::Packet(const int sender_id, const int packet_id, const int seq_num,
+                  const pair<size_t, T> data, const bool flood_flag)
     : sender_id_{sender_id},
       packet_id_{packet_id},
       seq_num_{seq_num},
-      data_{data}
+      data_{data},
+      flood_flag_{flood_flag}
 {
 }
 
@@ -271,11 +343,23 @@ template <typename T>
 int Packet<T>::getSeqNum() const { return seq_num_; }
 
 /*!
- * @tparam T 送信するデータの型
- * @return 送信するデータ
+ * @return データ識別子
+ */
+// template <typename T>
+// int Packet<T>::getDataId() const { return data_id_; }
+
+/*!
+ * @tparam T 送信データの型
+ * @return 送信データ
  */
 template <typename T>
-T Packet<T>::getData() const { return data_; }
+pair<size_t, T> Packet<T>::getData() const { return data_; }
+
+/*!
+ * @return フラッディングフラグ
+ */
+template <typename T>
+bool Packet<T>::isFloodFlag() const { return flood_flag_; }
 
 /* パケットカウンタ */
 namespace PacketCounter

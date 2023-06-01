@@ -39,7 +39,9 @@ private:
     /* 接続中デバイス */
     set<int> connected_devices_;
     /* メモリー */
-    vector<any> memory_;
+    map<size_t, any> memory_;
+    /* ルーティングテーブル */
+    Table table_;
 
 public:
     Device(int id, int max_connections = MAX_CONNECTIONS);
@@ -68,9 +70,16 @@ public:
     template <typename T>
     Packet<T> makePacket(T data) const;
     template <typename T>
+    Packet<T> makePacket(pair<size_t, T> idata, const bool flood_flag = false) const;
+    template <typename T>
     void sendPacket(const int receiver_id, const Packet<T> &packet);
     template <typename T>
-    void receivePacket(const Packet<T> &packet);
+    void receivePacket(const int sender_id, const Packet<T> &packet);
+
+    template <typename T>
+    size_t flooding();
+    template <typename T>
+    void hopping(const pair<size_t, T> idata, const int sender_id);
 
     void sendHello();
 
@@ -78,6 +87,9 @@ private:
     Device *getPairedDevice(const int id);
 
     bool isSelf(const int another_device_id) const;
+
+    template <typename T>
+    pair<size_t, T> makeSendData(const T data, const bool flood_flag = false) const;
 };
 
 /* パケットクラス */
@@ -91,17 +103,25 @@ private:
     const int packet_id_;
     /* シーケンスナンバー */
     const int seq_num_;
+    /* データ識別子 */
+    // const int data_id_;
     /* 送信するデータ */
-    const T data_;
+    const pair<size_t, T> data_;
+    /* フラッディングフラグ */
+    const bool flood_flag_;
 
 public:
-    Packet(const int sender_id, const int packet_id, int seq_num, T data);
+    Packet(const int sender_id, const int packet_id, const int seq_num,
+           const pair<size_t, T> data, const bool flood_flag = false);
 
     int getSenderId() const;
     int getPacketId() const;
     int getSeqNum() const;
+    int getDataId() const;
 
-    T getData() const;
+    pair<size_t, T> getData() const;
+
+    bool isFloodFlag() const;
 };
 
 /* パケットカウンタ */

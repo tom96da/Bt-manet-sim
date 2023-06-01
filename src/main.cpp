@@ -33,6 +33,7 @@ int main()
             mgr.getDeviceById(id_1)->sendHello();
             progress = id_1 + 1;
         }
+        size_t data_id = mgr.getDeviceById(45)->flooding<string>();
     };
 
     auto newCsv = [&]()
@@ -103,14 +104,14 @@ int main()
 
             pbar.join();
             writeCsv();
-            nextPos();
+            // nextPos();
         }
     };
 
     doSim(1);
 
-    showPaired(0);
-    showConnected(0);
+    // showPaired(0);
+    showConnected(45);
 
     showTotalPacket();
 
