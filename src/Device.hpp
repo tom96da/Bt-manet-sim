@@ -16,7 +16,7 @@
 #include <variant>
 #include <any>
 using namespace std;
-using Var = variant<int, double, string>;
+using Var = variant<int, double, string, Table>;
 
 /* 最大接続数 */
 const int MAX_CONNECTIONS = 6;
@@ -85,9 +85,8 @@ private:
 
     bool isSelf(const int another_device_id) const;
 
-    pair<size_t, Var> makeSendData(const Var data, const bool flood_flag = false,
-                                   size_t data_id = 0) const;
-    pair<size_t, Var> makeSendData(const size_t data_id, const Var data) const;
+    pair<size_t, Var> assignIdToData(const Var data, const bool flood_flag = false,
+                                     size_t data_id = 0) const;
 };
 
 /* パケットクラス */
@@ -112,7 +111,6 @@ public:
     int getSenderId() const;
     int getPacketId() const;
     int getSeqNum() const;
-    int getDataId() const;
 
     pair<size_t, Var> getData() const;
 

@@ -239,7 +239,7 @@ void DeviceManager::updatePisition(const int id)
  */
 size_t DeviceManager::startFlood(const int id)
 {
-    getDeviceById(id)->flooding();
+    return getDeviceById(id)->flooding();
 }
 
 int DeviceManager::getNumFloodDone(size_t data_id)
