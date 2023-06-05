@@ -71,7 +71,7 @@ int Device::getNewPacketId() const { return num_packet_made_++; }
  * @param data_id データ識別子
  * @return 該当データ
  */
-variant<int, double, string> Device::getDataFromMemory(const size_t data_id) const
+Var Device::getDataFromMemory(const size_t data_id) const
 {
     return memory_.at(data_id);
 }
@@ -98,6 +98,12 @@ bool Device::isConnected(const int another_device_id) const
     return connected_devices_.count(another_device_id);
 }
 
+/*!
+ * @brief メモリーにデータを持っているか取得
+ * @param data_id データ識別子
+ * @retval true 保持
+ * @retval false 未保持
+ */
 bool Device::hasData(const size_t data_id) const
 {
     return memory_.count(data_id);
@@ -183,7 +189,7 @@ void Device::receiveMessage(const int sender_id, string message)
 Packet Device::makePacket(Var data) const
 {
     return Packet(getId(), getNewPacketId(),
-                  pcnt::getNewSequenceNum(), makeSendData(data));
+                  pcnt::getNewSequenceNum(), assignIdToData(data));
 }
 
 /*!
@@ -234,7 +240,8 @@ void Device::receivePacket(const int sender_id, const Packet &packet)
  */
 size_t Device::flooding()
 {
-    pair<size_t, Var> idata = makeSendData(static_cast<string>("hello!"), true);
+    pair<size_t, Var> idata = assignIdToData(static_cast<string>("hello!"), true);
+    memory_.insert(idata);
     for (auto cntd : getConnectedDeviceId())
         sendPacket(cntd, makePacket(idata, true));
 
@@ -292,9 +299,9 @@ Device *Device::getPairedDevice(const int id)
  * @param data データ
  * @return 識別子が付与されたデータ
  */
-pair<size_t, Var> Device::makeSendData(const Var data,
-                                       const bool flood_flag,
-                                       size_t data_id) const
+pair<size_t, Var> Device::assignIdToData(const Var data,
+                                         const bool flood_flag,
+                                         size_t data_id) const
 {
     if (data_id == 0)
     {
@@ -302,25 +309,14 @@ pair<size_t, Var> Device::makeSendData(const Var data,
                s_packet = to_string(getNumPacket());
         if (!flood_flag)
             data_id = stoul(
-                "8" + string(3 - s_id.length(), '0') + s_id +
-                string(5 - s_packet.length(), '0') + s_packet);
+                "2" + string(3 - s_id.length(), '0') + s_id +
+                string(6 - s_packet.length(), '0') + s_packet);
         else
             data_id = stoul(
-                "9" + string(3 - s_id.length(), '0') + s_id +
-                string(5 - s_packet.length(), '0') + s_packet);
+                "3" + string(3 - s_id.length(), '0') + s_id +
+                string(6 - s_packet.length(), '0') + s_packet);
     }
 
-    return {data_id, data};
-}
-
-/*!
- * @brief データに既存のデータ識別子を付与する
- * @param data_id データ識別子
- * @param data データ
- * @return 識別子が付与されたデータ
- */
-pair<size_t, Var> Device::makeSendData(const size_t data_id, const Var data) const
-{
     return {data_id, data};
 }
 
@@ -330,7 +326,9 @@ pair<size_t, Var> Device::makeSendData(const size_t data_id, const Var data) con
  * @brief コンストラクタ
  * @param sender_id 送信元デバイスのID
  * @param packet_id パケットID
+ * @param seq_num シーケンスナンバー
  * @param data 送信データ
+ * @param flood_flag フラッディングフラグ
  */
 Packet::Packet(const int sender_id, const int packet_id, const int seq_num,
                const pair<size_t, Var> data, const bool flood_flag)
@@ -372,7 +370,13 @@ namespace PacketCounter
 {
     int num_total_packe = 0;
 
+    /*!
+     * @return 累計パケット数
+     */
     int getTotalPacket() { return num_total_packe; }
 
+    /*!
+     * @return 新規パケットID
+     */
     int getNewSequenceNum() { return num_total_packe++; }
 }
