@@ -12,9 +12,7 @@
 #include <string>
 #include <map>
 #include <set>
-#include <vector>
 #include <variant>
-#include <any>
 using namespace std;
 using Var = variant<int, double, string, Table>;
 
@@ -39,10 +37,13 @@ private:
     map<int, Device *> paired_devices_;
     /* 接続中デバイス */
     set<int> connected_devices_;
-    /* メモリー */
-    map<size_t, Var> memory_;
     /* ルーティングテーブル */
     Table table_;
+
+    /* メモリ―セルクラス */
+    class Sell;
+    /* メモリー */
+    map<size_t, Var> memory_;
 
 public:
     Device(int id, int max_connections = MAX_CONNECTIONS);
@@ -87,6 +88,25 @@ private:
 
     pair<size_t, Var> assignIdToData(const Var data, const bool flood_flag = false,
                                      size_t data_id = 0) const;
+};
+
+/* メモリ―セルクラス */
+class Device::Sell
+{
+private:
+    const pair<size_t, Var> data_;
+    const int sender_id_;
+    bool flood_flag_;
+
+public:
+    Sell();
+
+    size_t getDataId() const;
+    Var getData() const;
+    int getSenderId() const;
+    bool isFlag() const;
+
+    void markFlagInvalid();
 };
 
 /* パケットクラス */

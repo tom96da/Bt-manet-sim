@@ -295,7 +295,6 @@ Device *Device::getPairedDevice(const int id)
 
 /*!
  * @brief データにデータ識別子を付与する
- * @tparam T データの型
  * @param data データ
  * @return 識別子が付与されたデータ
  */
