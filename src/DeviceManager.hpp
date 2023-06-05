@@ -46,9 +46,9 @@ public:
     DeviceManager(double field_size, int init_num_devices = 0);
 
     int getNumDevices() const;
-    Device *getDeviceById(const int id);
-    pair<double, double> *getPositon(const int id);
-    pair<double, double> *getBias(const int id);
+    Device &getDeviceById(const int id);
+    pair<double, double> &getPosition(const int id);
+    pair<double, double> &getBias(const int id);
 
     double getDistance(const int id_1, const int id_2);
 
@@ -66,7 +66,7 @@ public:
     void updatePisition(const int id);
 
     size_t startFlood(const int id);
-    int getNumFloodDone(size_t data_id);
+    int getNumDevicesHaveData(size_t data_id);
 
     static double getMaxComDistance() { return max_com_distance_; }
 };
@@ -85,9 +85,9 @@ private:
 public:
     Node(const int id);
 
-    Device *getDevice();
-    pair<double, double> *getBias();
-    pair<double, double> *getPosition();
+    Device &getDevice();
+    pair<double, double> &getBias();
+    pair<double, double> &getPosition();
 
     void setBias(double bias_x, double bias_y);
     void setPositon(double pos_x, double pos_y);

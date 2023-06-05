@@ -40,12 +40,13 @@ int DeviceManager::getNumDevices() const { return nodes_.size(); };
  * @param id デバイスID
  * @return デバイスのポインタ
  */
-Device *DeviceManager::getDeviceById(const int id)
+Device &DeviceManager::getDeviceById(const int id)
 {
     if (nodes_.count(id))
         return nodes_.at(id).getDevice();
 
-    return nullptr;
+    static Device null_device(-1);
+    return null_device;
 }
 
 /*!
@@ -53,12 +54,13 @@ Device *DeviceManager::getDeviceById(const int id)
  * @param id デバイスID
  * @return デバイスの座標のポインタ
  */
-pair<double, double> *DeviceManager::getPositon(const int id)
+pair<double, double> &DeviceManager::getPosition(const int id)
 {
     if (nodes_.count(id))
         return nodes_.at(id).getPosition();
 
-    return nullptr;
+    static pair<double, double> null_pos;
+    return null_pos;
 }
 
 /*!
@@ -66,12 +68,13 @@ pair<double, double> *DeviceManager::getPositon(const int id)
  * @param id デバイスID
  * @return デバイスのバイアスのポインタ
  */
-pair<double, double> *DeviceManager::getBias(const int id)
+pair<double, double> &DeviceManager::getBias(const int id)
 {
     if (nodes_.count(id))
         return nodes_.at(id).getBias();
 
-    return nullptr;
+    static pair<double, double> null_bias;
+    return null_bias;
 }
 
 /*!
@@ -82,10 +85,10 @@ pair<double, double> *DeviceManager::getBias(const int id)
  */
 double DeviceManager::getDistance(const int id_1, const int id_2)
 {
-    auto pos_1 = getPositon(id_1);
-    auto pos_2 = getPositon(id_2);
+    auto &[pos_1_x, pos_1_y] = getPosition(id_1);
+    auto &[pos_2_x, pos_2_y] = getPosition(id_2);
 
-    return hypot(pos_1->first - pos_2->first, pos_1->second - pos_2->second);
+    return hypot(pos_1_x - pos_2_x, pos_1_y - pos_2_y);
 }
 
 /*!
@@ -109,8 +112,8 @@ bool DeviceManager::isSameDevice(const int id_1, const int id_2) const
  */
 bool DeviceManager::isPaired(const int id_1, const int id_2)
 {
-    return getDeviceById(id_1)->isPaired(id_2) &&
-           getDeviceById(id_2)->isPaired(id_1);
+    return getDeviceById(id_1).isPaired(id_2) &&
+           getDeviceById(id_2).isPaired(id_1);
 }
 
 /*!
@@ -122,8 +125,8 @@ bool DeviceManager::isPaired(const int id_1, const int id_2)
  */
 bool DeviceManager::isConnected(const int id_1, const int id_2)
 {
-    return getDeviceById(id_1)->isConnected(id_2) &&
-           getDeviceById(id_2)->isConnected(id_1);
+    return getDeviceById(id_1).isConnected(id_2) &&
+           getDeviceById(id_2).isConnected(id_1);
 }
 
 /*!
@@ -155,8 +158,8 @@ void DeviceManager::pairDevices(const int id_1, const int id_2)
     if (isSameDevice(id_1, id_2))
         return;
 
-    getDeviceById(id_1)->pairing(*getDeviceById(id_2));
-    getDeviceById(id_2)->pairing(*getDeviceById(id_1));
+    getDeviceById(id_1).pairing(getDeviceById(id_2));
+    getDeviceById(id_2).pairing(getDeviceById(id_1));
 }
 
 void DeviceManager::unpairDevices(const int id_1, const int id_2)
@@ -164,8 +167,8 @@ void DeviceManager::unpairDevices(const int id_1, const int id_2)
     if (isSameDevice(id_1, id_2))
         return;
 
-    getDeviceById(id_1)->unpairing(id_2);
-    getDeviceById(id_2)->unpairing(id_1);
+    getDeviceById(id_1).unpairing(id_2);
+    getDeviceById(id_2).unpairing(id_1);
 }
 
 /*!
@@ -182,8 +185,8 @@ void DeviceManager::connectDevices(const int id_1, const int id_2)
     if (isSameDevice(id_1, id_2))
         return;
 
-    getDeviceById(id_1)->connect(id_2);
-    getDeviceById(id_2)->connect(id_1);
+    getDeviceById(id_1).connect(id_2);
+    getDeviceById(id_2).connect(id_1);
 }
 
 /*!
@@ -196,8 +199,8 @@ void DeviceManager::disconnectDevices(const int id_1, const int id_2)
     if (getDistance(id_1, id_2) <= max_com_distance_)
         return;
 
-    getDeviceById(id_1)->disconnect(id_2);
-    getDeviceById(id_2)->disconnect(id_1);
+    getDeviceById(id_1).disconnect(id_2);
+    getDeviceById(id_2).disconnect(id_1);
 }
 
 /*!
@@ -210,25 +213,25 @@ void DeviceManager::updatePisition(const int id)
     double dx = move_randn_(mt_);
     double dy = move_randn_(mt_);
 
-    auto position = getPositon(id);
-    auto bias = getBias(id);
+    auto &[pos_x, pos_y] = getPosition(id);
+    auto &[bias_x, bias_y] = getBias(id);
 
-    tmp = position->first + dx + bias->first;
+    tmp = pos_x + dx + bias_x;
     if ((tmp > 0) & (tmp < field_size_))
-        position->first = tmp;
+        pos_x = tmp;
     else
     {
-        position->first -= (dx + bias->first);
-        bias->first = -bias->first;
+        pos_x -= (dx + bias_x);
+        bias_x = -bias_x;
     }
 
-    tmp = position->second + dy + bias->second;
+    tmp = pos_y + dy + bias_y;
     if ((tmp > 0) & (tmp < field_size_))
-        position->second = tmp;
+        pos_y = tmp;
     else
     {
-        position->second -= (dy + bias->second);
-        bias->second = -bias->second;
+        pos_y -= (dy + bias_y);
+        bias_y = -bias_y;
     }
 }
 
@@ -239,14 +242,18 @@ void DeviceManager::updatePisition(const int id)
  */
 size_t DeviceManager::startFlood(const int id)
 {
-    return getDeviceById(id)->flooding();
+    return getDeviceById(id).flooding();
 }
 
-int DeviceManager::getNumFloodDone(size_t data_id)
+/*!
+ * @param data_id データ識別子
+ * @return データ識別子が合致するデータを保持するデバイス数
+ */
+int DeviceManager::getNumDevicesHaveData(size_t data_id)
 {
     int tmp = 0;
     for (auto node : nodes_)
-        tmp += node.second.getDevice()->hasData(data_id);
+        tmp += node.second.getDevice().hasData(data_id);
     return tmp;
 }
 
@@ -266,17 +273,17 @@ DeviceManager::Node::Node(const int id)
 /*!
  * @return デバイスオブジェクト
  */
-Device *DeviceManager::Node::getDevice() { return &device_; }
+Device &DeviceManager::Node::getDevice() { return device_; }
 
 /*!
  * @return 移動バイアス
  */
-pair<double, double> *DeviceManager::Node::getBias() { return &bias_; }
+pair<double, double> &DeviceManager::Node::getBias() { return bias_; }
 
 /*!
  * @return 座標
  */
-pair<double, double> *DeviceManager::Node::getPosition() { return &position_; }
+pair<double, double> &DeviceManager::Node::getPosition() { return position_; }
 
 /* バイアスを設定 */
 void DeviceManager::Node::setBias(double bias_x, double bias_y)

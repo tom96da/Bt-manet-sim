@@ -30,7 +30,7 @@ int main()
                 mgr.connectDevices(id_1, id_2);
                 mgr.disconnectDevices(id_1, id_2);
             }
-            mgr.getDeviceById(id_1)->sendHello();
+            // mgr.getDeviceById(id_1).sendHello();
             progress = id_1 + 1;
         }
     };
@@ -49,7 +49,7 @@ int main()
     {
         for (int id = 0; id < num_dev; id++)
         {
-            auto [x, y] = *mgr.getPositon(id);
+            auto &[x, y] = mgr.getPosition(id);
             fs[id] << x << ", " << y << endl;
         }
     };
@@ -63,8 +63,8 @@ int main()
     auto showPaired = [&](int id)
     {
         auto dev = mgr.getDeviceById(id);
-        auto pards = dev->getPairedDeviceId();
-        cout << dev->getName() << " paired with ";
+        auto pards = dev.getPairedDeviceId();
+        cout << dev.getName() << " paired with ";
         for (auto pard : pards)
             cout << pard << ", ";
         cout << endl;
@@ -73,8 +73,8 @@ int main()
     auto showConnected = [&](int id)
     {
         auto dev = mgr.getDeviceById(id);
-        auto cntds = dev->getConnectedDeviceId();
-        cout << dev->getName() << " connected with ";
+        auto cntds = dev.getConnectedDeviceId();
+        cout << dev.getName() << " connected with ";
         for (auto cntd : cntds)
             cout << cntd << ", ";
         cout << endl;
@@ -88,11 +88,18 @@ int main()
     auto doSim = [&](const int frames)
     {
         newCsv();
+        int f = 0;
+        // auto pbar_frames = thread(
+        //     [&]()
+        //     {
+        //         auto p = PBar(frames, f);
+        //         // p.erase();
+        //     });
 
-        for (int f = 0; f < frames; f++)
+        for (f = 0; f < frames; f++)
         {
             int progress = 0;
-            auto pbar = thread(
+            auto pbar_dev = thread(
                 [&]()
                 {
                     auto p = PBar(num_dev, progress);
@@ -101,21 +108,22 @@ int main()
 
             runDevice(progress);
 
-            pbar.join();
+            pbar_dev.join();
 
             writeCsv();
             // nextPos();
         }
+        // pbar_frames.join();
     };
 
     doSim(1);
 
-    size_t data_id = mgr.getDeviceById(45)->flooding();
-    // showPaired(0);
+    size_t data_id = mgr.getDeviceById(45).flooding();
+    showPaired(45);
     showConnected(45);
 
     showTotalPacket();
-    cout << mgr.getNumFloodDone(data_id) << " devices have data" << endl;
+    cout << mgr.getNumDevicesHaveData(data_id) << " devices have data" << endl;
 
     return 0;
 }
