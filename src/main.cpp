@@ -87,7 +87,7 @@ int main()
 
     auto doSim = [&](const int frames)
     {
-        newCsv();
+        // newCsv();
         int f = 0;
         // auto pbar_frames = thread(
         //     [&]()
@@ -99,18 +99,18 @@ int main()
         for (f = 0; f < frames; f++)
         {
             int progress = 0;
-            auto pbar_dev = thread(
-                [&]()
-                {
-                    auto p = PBar(num_dev, progress);
-                    // p.erase();
-                });
+            // auto pbar_dev = thread(
+            //     [&]()
+            //     {
+            //         auto p = PBar(num_dev, progress);
+            //         // p.erase();
+            //     });
 
             runDevice(progress);
 
-            pbar_dev.join();
+            // pbar_dev.join();
 
-            writeCsv();
+            // writeCsv();
             // nextPos();
         }
         // pbar_frames.join();
@@ -118,12 +118,13 @@ int main()
 
     doSim(1);
 
-    size_t data_id = mgr.getDeviceById(45).flooding();
-    showPaired(45);
-    showConnected(45);
+    showPaired(3);
+    showConnected(3);
 
+    // size_t data_id = mgr.getDeviceById(3).makeFloodData();
+    mgr.startFlooding(3);
     showTotalPacket();
-    cout << mgr.getNumDevicesHaveData(data_id) << " devices have data" << endl;
+    // cout << mgr.getNumDevicesHaveData(data_id) << " devices have data" << endl;
 
     return 0;
 }

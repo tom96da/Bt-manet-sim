@@ -17,7 +17,7 @@ using namespace std;
 using Var = variant<int, double, string, Table>;
 
 /* 最大接続数 */
-const int MAX_CONNECTIONS = 6;
+const int MAX_CONNECTIONS = 5;
 
 /* パケットクラスの前方宣言 */
 class Packet;
@@ -33,6 +33,7 @@ private:
 
     /* 累計パケット生成数 */
     mutable int num_packet_made_;
+    int flood_steps_;
     /* ペアリング登録済みデバイス */
     map<int, Device *> paired_devices_;
     /* 接続中デバイス */
@@ -40,10 +41,10 @@ private:
     /* ルーティングテーブル */
     Table table_;
 
-    /* メモリ―セルクラス */
+    /* メモリセルクラス */
     class Sell;
-    /* メモリー */
-    map<size_t, Var> memory_;
+    /* メモリ */
+    map<size_t, Sell> memory_;
 
 public:
     Device(int id, int max_connections = MAX_CONNECTIONS);
@@ -57,7 +58,9 @@ public:
     set<int> getConnectedDeviceId() const;
     int getNumPacket() const;
     int getNewPacketId() const;
-    Var getDataFromMemory(const size_t data_id) const;
+    int getFloodSteps() const;
+    Sell &getSellData(const size_t data_id);
+    pair<size_t, Var> loadData(const size_t data_id) const;
 
     bool isPaired(const int another_device_id) const;
     bool isConnected(const int another_device_id) const;
@@ -65,24 +68,31 @@ public:
 
     void pairing(Device &another_device);
     void unpairing(const int another_device_id);
-    void connect(const int another_device_id);
+    bool connect(const int another_device_id);
     void disconnect(const int another_device_id);
+    void resetFloodSteps();
+    bool saveData(pair<size_t, Var> idata,
+                  bool flood_flag = false, int flood_step = 0);
+    bool saveData(const Packet &packet);
 
     void sendMessage(const int receiver_id, string message);
     void receiveMessage(const int sender_id, string message);
 
     Packet makePacket(Var data) const;
-    Packet makePacket(pair<size_t, Var> idata, const bool flood_flag = false) const;
+    Packet makePacket(pair<size_t, Var> idata,
+                      const bool flood_flag = false, const int flood_step = 0) const;
     void sendPacket(const int receiver_id, const Packet &packet);
-    void receivePacket(const int sender_id, const Packet &packet);
+    void receivePacket(const Packet &packet);
 
-    size_t flooding();
+    size_t makeFloodData();
+    bool flooding();
     void hopping(const pair<size_t, Var> idata, const int sender_id);
 
     void sendHello();
 
 private:
     Device *getPairedDevice(const int id);
+    void increaseFloodSteps();
 
     bool isSelf(const int another_device_id) const;
 
@@ -90,22 +100,28 @@ private:
                                      size_t data_id = 0) const;
 };
 
-/* メモリ―セルクラス */
+/* メモリセルクラス */
 class Device::Sell
 {
 private:
-    const pair<size_t, Var> data_;
     const int sender_id_;
+    const pair<size_t, Var> idata_;
+    const int flood_step_;
+
     bool flood_flag_;
 
 public:
-    Sell();
+    Sell(const int sender_id, const pair<size_t, Var> idata,
+         bool flood_flag, const int flood_step);
 
-    size_t getDataId() const;
-    Var getData() const;
     int getSenderId() const;
-    bool isFlag() const;
+    size_t getDataId() const;
+    pair<size_t, Var> getData() const;
+    int getFloodStep() const;
 
+    bool isFloodFlag() const;
+
+    void markFlagValid();
     void markFlagInvalid();
 };
 
@@ -123,10 +139,13 @@ private:
     const pair<size_t, Var> data_;
     /* フラッディングフラグ */
     const bool flood_flag_;
+    /* フラッディング段数 */
+    const int flood_step_;
 
 public:
-    Packet(const int sender_id, const int packet_id, const int seq_num,
-           const pair<size_t, Var> data, const bool flood_flag = false);
+    Packet(const int sender_id, const int packet_id,
+           const int seq_num, const pair<size_t, Var> data,
+           const bool flood_flag = false, const int flood_step = 0);
 
     int getSenderId() const;
     int getPacketId() const;
@@ -135,6 +154,7 @@ public:
     pair<size_t, Var> getData() const;
 
     bool isFloodFlag() const;
+    int getFloodStep() const;
 };
 
 /* パケットカウンタ */

@@ -30,6 +30,7 @@ private:
 
     /*すべてのデバイス */
     map<int, Node> nodes_;
+    set<int> devices_have_data_;
 
     /* メルセンヌ・ツイスタ */
     mt19937 mt_;
@@ -48,13 +49,6 @@ public:
     int getNumDevices() const;
     Device &getDeviceById(const int id);
     pair<double, double> &getPosition(const int id);
-    pair<double, double> &getBias(const int id);
-
-    double getDistance(const int id_1, const int id_2);
-
-    bool isSameDevice(const int id_1, const int id_2) const;
-    bool isPaired(const int id_1, const int id_2);
-    bool isConnected(const int id_1, const int id_2);
 
     void addDevices(int num_devices);
 
@@ -65,10 +59,19 @@ public:
 
     void updatePisition(const int id);
 
-    size_t startFlood(const int id);
+    void startFlooding(const int id);
     int getNumDevicesHaveData(size_t data_id);
+    int showDevicesGetData(size_t data_id);
 
     static double getMaxComDistance() { return max_com_distance_; }
+
+private:
+    pair<double, double> &getBias(const int id);
+    double getDistance(const int id_1, const int id_2);
+
+    bool isSameDevice(const int id_1, const int id_2) const;
+    bool isPaired(const int id_1, const int id_2);
+    bool isConnected(const int id_1, const int id_2);
 };
 
 /* ノード クラス */
