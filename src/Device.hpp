@@ -33,7 +33,6 @@ private:
 
     /* 累計パケット生成数 */
     mutable int num_packet_made_;
-    int flood_steps_;
     /* ペアリング登録済みデバイス */
     map<int, Device *> paired_devices_;
     /* 接続中デバイス */
@@ -58,7 +57,6 @@ public:
     set<int> getConnectedDeviceId() const;
     int getNumPacket() const;
     int getNewPacketId() const;
-    int getFloodSteps() const;
     Sell &getSellData(const size_t data_id);
     pair<size_t, Var> loadData(const size_t data_id) const;
 
@@ -70,10 +68,9 @@ public:
     void unpairing(const int another_device_id);
     bool connect(const int another_device_id);
     void disconnect(const int another_device_id);
-    void resetFloodSteps();
-    bool saveData(pair<size_t, Var> idata,
+    void saveData(pair<size_t, Var> idata,
                   bool flood_flag = false, int flood_step = 0);
-    bool saveData(const Packet &packet);
+    void saveData(const Packet &packet);
 
     void sendMessage(const int receiver_id, string message);
     void receiveMessage(const int sender_id, string message);
@@ -85,14 +82,12 @@ public:
     void receivePacket(const Packet &packet);
 
     size_t makeFloodData();
-    bool flooding();
-    void hopping(const pair<size_t, Var> idata, const int sender_id);
+    void flooding(const int flag = false);
 
     void sendHello();
 
 private:
-    Device *getPairedDevice(const int id);
-    void increaseFloodSteps();
+    Device &getPairedDevice(const int id);
 
     bool isSelf(const int another_device_id) const;
 
@@ -104,10 +99,13 @@ private:
 class Device::Sell
 {
 private:
+    /* 送信元デバイスのID */
     const int sender_id_;
+    /* 識別子付きデータ */
     const pair<size_t, Var> idata_;
+    /* フラッディングホップ数 */
     const int flood_step_;
-
+    /* フラッディングフラグ */
     bool flood_flag_;
 
 public:
@@ -135,11 +133,11 @@ private:
     const int packet_id_;
     /* シーケンスナンバー */
     const int seq_num_;
-    /* 送信するデータ */
-    const pair<size_t, Var> data_;
+    /* 識別子付きデータ */
+    const pair<size_t, Var> idata_;
     /* フラッディングフラグ */
     const bool flood_flag_;
-    /* フラッディング段数 */
+    /* フラッディングホップ数 */
     const int flood_step_;
 
 public:

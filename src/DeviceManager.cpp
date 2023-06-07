@@ -36,31 +36,23 @@ DeviceManager::DeviceManager(double field_size, int init_num_devices)
 int DeviceManager::getNumDevices() const { return nodes_.size(); };
 
 /*!
- * @brief IDに合致するデバイスを取得
+ * @brief IDに合致するデバイスを参照 (不正なIDではないか事前確認)
  * @param id デバイスID
- * @return デバイスのポインタ
+ * @return デバイスの参照
  */
 Device &DeviceManager::getDeviceById(const int id)
 {
-    if (nodes_.count(id))
-        return nodes_.at(id).getDevice();
-
-    static Device null_device(-1);
-    return null_device;
+    return nodes_.at(id).getDevice();
 }
 
 /*!
- * @brief IDに合致する座標を取得
+ * @brief IDに合致する座標を参照 (不正なIDではないか事前確認)
  * @param id デバイスID
- * @return デバイスの座標のポインタ
+ * @return デバイスの座標の参照
  */
 pair<double, double> &DeviceManager::getPosition(const int id)
 {
-    if (nodes_.count(id))
-        return nodes_.at(id).getPosition();
-
-    static pair<double, double> null_pos;
-    return null_pos;
+    return nodes_.at(id).getPosition();
 }
 
 /*!
@@ -87,6 +79,8 @@ void DeviceManager::pairDevices(const int id_1, const int id_2)
 {
     if (getDistance(id_1, id_2) > max_com_distance_)
         return;
+    if (getDistance(id_1, id_2) < 0)
+        return;
     if (isPaired(id_1, id_2))
         return;
     if (isSameDevice(id_1, id_2))
@@ -98,6 +92,8 @@ void DeviceManager::pairDevices(const int id_1, const int id_2)
 
 void DeviceManager::unpairDevices(const int id_1, const int id_2)
 {
+    if (getDistance(id_1, id_2) < 0)
+        return;
     if (isSameDevice(id_1, id_2))
         return;
 
@@ -113,6 +109,8 @@ void DeviceManager::unpairDevices(const int id_1, const int id_2)
 void DeviceManager::connectDevices(const int id_1, const int id_2)
 {
     if (getDistance(id_1, id_2) > max_com_distance_)
+        return;
+    if (getDistance(id_1, id_2) < 0)
         return;
     if (!isPaired(id_1, id_2))
         return;
@@ -131,7 +129,10 @@ void DeviceManager::connectDevices(const int id_1, const int id_2)
  */
 void DeviceManager::disconnectDevices(const int id_1, const int id_2)
 {
+
     if (getDistance(id_1, id_2) <= max_com_distance_)
+        return;
+    if (getDistance(id_1, id_2) < 0)
         return;
 
     getDeviceById(id_1).disconnect(id_2);
@@ -144,6 +145,9 @@ void DeviceManager::disconnectDevices(const int id_1, const int id_2)
  */
 void DeviceManager::updatePisition(const int id)
 {
+    if (!nodes_.count(id))
+        return;
+
     double tmp;
     double dx = move_randn_(mt_);
     double dy = move_randn_(mt_);
@@ -177,91 +181,87 @@ void DeviceManager::updatePisition(const int id)
  */
 void DeviceManager::startFlooding(const int id)
 {
-    for (auto &node : nodes_)
-        node.second.getDevice().resetFloodSteps();
+    if (!nodes_.count(id))
+        return;
+    auto &device_starter = getDeviceById(id);
 
-    size_t data_id = getDeviceById(id).makeFloodData();
-    int num_devices_have_data = showDevicesGetData(data_id);
-    do
+    int num_devices_have_data = 0,
+        num_step = 0;
+
+    device_starter.flooding(-1);
+    set<int> devices_have_data;
+
+    size_t data_id = device_starter.makeFloodData();
+    std::cout << "start from : ";
+
+    while (num_devices_have_data !=
+           aggregateDevicesGetData(data_id, devices_have_data))
     {
-        num_devices_have_data = getNumDevicesHaveData(data_id);
+        num_devices_have_data = devices_have_data.size();
 
         for (auto &node : nodes_)
             node.second.getDevice().flooding();
-    } while (num_devices_have_data != showDevicesGetData(data_id));
 
-    cout << getNumDevicesHaveData(data_id) << " devices have data" << endl;
-}
-
-/*!
- * @param data_id データ識別子
- * @return データ識別子が合致するデータを保持するデバイス数
- */
-int DeviceManager::getNumDevicesHaveData(size_t data_id)
-{
-    for (auto &node : nodes_)
-    {
-        auto &device = node.second.getDevice();
-        int id = device.getId();
-
-        if (devices_have_data_.count(id))
-            continue;
-
-        if (device.hasData(data_id))
-            devices_have_data_.emplace(id);
+        num_step++;
+        device_starter.flooding(1);
+        std::cout << num_step << " hop ; get data : ";
     }
 
-    return devices_have_data_.size();
+    std::cout << devices_have_data.size() << " devices have data" << endl;
 }
 
 /*!
  * @param data_id データ識別子
+ * @param devices_have_data 集計コンテナ
  * @return データ識別子が合致するデータを保持するデバイス数
  */
-int DeviceManager::showDevicesGetData(size_t data_id)
+int DeviceManager::aggregateDevicesGetData(size_t data_id,
+                                           set<int> &devices_have_data)
 {
-    cout << "get data : ";
+
     for (auto &node : nodes_)
     {
         auto &device = node.second.getDevice();
         int id = device.getId();
 
-        if (devices_have_data_.count(id))
+        if (devices_have_data.count(id))
             continue;
 
         if (device.hasData(data_id))
         {
-            devices_have_data_.emplace(id);
-            cout << id << ", ";
+            devices_have_data.emplace(id);
+            std::cout << id << ", ";
         }
     }
-    cout << endl;
+    std::cout << endl;
 
-    return devices_have_data_.size();
+    return devices_have_data.size();
 }
 
 /*!
- * @brief IDに合致するバイアスを取得
+ * @brief IDに合致するバイアスを参照 (不正なIDではないか事前確認)
  * @param id デバイスID
- * @return デバイスのバイアスのポインタ
+ * @return デバイスのバイアスの参照
  */
 pair<double, double> &DeviceManager::getBias(const int id)
 {
-    if (nodes_.count(id))
-        return nodes_.at(id).getBias();
-
-    static pair<double, double> null_bias;
-    return null_bias;
+    return nodes_.at(id).getBias();
 }
 
 /*!
  * @brief デバイス間距離の取得
  * @param id_1 デバイスID1
  * @param id_2 デバイスID2
- * @return　デバイス間距離
+ * @retval 0< デバイス間距離
+ * @retval <0 デバイスIDが不正
  */
 double DeviceManager::getDistance(const int id_1, const int id_2)
 {
+    if (!nodes_.count(id_1))
+        return -1.0;
+    if (!nodes_.count(id_2))
+        return -1.0;
+
     auto &[pos_1_x, pos_1_y] = getPosition(id_1);
     auto &[pos_2_x, pos_2_y] = getPosition(id_2);
 

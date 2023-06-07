@@ -64,25 +64,25 @@ int main()
     {
         auto dev = mgr.getDeviceById(id);
         auto pards = dev.getPairedDeviceId();
-        cout << dev.getName() << " paired with ";
+        std::cout << dev.getName() << " paired with ";
         for (auto pard : pards)
-            cout << pard << ", ";
-        cout << endl;
+            std::cout << pard << ", ";
+        std::cout << endl;
     };
 
     auto showConnected = [&](int id)
     {
         auto dev = mgr.getDeviceById(id);
         auto cntds = dev.getConnectedDeviceId();
-        cout << dev.getName() << " connected with ";
+        std::cout << dev.getName() << " connected with ";
         for (auto cntd : cntds)
-            cout << cntd << ", ";
-        cout << endl;
+            std::cout << cntd << ", ";
+        std::cout << endl;
     };
 
     auto showTotalPacket = [&]()
     {
-        cout << "total packet: " << pcnt::getTotalPacket() << endl;
+        std::cout << "total packet: " << pcnt::getTotalPacket() << endl;
     };
 
     auto doSim = [&](const int frames)
@@ -118,13 +118,11 @@ int main()
 
     doSim(1);
 
-    showPaired(3);
-    showConnected(3);
+    // showPaired(3);
+    // showConnected(3);
 
-    // size_t data_id = mgr.getDeviceById(3).makeFloodData();
     mgr.startFlooding(3);
     showTotalPacket();
-    // cout << mgr.getNumDevicesHaveData(data_id) << " devices have data" << endl;
 
     return 0;
 }

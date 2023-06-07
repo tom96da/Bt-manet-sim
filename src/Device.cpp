@@ -13,8 +13,7 @@
 Device::Device(int id, int max_connections)
     : id_(id),
       max_connections_(max_connections),
-      num_packet_made_{0},
-      flood_steps_{0}
+      num_packet_made_{0}
 {
 }
 
@@ -67,8 +66,6 @@ int Device::getNumPacket() const { return num_packet_made_; }
  * @return 新規パケットのID
  */
 int Device::getNewPacketId() const { return num_packet_made_++; }
-
-int Device::getFloodSteps() const { return flood_steps_; }
 
 Device::Sell &Device::getSellData(const size_t data_id)
 {
@@ -173,30 +170,36 @@ void Device::disconnect(const int another_device_id)
     this->connected_devices_.erase(another_device_id);
 }
 
-void Device::resetFloodSteps() { flood_steps_ = 0; }
-
-bool Device::saveData(pair<size_t, Var> idata,
+/*!
+ * @brief データを保存する
+ * @param idata 識別子付きデータ
+ * @param flood_flag フラッディングフラグ
+ * @param flood_step フラッディングホップ数
+ */
+void Device::saveData(pair<size_t, Var> idata,
                       bool flood_flag, int flood_step)
 {
     size_t data_id = idata.first;
     if (memory_.count(data_id))
-        return false;
+        return;
 
     memory_.emplace(data_id, Sell(getId(), idata,
                                   flood_flag, flood_step));
-    return true;
 }
 
-bool Device::saveData(const Packet &packet)
+/*!
+ * @brief パケットを保存する
+ * @param packet パケット
+ */
+void Device::saveData(const Packet &packet)
 {
     pair<size_t, Var> idata = packet.getData();
     size_t data_id = idata.first;
     if (memory_.count(data_id))
-        return false;
+        return;
 
     memory_.emplace(data_id, Sell(packet.getSenderId(), idata,
                                   packet.isFloodFlag(), packet.getFloodStep()));
-    return true;
 }
 
 /*!
@@ -206,8 +209,11 @@ bool Device::saveData(const Packet &packet)
  */
 void Device::sendMessage(const int receiver_id, string message)
 {
-    cout << "ID_" << this->getId() << " -> " << flush;
-    getPairedDevice(receiver_id)->receiveMessage(this->getId(), message);
+    if (!isConnected(receiver_id))
+        return;
+
+    std::cout << "ID_" << this->getId() << " -> " << flush;
+    getPairedDevice(receiver_id).receiveMessage(this->getId(), message);
 }
 
 /*!
@@ -217,7 +223,7 @@ void Device::sendMessage(const int receiver_id, string message)
  */
 void Device::receiveMessage(const int sender_id, string message)
 {
-    cout << message << " -> ID_" << this->getId() << endl;
+    std::cout << message << " -> ID_" << this->getId() << endl;
 }
 
 /*!
@@ -234,6 +240,8 @@ Packet Device::makePacket(Var data) const
 /*!
  * @brief 識別子付きデータパケットを生成する
  * @param idata 送信する識別子付きデータ
+ * @param flood_flag フラッディングフラグ
+ * @param flood_step フラッディングホップ数
  * @return 生成したパケット
  */
 Packet Device::makePacket(pair<size_t, Var> idata,
@@ -250,25 +258,22 @@ Packet Device::makePacket(pair<size_t, Var> idata,
  */
 void Device::sendPacket(const int receiver_id, const Packet &packet)
 {
-    getPairedDevice(receiver_id)->receivePacket(packet);
+    if (isConnected(receiver_id))
+        getPairedDevice(receiver_id).receivePacket(packet);
 }
 
 /*!
  * @brief 接続中のデバイスからパケットを受信する
- * @param sender_id 送信元デバイスのID
  * @param packet 受信するパケット
  */
 void Device::receivePacket(const Packet &packet)
 {
-    if (saveData(packet))
-        ;
-    // if (packet.isFloodFlag())
-    //     hopping(packet.getData(), packet.getSenderId());
+    saveData(packet);
 }
 
 /*!
- * @brief フラッディングを始める
- * @return フラッディングしたデータ識別子
+ * @brief フラッディングするデータを作成
+ * @return 作成したデータの識別子
  */
 size_t Device::makeFloodData()
 {
@@ -279,14 +284,26 @@ size_t Device::makeFloodData()
 }
 
 /*!
- * @brief フラッディングデータをホップする
- * @retval true ホップ完了
- * @retval false データなし
+ * @brief フラッディングを行う
+ * @param flag 制御フラグ 0 -ホップ, 1 -次ステップへ, -1 -初期化,
+ * デフォルト値: 0
  */
-bool Device::flooding()
+void Device::flooding(const int flag)
 {
-    int steps = getFloodSteps();
-    increaseFloodSteps();
+    /* 現在のホップ数 */
+    static int _step_new = 0;
+    if (flag == 1)
+    {
+        /* flag = 1 なら次のホップへ */
+        _step_new++;
+        return;
+    }
+    if (flag == -1)
+    {
+        /* flag = -1 なら初期化 */
+        _step_new = 0;
+        return;
+    }
 
     auto itr = find_if(memory_.rbegin(), memory_.rend(),
                        [](pair<size_t, Device::Sell> sell)
@@ -294,21 +311,17 @@ bool Device::flooding()
                            return sell.second.isFloodFlag();
                        });
     if (itr == memory_.rend())
-        return false;
+        return;
 
-    auto &sell = itr->second;
-    if (sell.getFloodStep() == steps + 1)
-        return false;
-
-    size_t data_id = sell.getDataId();
+    auto &data_in_sell = itr->second;
+    if (data_in_sell.getFloodStep() > _step_new)
+        return;
 
     for (auto cntd : getConnectedDeviceId())
-        if (cntd != sell.getSenderId())
-            sendPacket(cntd, makePacket(sell.getData(), true, steps + 1));
+        if (cntd != data_in_sell.getSenderId())
+            sendPacket(cntd, makePacket(data_in_sell.getData(), true, _step_new + 1));
 
-    memory_.at(data_id).markFlagInvalid();
-
-    return true;
+    data_in_sell.markFlagInvalid();
 }
 
 /*!
@@ -321,19 +334,14 @@ void Device::sendHello()
 }
 
 /*!
- * @brief ペアリング済みのデバイスオブジェクトを取得
+ * @brief ペアリング済みのデバイスの参照を取得
  * @param id 対象デバイスのID
- * @return デバイスオブジェクト
+ * @return デバイスオブジェクトの参照
  */
-Device *Device::getPairedDevice(const int id)
+Device &Device::getPairedDevice(const int id)
 {
-    if (!paired_devices_.count(id))
-        return nullptr;
-
-    return paired_devices_.at(id);
+    return *paired_devices_.at(id);
 }
-
-void Device::increaseFloodSteps() { flood_steps_++; }
 
 /*!
  * @brief デバイスが自身かどうか取得
@@ -379,6 +387,7 @@ pair<size_t, Var> Device::assignIdToData(const Var data,
  * @param sender_id 送信元デバイスのID
  * @param data 送信データ
  * @param flood_flag フラッディングフラグ デフォルト値: false
+ * @param flood_step ホップ数 デフォルト値: 0
  */
 Device::Sell::Sell(const int sender_id, const pair<size_t, Var> idata,
                    const bool flood_flag, const int flood_step)
@@ -389,18 +398,39 @@ Device::Sell::Sell(const int sender_id, const pair<size_t, Var> idata,
 {
 }
 
+/*!
+ * @return 送信元デバイスのID
+ */
 int Device::Sell::getSenderId() const { return sender_id_; }
 
+/*!
+ * @return データ識別子
+ */
 size_t Device::Sell::getDataId() const { return idata_.first; }
 
+/*!
+ * @return 識別子付きデータ
+ */
 pair<size_t, Var> Device::Sell::getData() const { return idata_; }
 
+/*!
+ * @return フラッディングホップ数
+ */
 int Device::Sell::getFloodStep() const { return flood_step_; }
 
+/*!
+ * @return フラッディングフラグ
+ */
 bool Device::Sell::isFloodFlag() const { return flood_flag_; }
 
+/*!
+ * @brief フラッディングフラグを立てる
+ */
 void Device::Sell::markFlagValid() { flood_flag_ = true; }
 
+/*!
+ * @brief フラッディングフラグを下ろす
+ */
 void Device::Sell::markFlagInvalid() { flood_flag_ = false; }
 
 /* パケットクラス */
@@ -419,7 +449,7 @@ Packet::Packet(const int sender_id, const int packet_id,
     : sender_id_{sender_id},
       packet_id_{packet_id},
       seq_num_{seq_num},
-      data_{data},
+      idata_{data},
       flood_flag_{flood_flag},
       flood_step_{flood_step}
 {
@@ -443,7 +473,7 @@ int Packet::getSeqNum() const { return seq_num_; }
 /*!
  * @return 送信データ
  */
-pair<size_t, Var> Packet::getData() const { return data_; }
+pair<size_t, Var> Packet::getData() const { return idata_; }
 
 /*!
  * @return フラッディングフラグ

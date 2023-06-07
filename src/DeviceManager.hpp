@@ -30,7 +30,6 @@ private:
 
     /*すべてのデバイス */
     map<int, Node> nodes_;
-    set<int> devices_have_data_;
 
     /* メルセンヌ・ツイスタ */
     mt19937 mt_;
@@ -60,8 +59,7 @@ public:
     void updatePisition(const int id);
 
     void startFlooding(const int id);
-    int getNumDevicesHaveData(size_t data_id);
-    int showDevicesGetData(size_t data_id);
+    int aggregateDevicesGetData(size_t data_id, set<int> &devices_have_data);
 
     static double getMaxComDistance() { return max_com_distance_; }
 
