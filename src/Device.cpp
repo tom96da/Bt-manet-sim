@@ -43,7 +43,7 @@ int Device::getNumConnected() const { return connected_devices_.size(); }
 set<int> Device::getPairedDeviceId() const
 {
     set<int> paired_devices_id;
-    for (const auto paired_device : paired_devices_)
+    for (const auto &paired_device : paired_devices_)
         paired_devices_id.emplace(paired_device.first);
 
     return paired_devices_id;
@@ -125,7 +125,7 @@ void Device::pairing(Device &another_device)
     if (this->isPaired(another_device.getId()))
         return;
 
-    this->paired_devices_.emplace(another_device.getId(), &another_device);
+    this->paired_devices_.emplace(another_device.getId(), another_device);
 }
 
 /*!
@@ -340,7 +340,7 @@ void Device::sendHello()
  */
 Device &Device::getPairedDevice(const int id)
 {
-    return *paired_devices_.at(id);
+    return paired_devices_.at(id);
 }
 
 /*!

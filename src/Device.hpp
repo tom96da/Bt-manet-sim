@@ -34,7 +34,7 @@ private:
     /* 累計パケット生成数 */
     mutable int num_packet_made_;
     /* ペアリング登録済みデバイス */
-    map<int, Device *> paired_devices_;
+    map<int, Device &> paired_devices_;
     /* 接続中デバイス */
     set<int> connected_devices_;
     /* ルーティングテーブル */
