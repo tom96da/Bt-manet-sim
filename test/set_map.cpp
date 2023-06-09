@@ -1,7 +1,7 @@
 /*!
  * @file set_map.cpp
  * @author tom96da
- * @brief setとmapの最大値取得
+ * @brief setとmapの習得
  * @date 2023-05-30
  */
 
@@ -9,6 +9,21 @@
 #include <map>
 
 using namespace std;
+
+class MyClass
+{
+private:
+    int id_;
+
+public:
+    MyClass(int id)
+        : id_{id} {}
+
+    bool operator<(const MyClass &right) const
+    {
+        return this->id_ < right.id_;
+    }
+};
 
 int main()
 {
@@ -24,5 +39,15 @@ int main()
         {3, 4.0}};
     auto t = myMap.emplace(6, 7.4);
     auto maxMap = (*myMap.rbegin()).first;
+
+    set<MyClass> myClassSet;
+    myClassSet.emplace(1);
+    myClassSet.emplace(3);
+
+    map<MyClass, int> myClassMap;
+    myClassMap.emplace(MyClass(1), 2);
+    myClassMap.emplace(MyClass(3), 4);
+    auto l = myClassMap.at(MyClass(3));
+
     return 0;
 }
