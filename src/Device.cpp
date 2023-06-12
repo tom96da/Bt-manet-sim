@@ -8,11 +8,12 @@
 /*!
  * @brief コンストラクタ
  * @param id デバイスID
- * @param max_connections 最大接続数 デフォルト値: 6
+ * @param willingness willingness デフォルト値: 3
  */
-Device::Device(int id, int max_connections)
+Device::Device(const int id, const int willingness)
     : id_(id),
-      max_connections_(max_connections),
+      max_connections_(MAX_CONNECTIONS),
+      willingness_{willingness},
       num_packet_made_{0}
 {
 }
@@ -26,6 +27,8 @@ int Device::getId() const { return id_; }
  * @return デバイス名
  */
 string Device::getName() const { return "device[" + to_string(getId()) + "]"; }
+
+int Device::getWillingness() const { return willingness_; }
 
 /*!
  * @return ペアリング済みデバイス数
@@ -272,6 +275,15 @@ void Device::receivePacket(const Packet &packet)
 }
 
 /*!
+ * @brief 接続中のデバイスにhello!を送信
+ */
+void Device::sendHello()
+{
+    for (auto id_cntd : getConnectedDeviceId())
+        sendPacket(id_cntd, makePacket(static_cast<string>("hello!")));
+}
+
+/*!
  * @brief フラッディングするデータを作成
  * @return 作成したデータの識別子
  */
@@ -317,20 +329,20 @@ void Device::flooding(const int flag)
     if (data_in_sell.getFloodStep() > _step_new)
         return;
 
-    for (auto cntd : getConnectedDeviceId())
-        if (cntd != data_in_sell.getSenderId())
-            sendPacket(cntd, makePacket(data_in_sell.getData(), true, _step_new + 1));
+    for (auto id_cntd : getConnectedDeviceId())
+        if (id_cntd != data_in_sell.getSenderId())
+            sendPacket(id_cntd, makePacket(data_in_sell.getData(), true, _step_new + 1));
 
     data_in_sell.markFlagInvalid();
 }
 
-/*!
- * @brief 接続中のデバイスにhello!を送信
- */
-void Device::sendHello()
+void Device::makeMPR()
 {
-    for (auto cntd : getConnectedDeviceId())
-        sendPacket(cntd, makePacket(static_cast<string>("hello!")));
+    MPR_.clear();
+
+    multimap<int, int, greater<int>> neighbors;
+    for (auto id_cntd : getConnectedDeviceId())
+        neighbors.emplace(getPairedDevice(id_cntd).getWillingness(), id_cntd);
 }
 
 /*!
@@ -499,4 +511,9 @@ namespace PacketCounter
      * @return 新規パケットID
      */
     int getNewSequenceNum() { return num_total_packe++; }
+
+    void showTotalPacket()
+    {
+        std::cout << "total packet: " << pcnt::getTotalPacket() << std::endl;
+    }
 }

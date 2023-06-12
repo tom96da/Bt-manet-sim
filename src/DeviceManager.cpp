@@ -17,15 +17,16 @@ double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
 /*!
  * @brief コンストラクタ
  * @param field_size フィールドサイズ
- * @param init_num_devices デバイス数 デフォルト値: 0
+ * @param init_num_devices 初期デバイス数 デフォルト値: 0
  */
 DeviceManager::DeviceManager(double field_size, int init_num_devices)
     : field_size_{field_size},
       mt_{random_device{}()},
-      position_random_(0.0, field_size_),
-      move_random_(0.0, 2 * M_PI),
-      move_randn_(0, 0.3),
-      bias_random_(-0.4, 0.4)
+      position_random_{0.0, field_size_},
+      move_random_{0.0, 2 * M_PI},
+      move_randn_{0, 0.3},
+      bias_random_{-0.4, 0.4},
+      willingness_random_{1, 5}
 {
     addDevices(init_num_devices);
 }
@@ -62,10 +63,15 @@ pair<double, double> &DeviceManager::getPosition(const int id)
  */
 void DeviceManager::addDevices(int num_devices)
 {
-    int pre_num_devices = nodes_.size();
-    for (int id = pre_num_devices; id < pre_num_devices + num_devices; id++)
+    int device_id_next = 0;
+    if (!nodes_.empty())
     {
-        nodes_.emplace(id, Node(id));
+        device_id_next = nodes_.rbegin()->first + 1;
+    }
+
+    for (int id = device_id_next; id < device_id_next + num_devices; id++)
+    {
+        nodes_.emplace(id, Node(id, willingness_random_(mt_)));
         nodes_.at(id).setBias(bias_random_(mt_), bias_random_(mt_));
         nodes_.at(id).setPositon(position_random_(mt_), position_random_(mt_));
     }
@@ -130,7 +136,6 @@ void DeviceManager::connectDevices(const int id_1, const int id_2)
  */
 void DeviceManager::disconnectDevices(const int id_1, const int id_2)
 {
-
     if (getDistance(id_1, id_2) <= max_com_distance_)
         return;
     if (getDistance(id_1, id_2) < 0)
@@ -141,10 +146,20 @@ void DeviceManager::disconnectDevices(const int id_1, const int id_2)
 }
 
 /*!
+ * @brief 離れたデバイスとの接続を切る
+ * @param id デバイスID
+ */
+void DeviceManager::disconnectDevices(const int id)
+{
+    for (auto &cntd : getDeviceById(id).getConnectedDeviceId())
+        disconnectDevices(id, cntd);
+}
+
+/*!
  * @brief 座標の更新
  * @param id デバイスID
  */
-void DeviceManager::updatePisition(const int id)
+void DeviceManager::updatePosition(const int id)
 {
     if (!nodes_.count(id))
         return;
@@ -176,11 +191,25 @@ void DeviceManager::updatePisition(const int id)
 }
 
 /*!
+ * @brief すべてのデバイスの座標の更新
+ */
+void DeviceManager::updatePositionAll()
+{
+    for (auto id : getDevicesList())
+        updatePosition(id);
+    setDevices();
+}
+
+/*!
  * @brief デバイスをペアリングおよび接続する
  */
 void DeviceManager::setDevices()
 {
     vector<int> list_1{getDevicesList()};
+
+    for (auto const id : list_1)
+        disconnectDevices(id);
+
     shuffle(list_1.begin(), list_1.end(), mt_);
 
     auto list_2 = list_1;
@@ -348,9 +377,10 @@ bool DeviceManager::isConnected(const int id_1, const int id_2)
 /*!
  * @brief コンストラクタ
  * @param id デバイスID
+ * @param willingness willingness
  */
-DeviceManager::Node::Node(const int id)
-    : device_{id},
+DeviceManager::Node::Node(const int id, const int willingness)
+    : device_{id, willingness},
       bias_{0.0, 0.0},
       position_{0.0, 0.0}
 {

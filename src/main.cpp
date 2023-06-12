@@ -39,65 +39,21 @@ int main()
         }
     };
 
-    auto nextPos = [&]()
-    {
-        for (int id = 0; id < num_dev; id++)
-            mgr.updatePisition(id);
-    };
-
-    auto showPaired = [&](int id)
-    {
-        auto dev = mgr.getDeviceById(id);
-        auto pards = dev.getPairedDeviceId();
-        std::cout << dev.getName() << " paired with ";
-        for (auto pard : pards)
-            std::cout << pard << ", ";
-        std::cout << endl;
-    };
-
-    auto showConnected = [&](int id)
-    {
-        auto dev = mgr.getDeviceById(id);
-        auto cntds = dev.getConnectedDeviceId();
-        std::cout << dev.getName() << " connected with ";
-        for (auto cntd : cntds)
-            std::cout << cntd << ", ";
-        std::cout << endl;
-    };
-
-    auto showTotalPacket = [&]()
-    {
-        std::cout << "total packet: " << pcnt::getTotalPacket() << endl;
-    };
-
     auto doSim = [&](const int frames)
     {
-        // newCsv();
-        int f = 0;
-        // auto pbar_frames = thread(
-        //     [&]()
-        //     {
-        //         auto p = PBar(frames, f);
-        //         // p.erase();
-        //     });
-
-        for (f = 0; f < frames; f++)
+        newCsv();
+        mgr.setDevices();
+        for (int f = 0; f < frames; f++)
         {
-            mgr.setDevices();
-
-            // writeCsv();
-            // nextPos();
+            writeCsv();
+            // mgr.updatePositionAll();
         }
-        // pbar_frames.join();
+        // mgr.startFlooding(3);
     };
 
     doSim(1);
 
-    // showPaired(3);
-    // showConnected(3);
-
-    mgr.startFlooding(3);
-    showTotalPacket();
+    // pcnt::showTotalPacket();
 
     return 0;
 }

@@ -42,6 +42,8 @@ private:
     normal_distribution<> move_randn_;
     /* 一様実数分布 バイアス */
     uniform_real_distribution<> bias_random_;
+    /* 一様分布 willingness */
+    uniform_int_distribution<> willingness_random_;
 
 public:
     DeviceManager(double field_size, int init_num_devices = 0);
@@ -56,8 +58,10 @@ public:
     void unpairDevices(const int id_1, const int id_2);
     void connectDevices(const int id_1, const int id_2);
     void disconnectDevices(const int id_1, const int id_2);
+    void disconnectDevices(const int id);
 
-    void updatePisition(const int id);
+    void updatePosition(const int id);
+    void updatePositionAll();
 
     void setDevices();
     void startFlooding(const int id);
@@ -75,6 +79,9 @@ private:
     bool isConnected(const int id_1, const int id_2);
 };
 
+/* デバイスマネージャー クラス */
+using MGR = DeviceManager;
+
 /* ノード クラス */
 class DeviceManager::Node
 {
@@ -87,7 +94,7 @@ private:
     pair<double, double> position_;
 
 public:
-    Node(const int id);
+    Node(const int id, const int willingness = 3);
 
     Device &getDevice();
     pair<double, double> &getBias();
@@ -96,9 +103,6 @@ public:
     void setBias(double bias_x, double bias_y);
     void setPositon(double pos_x, double pos_y);
 };
-
-/* デバイスマネージャー クラス */
-using MGR = DeviceManager;
 
 #include "DeviceManager.cpp"
 

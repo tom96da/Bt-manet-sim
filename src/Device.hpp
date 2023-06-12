@@ -30,6 +30,8 @@ private:
     const int id_;
     /* 最大接続台数 */
     const int max_connections_;
+    /* willingness */
+    const int willingness_;
 
     /* 累計パケット生成数 */
     mutable int num_packet_made_;
@@ -37,6 +39,8 @@ private:
     map<int, Device &> paired_devices_;
     /* 接続中デバイス */
     set<int> connected_devices_;
+    /* MPR集合 <2hop neighbor, MPR selector>*/
+    map<int, int> MPR_;
     /* ルーティングテーブル */
     Table table_;
 
@@ -46,10 +50,11 @@ private:
     map<size_t, Sell> memory_;
 
 public:
-    Device(int id, int max_connections = MAX_CONNECTIONS);
+    Device(const int id, const int willingness);
 
     int getId() const;
     string getName() const;
+    int getWillingness() const;
 
     int getNumPaired() const;
     int getNumConnected() const;
@@ -81,10 +86,14 @@ public:
     void sendPacket(const int receiver_id, const Packet &packet);
     void receivePacket(const Packet &packet);
 
+    void sendHello();
+
     size_t makeFloodData();
     void flooding(const int flag = false);
 
-    void sendHello();
+    void requestTopology();
+    void replyTopology();
+    void makeMPR();
 
 private:
     Device &getPairedDevice(const int id);
@@ -163,6 +172,8 @@ namespace PacketCounter
 
     int getTotalPacket();
     int getNewSequenceNum();
+
+    void showTotalPacket();
 };
 
 namespace pcnt = PacketCounter;
