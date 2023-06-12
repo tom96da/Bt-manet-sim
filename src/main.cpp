@@ -20,21 +20,6 @@ int main()
     MGR mgr(field_size, num_dev);
     vector<ofstream> fs;
 
-    auto runDevice = [&](int &progress)
-    {
-        for (int id_1 = 0; id_1 < num_dev; id_1++)
-        {
-            for (int id_2 = 0; id_2 < num_dev; id_2++)
-            {
-                mgr.pairDevices(id_1, id_2);
-                mgr.connectDevices(id_1, id_2);
-                mgr.disconnectDevices(id_1, id_2);
-            }
-            // mgr.getDeviceById(id_1).sendHello();
-            progress = id_1 + 1;
-        }
-    };
-
     auto newCsv = [&]()
     {
         for (int id = 0; id < num_dev; id++)
@@ -98,17 +83,7 @@ int main()
 
         for (f = 0; f < frames; f++)
         {
-            int progress = 0;
-            // auto pbar_dev = thread(
-            //     [&]()
-            //     {
-            //         auto p = PBar(num_dev, progress);
-            //         // p.erase();
-            //     });
-
-            runDevice(progress);
-
-            // pbar_dev.join();
+            mgr.setDevices();
 
             // writeCsv();
             // nextPos();

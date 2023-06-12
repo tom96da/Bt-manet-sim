@@ -10,6 +10,7 @@
 
 #include <random>
 #include <map>
+#include <vector>
 #include "Device.hpp"
 using namespace std;
 
@@ -58,12 +59,14 @@ public:
 
     void updatePisition(const int id);
 
+    void setDevices();
     void startFlooding(const int id);
     int aggregateDevicesGetData(size_t data_id, set<int> &devices_have_data);
 
     static double getMaxComDistance() { return max_com_distance_; }
 
 private:
+    vector<int> getDevicesList() const;
     pair<double, double> &getBias(const int id);
     double getDistance(const int id_1, const int id_2);
 

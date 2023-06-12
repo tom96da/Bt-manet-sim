@@ -5,8 +5,9 @@
  * @date 2023-05-15
  */
 
-#include <iostream>
 #include "DeviceManager.hpp"
+#include <iostream>
+#include <algorithm>
 
 /* 接続可能距離 */
 double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
@@ -175,6 +176,30 @@ void DeviceManager::updatePisition(const int id)
 }
 
 /*!
+ * @brief デバイスをペアリングおよび接続する
+ */
+void DeviceManager::setDevices()
+{
+    vector<int> list_1{getDevicesList()};
+    shuffle(list_1.begin(), list_1.end(), mt_);
+
+    auto list_2 = list_1;
+
+    for (const auto &id_1 : list_1)
+    {
+        for (const auto &id_2 : list_2)
+        {
+            pairDevices(id_1, id_2);
+            connectDevices(id_1, id_2);
+        }
+
+        auto itr = find(list_2.begin(), list_2.end(), id_1);
+        list_2.erase(itr);
+        shuffle(list_2.begin(), list_2.end(), mt_);
+    }
+}
+
+/*!
  * @brief フラッディングを開始する
  * @param id 開始デバイスのID
  * @return データ識別子
@@ -236,6 +261,18 @@ int DeviceManager::aggregateDevicesGetData(size_t data_id,
     std::cout << endl;
 
     return devices_have_data.size();
+}
+
+/*!
+ * @return デバイスIDのリスト
+ */
+vector<int> DeviceManager::getDevicesList() const
+{
+    vector<int> list;
+    for (auto &node : nodes_)
+        list.emplace_back(node.first);
+
+    return list;
 }
 
 /*!
