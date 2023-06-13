@@ -64,6 +64,7 @@ public:
     void updatePositionAll();
 
     void setDevices();
+    void sendHello();
     void startFlooding(const int id);
     int aggregateDevicesGetData(size_t data_id, set<int> &devices_have_data);
 

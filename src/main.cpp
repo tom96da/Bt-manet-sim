@@ -39,21 +39,50 @@ int main()
         }
     };
 
+    auto showMPR = [&](int id)
+    {
+        auto dev = mgr.getDeviceById(id);
+        auto cntds = dev.getConnectedDeviceId();
+        std::cout << dev.getName() << " connected with ";
+        for (auto cntd : cntds)
+            std::cout << cntd << ", ";
+        std::cout << std::endl;
+        auto MPR = dev.getMPR();
+        for (auto &&cntd : cntds)
+        {
+            auto dev__ = mgr.getDeviceById(cntd);
+            std::cout << dev__.getName()
+                      << [&]
+            {
+                if (MPR.count(cntd))
+                    return "*";
+
+                return " ";
+            }() << " connected with ";
+            for (auto &&cntd__ : dev__.getConnectedDeviceId())
+                std::cout << cntd__ << ", ";
+            std::cout << std::endl;
+        }
+    };
+
     auto doSim = [&](const int frames)
     {
         newCsv();
         mgr.setDevices();
+        mgr.sendHello();
         for (int f = 0; f < frames; f++)
         {
             writeCsv();
             // mgr.updatePositionAll();
+            mgr.getDeviceById(0).makeMPR();
         }
-        // mgr.startFlooding(3);
+        // mgr.startFlooding(45);
     };
 
     doSim(1);
+    showMPR(0);
 
-    // pcnt::showTotalPacket();
+    pcnt::showTotalPacket();
 
     return 0;
 }

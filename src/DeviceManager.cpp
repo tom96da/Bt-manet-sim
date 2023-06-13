@@ -205,7 +205,7 @@ void DeviceManager::updatePositionAll()
  */
 void DeviceManager::setDevices()
 {
-    vector<int> list_1{getDevicesList()};
+    vector<int> &&list_1{getDevicesList()};
 
     for (auto const id : list_1)
         disconnectDevices(id);
@@ -214,9 +214,9 @@ void DeviceManager::setDevices()
 
     auto list_2 = list_1;
 
-    for (const auto &id_1 : list_1)
+    for (const auto id_1 : list_1)
     {
-        for (const auto &id_2 : list_2)
+        for (const auto id_2 : list_2)
         {
             pairDevices(id_1, id_2);
             connectDevices(id_1, id_2);
@@ -226,6 +226,14 @@ void DeviceManager::setDevices()
         list_2.erase(itr);
         shuffle(list_2.begin(), list_2.end(), mt_);
     }
+}
+
+void DeviceManager::sendHello()
+{
+    vector<int> &&list_1{getDevicesList()};
+
+    for (auto &&id : list_1)
+        getDeviceById(id).sendHello();
 }
 
 /*!

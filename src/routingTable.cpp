@@ -17,7 +17,7 @@ RoutingTable::RoutingTable() {}
  * @param dest_id 宛先デバイスID
  * @return 次ホップデバイスID
  */
-int RoutingTable::getNextHop(int dest_id) const
+int RoutingTable::getNextHop(const int dest_id) const
 {
     auto it = table_.find(dest_id);
     if (it == table_.end())
@@ -28,7 +28,6 @@ int RoutingTable::getNextHop(int dest_id) const
 }
 
 /*!
- * @brief エントリ済みデバイスのIDを取得
  * @return エントリ済みデバイスのID
  */
 vector<int> RoutingTable::getDestinations() const
@@ -41,16 +40,25 @@ vector<int> RoutingTable::getDestinations() const
 }
 
 /*!
+ * @brief 宛先のエントリがあるかを取得
+ * @param dest_id
+ * @retval true 存在する
+ * @retval false 存在しない
+ */
+bool RoutingTable::hasEntry(const int dest_id) const { return table_.count(dest_id); }
+
+/*!
  * @brief エントリの更新
  * @param dest_id 宛先デバイスID
  * @param nextHop_id 次ホップデバイスのID
  * @param distance 次ホップデバイスの距離
  */
-void RoutingTable::updateEntry(int dest_id, int nextHop_id, double distance)
+void RoutingTable::setEntry(const int dest_id, const int nextHop_id,
+                            const double distance)
 {
     if (table_.count(dest_id))
         // 既にエントリが存在する場合は、更新する
-        table_[dest_id].updateEntry(nextHop_id, distance);
+        table_[dest_id].setEntry(nextHop_id, distance);
     else
         // エントリが存在しない場合は、新たに作成する
         table_.emplace(dest_id, Entry(nextHop_id, distance));
@@ -60,7 +68,7 @@ void RoutingTable::updateEntry(int dest_id, int nextHop_id, double distance)
  * @brief 宛先に対するエントリを無効にする
  * @param dest_id 宛先デバイスID
  */
-void RoutingTable::markEntryInvalid(int dest_id)
+void RoutingTable::markEntryInvalid(const int dest_id)
 {
     if (table_.count(dest_id))
         table_.at(dest_id).markInvalid();
@@ -73,7 +81,7 @@ void RoutingTable::markEntryInvalid(int dest_id)
  * @param nextHop_id 次ホップデバイスのID
  * @param distance 次ホップデバイスの距離
  */
-RoutingTable::Entry::Entry(int nextHop_id, double distance)
+RoutingTable::Entry::Entry(const int nextHop_id, const double distance)
     : nextHop_id_{nextHop_id},
       distance_{distance},
       isValid_{true}
@@ -98,7 +106,7 @@ bool RoutingTable::Entry::isValid() const { return isValid_; }
  * @param nextHop_id 次のホップデバイスのID
  * @param distance 次ポップデバイスの距離
  */
-void RoutingTable::Entry::updateEntry(int nextHop_id, double distance)
+void RoutingTable::Entry::setEntry(const int nextHop_id, const double distance)
 {
     nextHop_id_ = nextHop_id;
     distance_ = distance;

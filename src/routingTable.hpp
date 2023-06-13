@@ -24,11 +24,14 @@ private:
 public:
     RoutingTable();
 
-    int getNextHop(int dest_id) const;
+    int getNextHop(const int dest_id) const;
     vector<int> getDestinations() const;
 
-    void updateEntry(int dest_id, int nextHop_id, double distance = -1.0);
-    void markEntryInvalid(int dest_id);
+    bool hasEntry(const int dest_id) const;
+
+    void setEntry(const int dest_id, const int nextHop_id,
+                  const double distance = -1.0);
+    void markEntryInvalid(const int dest_id);
 };
 
 /* 各デバイスのエントリクラス */
@@ -44,12 +47,12 @@ private:
 
 public:
     Entry() = default;
-    Entry(int nextHop_id, double distance = -1.0);
+    Entry(const int nextHop_id, const double distance = -1.0);
 
     int getNextHop() const;
     bool isValid() const;
 
-    void updateEntry(int nextHop_id, double distance = -1.0);
+    void setEntry(const int nextHop_id, const double distance = -1.0);
     void markInvalid();
 };
 
