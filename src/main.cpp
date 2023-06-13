@@ -74,13 +74,13 @@ int main()
         {
             writeCsv();
             // mgr.updatePositionAll();
-            mgr.getDeviceById(0).makeMPR();
+            mgr.makeMPR();
         }
-        // mgr.startFlooding(45);
+        mgr.startFlooding(45);
     };
 
     doSim(1);
-    showMPR(0);
+    // showMPR(0);
 
     pcnt::showTotalPacket();
 

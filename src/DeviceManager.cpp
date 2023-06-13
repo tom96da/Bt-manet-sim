@@ -228,12 +228,19 @@ void DeviceManager::setDevices()
     }
 }
 
+/*!
+ * @brief Helloパケットを送信する
+ */
 void DeviceManager::sendHello()
 {
-    vector<int> &&list_1{getDevicesList()};
-
-    for (auto &&id : list_1)
+    for (auto &&id : getDevicesList())
         getDeviceById(id).sendHello();
+}
+
+void DeviceManager::makeMPR()
+{
+    for (auto &&id : getDevicesList())
+        getDeviceById(id).makeMPR();
 }
 
 /*!
@@ -254,7 +261,7 @@ void DeviceManager::startFlooding(const int id)
     set<int> devices_have_data;
 
     size_t data_id = device_starter.makeFloodData();
-    std::cout << "start from : ";
+    // std::cout << "start from : ";
 
     while (num_devices_have_data !=
            aggregateDevicesGetData(data_id, devices_have_data))
@@ -266,7 +273,7 @@ void DeviceManager::startFlooding(const int id)
 
         num_step++;
         device_starter.flooding(1);
-        std::cout << num_step << " hop ; get data : ";
+        // std::cout << num_step << " hop ; get data : ";
     }
 
     std::cout << devices_have_data.size() << " devices have data" << endl;
@@ -292,10 +299,10 @@ int DeviceManager::aggregateDevicesGetData(size_t data_id,
         if (device.hasData(data_id))
         {
             devices_have_data.emplace(id);
-            std::cout << id << ", ";
+            // std::cout << id << ", ";
         }
     }
-    std::cout << endl;
+    // std::cout << endl;
 
     return devices_have_data.size();
 }

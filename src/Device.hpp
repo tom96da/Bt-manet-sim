@@ -147,6 +147,7 @@ public:
 
     bool isFloodFlag() const;
 
+    void setDaTaAttribute(const DataAttr data_attr);
     void markFlagValid();
     void markFlagInvalid();
 };

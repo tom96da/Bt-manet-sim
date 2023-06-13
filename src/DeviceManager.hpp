@@ -65,6 +65,7 @@ public:
 
     void setDevices();
     void sendHello();
+    void makeMPR();
     void startFlooding(const int id);
     int aggregateDevicesGetData(size_t data_id, set<int> &devices_have_data);
 

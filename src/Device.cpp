@@ -327,7 +327,8 @@ void Device::flooding(const int flag)
     auto itr = find_if(memory_.rbegin(), memory_.rend(),
                        [](pair<size_t, Device::Sell> sell)
                        {
-                           return sell.second.isFloodFlag();
+                           return sell.second.getDaTaAttribute() ==
+                                  Device::DataAttr::FLOODING;
                        });
     if (itr == memory_.rend())
         return;
@@ -353,15 +354,15 @@ void Device::makeMPR()
     /* 2ホップ隣接 <tow hop neighbor, MPR> */
     map<int, int> tow_hop_neighbors;
 
-    while (false)
+    while (true)
     {
-        auto itr = find_if(memory_.begin(), memory_.end(),
+        auto itr = find_if(memory_.rbegin(), memory_.rend(),
                            [](pair<size_t, Device::Sell> sell)
                            {
                                return sell.second.getDaTaAttribute() ==
                                       Device::DataAttr::WILLINGNESS;
                            });
-        if (itr == memory_.end())
+        if (itr == memory_.rend())
             break;
 
         auto &data_in_sell = itr->second;
@@ -371,36 +372,27 @@ void Device::makeMPR()
         neighbors.emplace(willingness, id_cntd);
         table_.setEntry(id_cntd, id_cntd);
 
-        // data_attrの書き換え処理
+        data_in_sell.setDaTaAttribute(DataAttr::NONE);
     }
-
-    for (auto id_cntd : this->getConnectedDeviceId())
-    {
-        neighbors.emplace(getPairedDevice(id_cntd).getWillingness(), id_cntd);
-        table_.setEntry(id_cntd, id_cntd);
-    }
-
-    // while (true)
-    // {
-    //     auto itr = find_if(memory_.begin(), memory_.end(),
-    //                        [](pair<size_t, Device::Sell> sell)
-    //                        {
-    //                            return sell.second.getDaTaAttribute() ==
-    //                                   Device::DataAttr::TOPOLOGY;
-    //                        });
-    //     if (itr == memory_.end())
-    //         break;
-
-    //     auto &data_in_sell = itr->second;
-    //     auto id_cntd = data_in_sell.getSenderId();
-    // }
 
     for (auto &neighbor : neighbors)
     {
         auto id_neighbor = neighbor.second;
 
-        for (auto id_tow_hop_neighbor :
-             getPairedDevice(neighbor.second).getConnectedDeviceId())
+        auto itr = find_if(memory_.rbegin(), memory_.rend(),
+                           [&](pair<size_t, Device::Sell> sell)
+                           {
+                               auto is_topology = sell.second.getDaTaAttribute() ==
+                                                  Device::DataAttr::TOPOLOGY;
+                               auto is_id = sell.second.getSenderId() == id_neighbor;
+                               return is_topology & is_id;
+                           });
+        if (itr == memory_.rend())
+            break;
+
+        auto &data_in_sell = itr->second;
+        auto neighbor_cntds = get<set<int>>(data_in_sell.getData().second);
+        for (auto id_tow_hop_neighbor : neighbor_cntds)
         {
             if (isSelf(id_tow_hop_neighbor))
                 continue;
@@ -414,7 +406,7 @@ void Device::makeMPR()
         }
     }
 
-    for (auto two_hop_neighbor : tow_hop_neighbors)
+    for (auto &two_hop_neighbor : tow_hop_neighbors)
     {
         MPR_.emplace(two_hop_neighbor.second);
     }
@@ -521,6 +513,11 @@ bool Device::Sell::isFloodFlag() const
         return true;
 
     return false;
+}
+
+void Device::Sell::setDaTaAttribute(const DataAttr data_attr)
+{
+    data_attr_ = data_attr;
 }
 
 /*!
