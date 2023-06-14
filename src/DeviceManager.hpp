@@ -28,7 +28,6 @@ private:
 
     /* ノード クラス */
     class Node;
-
     /*すべてのデバイス */
     map<int, Node> nodes_;
 
@@ -85,11 +84,9 @@ private:
 using MGR = DeviceManager;
 
 /* ノード クラス */
-class DeviceManager::Node
+class DeviceManager::Node : public Device
 {
 private:
-    /* デバイス */
-    Device device_;
     /* 移動バイアス */
     pair<double, double> bias_;
     /* 座標 */
@@ -98,7 +95,6 @@ private:
 public:
     Node(const int id, const int willingness = 3);
 
-    Device &getDevice();
     pair<double, double> &getBias();
     pair<double, double> &getPosition();
 
