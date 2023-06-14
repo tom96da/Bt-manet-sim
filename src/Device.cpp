@@ -234,11 +234,11 @@ void Device::receiveMessage(const int sender_id, string message)
  * @param data 送信するデータ
  * @return 生成したパケット
  */
-// Device::Packet Device::makePacket(Var data) const
-// {
-//     return Packet(getId(), getNewPacketId(),
-//                   pcnt::getNewSequenceNum(), assignIdToData(data));
-// }
+Device::Packet Device::makePacket(Var data) const
+{
+    return Packet(getId(), getNewPacketId(), pcnt::getNewSequenceNum(),
+                  assignIdToData(data), DataAttr::NONE);
+}
 
 /*!
  * @brief 識別子付きデータパケットを生成する
@@ -343,7 +343,7 @@ void Device::flooding(const int flag)
                        makePacket(data_in_sell.getData(), DataAttr::FLOODING,
                                   _step_new + 1));
 
-    data_in_sell.markFlagInvalid();
+    data_in_sell.setDaTaAttribute(DataAttr::NONE);
 }
 
 void Device::makeMPR()
@@ -518,22 +518,6 @@ bool Device::Sell::isFloodFlag() const
 void Device::Sell::setDaTaAttribute(const DataAttr data_attr)
 {
     data_attr_ = data_attr;
-}
-
-/*!
- * @brief フラッディング属性を与える
- */
-void Device::Sell::markFlagValid()
-{
-    data_attr_ = DataAttr::FLOODING;
-}
-
-/*!
- * @brief フラッディング属性を外す
- */
-void Device::Sell::markFlagInvalid()
-{
-    data_attr_ = DataAttr::NONE;
 }
 
 /* パケットクラス */

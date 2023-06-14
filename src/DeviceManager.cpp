@@ -229,7 +229,7 @@ void DeviceManager::setDevices()
 }
 
 /*!
- * @brief Helloパケットを送信する
+ * @brief すべてのデバイスにHelloパケットを送信させる
  */
 void DeviceManager::sendHello()
 {
@@ -237,6 +237,9 @@ void DeviceManager::sendHello()
         getDeviceById(id).sendHello();
 }
 
+/*!
+ * @brief すべてのデバイスにMPR集合を作成させる
+ */
 void DeviceManager::makeMPR()
 {
     for (auto &&id : getDevicesList())
@@ -250,6 +253,15 @@ void DeviceManager::makeMPR()
  */
 void DeviceManager::startFlooding(const int id)
 {
+    enum WriteMode
+    {
+        DEFAULT,
+        HIDE,
+        ARRAY,
+        VISIBLE
+    };
+    WriteMode write_mode = HIDE;
+
     if (!nodes_.count(id))
         return;
     auto &device_starter = getDeviceById(id);
@@ -261,10 +273,20 @@ void DeviceManager::startFlooding(const int id)
     set<int> devices_have_data;
 
     size_t data_id = device_starter.makeFloodData();
-    // std::cout << "start from : ";
+    switch (write_mode)
+    {
+    case VISIBLE:
+        std::cout << "start from : ";
+        break;
+    case ARRAY:
+        std::cout << "[";
+        break;
+    default:
+        break;
+    }
 
     while (num_devices_have_data !=
-           aggregateDevicesGetData(data_id, devices_have_data))
+           aggregateDevices(data_id, devices_have_data, write_mode))
     {
         num_devices_have_data = devices_have_data.size();
 
@@ -273,10 +295,24 @@ void DeviceManager::startFlooding(const int id)
 
         num_step++;
         device_starter.flooding(1);
-        // std::cout << num_step << " hop ; get data : ";
-    }
 
-    std::cout << devices_have_data.size() << " devices have data" << endl;
+        switch (write_mode)
+        {
+        case VISIBLE:
+            std::cout << "\e[2D \n"
+                      << num_step << " hop : ";
+            break;
+        case ARRAY:
+            std::cout << "\e[2D],\n"
+                      << "[";
+            break;
+        default:
+            break;
+        }
+    }
+    if (write_mode != HIDE)
+        std::cout << "\r"
+                  << devices_have_data.size() << " devices have data" << endl;
 }
 
 /*!
@@ -284,8 +320,8 @@ void DeviceManager::startFlooding(const int id)
  * @param devices_have_data 集計コンテナ
  * @return データ識別子が合致するデータを保持するデバイス数
  */
-int DeviceManager::aggregateDevicesGetData(size_t data_id,
-                                           set<int> &devices_have_data)
+int DeviceManager::aggregateDevices(size_t data_id, set<int> &devices_have_data,
+                                    const int write_mode)
 {
 
     for (auto &node : nodes_)
@@ -299,10 +335,10 @@ int DeviceManager::aggregateDevicesGetData(size_t data_id,
         if (device.hasData(data_id))
         {
             devices_have_data.emplace(id);
-            // std::cout << id << ", ";
+            if (write_mode > 1)
+                std::cout << id << ", ";
         }
     }
-    // std::cout << endl;
 
     return devices_have_data.size();
 }
@@ -411,13 +447,21 @@ pair<double, double> &DeviceManager::Node::getBias() { return bias_; }
  */
 pair<double, double> &DeviceManager::Node::getPosition() { return position_; }
 
-/* バイアスを設定 */
+/*!
+ * @brief バイアスを設定
+ * @param bias_x x成分
+ * @param bias_y y成分
+ */
 void DeviceManager::Node::setBias(double bias_x, double bias_y)
 {
     bias_ = {bias_x, bias_y};
 }
 
-/* 座標を更新 */
+/*!
+ * @brief 座標を設定
+ * @param pos_x x座標
+ * @param pos_y y座標
+ */
 void DeviceManager::Node::setPositon(double pos_x, double pos_y)
 {
     position_ = {pos_x, pos_y};

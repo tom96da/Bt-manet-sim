@@ -13,6 +13,7 @@
 #include <map>
 #include <set>
 #include <variant>
+
 using namespace std;
 using Var = variant<int, double, string, set<int>, Table>;
 
@@ -86,7 +87,7 @@ public:
     void sendMessage(const int receiver_id, string message);
     void receiveMessage(const int sender_id, string message);
 
-    // Packet makePacket(Var data) const;
+    Packet makePacket(Var data) const;
     Packet makePacket(pair<size_t, Var> idata,
                       const DataAttr data_attr, const int flood_step = 0) const;
     void sendPacket(const int receiver_id, const Packet &packet);
@@ -148,8 +149,6 @@ public:
     bool isFloodFlag() const;
 
     void setDaTaAttribute(const DataAttr data_attr);
-    void markFlagValid();
-    void markFlagInvalid();
 };
 
 /* パケットクラス */

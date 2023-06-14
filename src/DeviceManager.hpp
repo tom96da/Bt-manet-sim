@@ -66,7 +66,8 @@ public:
     void sendHello();
     void makeMPR();
     void startFlooding(const int id);
-    int aggregateDevicesGetData(size_t data_id, set<int> &devices_have_data);
+    int aggregateDevices(size_t data_id, set<int> &devices_have_data,
+                         const int write_mode);
 
     static double getMaxComDistance() { return max_com_distance_; }
 
