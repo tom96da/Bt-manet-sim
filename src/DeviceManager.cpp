@@ -44,7 +44,7 @@ int DeviceManager::getNumDevices() const { return nodes_.size(); };
  */
 Device &DeviceManager::getDeviceById(const int id)
 {
-    return nodes_.at(id).getDevice();
+    return nodes_.at(id);
 }
 
 /*!
@@ -269,7 +269,7 @@ void DeviceManager::startFlooding(const int id)
         num_devices_have_data = devices_have_data.size();
 
         for (auto &node : nodes_)
-            node.second.getDevice().flooding();
+            node.second.flooding();
 
         num_step++;
         device_starter.flooding(1);
@@ -290,7 +290,7 @@ int DeviceManager::aggregateDevicesGetData(size_t data_id,
 
     for (auto &node : nodes_)
     {
-        auto &device = node.second.getDevice();
+        auto &device = node.second;
         int id = device.getId();
 
         if (devices_have_data.count(id))
@@ -395,16 +395,11 @@ bool DeviceManager::isConnected(const int id_1, const int id_2)
  * @param willingness willingness
  */
 DeviceManager::Node::Node(const int id, const int willingness)
-    : device_{id, willingness},
+    : Device{id, willingness},
       bias_{0.0, 0.0},
       position_{0.0, 0.0}
 {
 }
-
-/*!
- * @return デバイスオブジェクト
- */
-Device &DeviceManager::Node::getDevice() { return device_; }
 
 /*!
  * @return 移動バイアス
