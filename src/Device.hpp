@@ -24,6 +24,9 @@ const int MAX_CONNECTIONS = 6;
 class Device
 {
 private:
+    /* 累計パケット数 */
+    static int num_total_packe_;
+
     /* デバイスID */
     const int id_;
     /* 最大接続台数 */
@@ -55,6 +58,10 @@ private:
 
 public:
     Device(const int id, const int willingness);
+
+    static int getTotalPacket();
+    static int getNewSequenceNum();
+    static void showTotalPacket();
 
     int getId() const;
     string getName() const;
@@ -189,20 +196,6 @@ public:
     bool isFloodFlag() const;
     int getFloodStep() const;
 };
-
-/* パケットカウンタ */
-namespace PacketCounter
-{
-    /* 累計パケット数 */
-    extern int num_total_packe;
-
-    int getTotalPacket();
-    int getNewSequenceNum();
-
-    void showTotalPacket();
-};
-
-namespace pcnt = PacketCounter;
 
 #include "Device.cpp"
 

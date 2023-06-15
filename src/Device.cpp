@@ -18,6 +18,27 @@ Device::Device(const int id, const int willingness)
 {
 }
 
+/* 累計パケット数 */
+int Device::num_total_packe_ = 0;
+
+/*!
+ * @return 累計パケット数
+ */
+int Device::getTotalPacket() { return num_total_packe_; }
+
+/*!
+ * @return 新規パケットID
+ */
+int Device::getNewSequenceNum() { return num_total_packe_++; }
+
+/*!
+ * @brief 累計パケット数の出力
+ */
+void Device::showTotalPacket()
+{
+    std::cout << "total packet: " << getTotalPacket() << std::endl;
+}
+
 /*!
  * @return デバイスID
  */
@@ -251,7 +272,7 @@ void Device::receiveMessage(const int sender_id, string message)
  */
 Device::Packet Device::makePacket(Var data) const
 {
-    return Packet(getId(), getNewPacketId(), pcnt::getNewSequenceNum(),
+    return Packet(getId(), getNewPacketId(), getNewSequenceNum(),
                   assignIdToData(data), DataAttr::NONE);
 }
 
@@ -265,7 +286,7 @@ Device::Packet Device::makePacket(Var data) const
 Device::Packet Device::makePacket(pair<size_t, Var> idata,
                                   const DataAttr data_attr, const int flood_step) const
 {
-    return Packet(getId(), getNewPacketId(), pcnt::getNewSequenceNum(),
+    return Packet(getId(), getNewPacketId(), getNewSequenceNum(),
                   idata, data_attr, flood_step);
 }
 
@@ -642,24 +663,3 @@ bool Device::Packet::isFloodFlag() const
  * @return フラッディングステップ数
  */
 int Device::Packet::getFloodStep() const { return flood_step_; }
-
-/* パケットカウンタ */
-namespace PacketCounter
-{
-    int num_total_packe = 0;
-
-    /*!
-     * @return 累計パケット数
-     */
-    int getTotalPacket() { return num_total_packe; }
-
-    /*!
-     * @return 新規パケットID
-     */
-    int getNewSequenceNum() { return num_total_packe++; }
-
-    void showTotalPacket()
-    {
-        std::cout << "total packet: " << pcnt::getTotalPacket() << std::endl;
-    }
-}

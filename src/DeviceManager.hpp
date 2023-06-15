@@ -44,8 +44,13 @@ private:
     /* 一様分布 willingness */
     uniform_int_distribution<> willingness_random_;
 
+    /* 出力モード */
+    enum class WriteMode;
+
 public:
     DeviceManager(double field_size, int init_num_devices = 0);
+
+    static double getMaxComDistance();
 
     int getNumDevices() const;
     Device &getDeviceById(const int id);
@@ -71,9 +76,7 @@ public:
 
     void startFlooding(const int id);
     int aggregateDevices(size_t data_id, set<int> &devices_have_data,
-                         const int write_mode);
-
-    static double getMaxComDistance() { return max_com_distance_; }
+                         const WriteMode write_mode);
 
 private:
     vector<int> getDevicesList() const;
@@ -105,6 +108,15 @@ public:
 
     void setBias(double bias_x, double bias_y);
     void setPositon(double pos_x, double pos_y);
+};
+
+/* 出力モード列挙型 */
+enum class DeviceManager::WriteMode
+{
+    DEFAULT,
+    HIDE,
+    ARRAY,
+    VISIBLE
 };
 
 #include "DeviceManager.cpp"

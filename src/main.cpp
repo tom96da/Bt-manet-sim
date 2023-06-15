@@ -72,19 +72,28 @@ int main()
         mgr.setDevices();
         mgr.sendHello();
         mgr.makeMPR();
-        for (int f = 0; f < frames; f++)
+
+        int f = 0;
+        auto pbar = thread(
+            [&]()
+            {
+                auto p = PBar(frames, f);
+                p.erase();
+            });
+        for (f = 0; f < frames; f++)
         {
             mgr.sendTable();
             mgr.makeTable();
             // mgr.updatePositionAll();
         }
         // mgr.startFlooding(45);
+        pbar.join();
     };
 
     doSim(1);
     // showMPR(0);
 
-    pcnt::showTotalPacket();
+    Device::showTotalPacket();
 
     return 0;
 }

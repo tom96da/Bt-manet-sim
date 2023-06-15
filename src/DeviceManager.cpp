@@ -9,9 +9,6 @@
 #include <iostream>
 #include <algorithm>
 
-/* 接続可能距離 */
-double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
-
 /* デバイスマネージャー クラス */
 
 /*!
@@ -30,6 +27,14 @@ DeviceManager::DeviceManager(double field_size, int init_num_devices)
 {
     addDevices(init_num_devices);
 }
+
+/* 接続可能距離 */
+double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
+
+/*!
+ * @return 接続可能距離
+ */
+double DeviceManager::getMaxComDistance() { return max_com_distance_; }
 
 /*!
  * @brief 管理下のデバイス数 取得
@@ -271,14 +276,7 @@ void DeviceManager::makeTable()
  */
 void DeviceManager::startFlooding(const int id)
 {
-    enum WriteMode
-    {
-        DEFAULT,
-        HIDE,
-        ARRAY,
-        VISIBLE
-    };
-    WriteMode write_mode = HIDE;
+    MGR::WriteMode write_mode = WriteMode::DEFAULT;
 
     if (!nodes_.count(id))
         return;
@@ -293,10 +291,10 @@ void DeviceManager::startFlooding(const int id)
     size_t data_id = device_starter.makeFloodData();
     switch (write_mode)
     {
-    case VISIBLE:
+    case WriteMode::VISIBLE:
         std::cout << "start from : ";
         break;
-    case ARRAY:
+    case WriteMode::ARRAY:
         std::cout << "[";
         break;
     default:
@@ -316,11 +314,11 @@ void DeviceManager::startFlooding(const int id)
 
         switch (write_mode)
         {
-        case VISIBLE:
+        case WriteMode::VISIBLE:
             std::cout << "\e[2D \n"
                       << num_step << " hop : ";
             break;
-        case ARRAY:
+        case WriteMode::ARRAY:
             std::cout << "\e[2D],\n"
                       << "[";
             break;
@@ -328,7 +326,7 @@ void DeviceManager::startFlooding(const int id)
             break;
         }
     }
-    if (write_mode != HIDE)
+    if (write_mode != WriteMode::HIDE)
         std::cout << "\r"
                   << devices_have_data.size() << " devices have data" << endl;
 }
@@ -339,7 +337,7 @@ void DeviceManager::startFlooding(const int id)
  * @return データ識別子が合致するデータを保持するデバイス数
  */
 int DeviceManager::aggregateDevices(size_t data_id, set<int> &devices_have_data,
-                                    const int write_mode)
+                                    const WriteMode write_mode)
 {
 
     for (auto &node : nodes_)
@@ -353,7 +351,7 @@ int DeviceManager::aggregateDevices(size_t data_id, set<int> &devices_have_data,
         if (device.hasData(data_id))
         {
             devices_have_data.emplace(id);
-            if (write_mode > 1)
+            if (static_cast<int>(write_mode) > 1)
                 std::cout << id << ", ";
         }
     }
