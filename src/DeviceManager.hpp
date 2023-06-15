@@ -64,7 +64,11 @@ public:
 
     void setDevices();
     void sendHello();
+    void sendTable();
+
     void makeMPR();
+    void makeTable();
+
     void startFlooding(const int id);
     int aggregateDevices(size_t data_id, set<int> &devices_have_data,
                          const int write_mode);

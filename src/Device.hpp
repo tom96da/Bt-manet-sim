@@ -64,6 +64,7 @@ public:
     int getNumConnected() const;
     set<int> getPairedDeviceId() const;
     set<int> getConnectedDeviceId() const;
+    Table getTable() const;
 
     int getNumPacket() const;
     int getNewPacketId() const;
@@ -94,11 +95,13 @@ public:
     void receivePacket(const Packet &packet);
 
     void sendHello();
+    void sendTable();
 
     size_t makeFloodData();
     void flooding(const int flag = false);
 
     void makeMPR();
+    void makeTable();
 
 private:
     Device &getPairedDevice(const int id);
@@ -141,7 +144,8 @@ public:
     int getSenderId() const;
     size_t getDataId() const;
 
-    pair<size_t, Var> getData() const;
+    Var getData() const;
+    pair<size_t, Var> getDataWithId() const;
     DataAttr getDaTaAttribute() const;
 
     int getFloodStep() const;
@@ -179,7 +183,7 @@ public:
     int getPacketId() const;
     int getSeqNum() const;
 
-    pair<size_t, Var> getData() const;
+    pair<size_t, Var> getDataWithId() const;
     DataAttr getDaTaAttribute() const;
 
     bool isFloodFlag() const;

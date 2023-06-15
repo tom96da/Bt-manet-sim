@@ -13,7 +13,14 @@
 RoutingTable::RoutingTable() {}
 
 /*!
- * @brief 宛先に対する次ホップデバイスIDを取得
+ * @return 総エントリ数
+ */
+int RoutingTable::getNumEntry() const
+{
+    return table_.size();
+}
+
+/*!
  * @param dest_id 宛先デバイスID
  * @return 次ホップデバイスID
  */
@@ -25,6 +32,14 @@ int RoutingTable::getNextHop(const int dest_id) const
         return -1;
 
     return it->second.getNextHop();
+}
+
+/*!
+ * @return ルーティングテーブル
+ */
+map<int, Table::Entry> RoutingTable::getTable() const
+{
+    return table_;
 }
 
 /*!
@@ -54,11 +69,14 @@ bool RoutingTable::hasEntry(const int dest_id) const { return table_.count(dest_
  * @param distance 次ホップデバイスの距離
  */
 void RoutingTable::setEntry(const int dest_id, const int nextHop_id,
-                            const double distance)
+                            const int distance)
 {
     if (table_.count(dest_id))
-        // 既にエントリが存在する場合は、更新する
-        table_[dest_id].setEntry(nextHop_id, distance);
+        // 既にエントリが存在する場合は、距離が近ければ更新する
+        if (table_.at(dest_id).getDistance() > distance)
+            table_[dest_id].setEntry(nextHop_id, distance);
+        else
+            ;
     else
         // エントリが存在しない場合は、新たに作成する
         table_.emplace(dest_id, Entry(nextHop_id, distance));
@@ -81,7 +99,7 @@ void RoutingTable::markEntryInvalid(const int dest_id)
  * @param nextHop_id 次ホップデバイスのID
  * @param distance 次ホップデバイスの距離
  */
-RoutingTable::Entry::Entry(const int nextHop_id, const double distance)
+RoutingTable::Entry::Entry(const int nextHop_id, const int distance)
     : nextHop_id_{nextHop_id},
       distance_{distance},
       isValid_{true}
@@ -89,10 +107,17 @@ RoutingTable::Entry::Entry(const int nextHop_id, const double distance)
 }
 
 /*!
- * @brief 次ポップデバイスのIDを取得
  * @return 次ホップデバイスのID
  */
 int RoutingTable::Entry::getNextHop() const { return nextHop_id_; }
+
+/*!
+ * @return マルチホップ距離
+ */
+int RoutingTable::Entry::getDistance() const
+{
+    return distance_;
+}
 
 /*!
  * @brief エントリが無効か取得
@@ -106,7 +131,7 @@ bool RoutingTable::Entry::isValid() const { return isValid_; }
  * @param nextHop_id 次のホップデバイスのID
  * @param distance 次ポップデバイスの距離
  */
-void RoutingTable::Entry::setEntry(const int nextHop_id, const double distance)
+void RoutingTable::Entry::setEntry(const int nextHop_id, const int distance)
 {
     nextHop_id_ = nextHop_id;
     distance_ = distance;

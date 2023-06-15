@@ -233,8 +233,17 @@ void DeviceManager::setDevices()
  */
 void DeviceManager::sendHello()
 {
-    for (auto &&id : getDevicesList())
+    for (auto &id : getDevicesList())
         getDeviceById(id).sendHello();
+}
+
+/*!
+ * @brief すべてのデバイスにルーティングテーブルを送信させる
+ */
+void DeviceManager::sendTable()
+{
+    for (auto &id : getDevicesList())
+        getDeviceById(id).sendTable();
 }
 
 /*!
@@ -242,8 +251,17 @@ void DeviceManager::sendHello()
  */
 void DeviceManager::makeMPR()
 {
-    for (auto &&id : getDevicesList())
+    for (auto &id : getDevicesList())
         getDeviceById(id).makeMPR();
+}
+
+/*!
+ * @brief すべてのデバイスにルーティングテーブルを作成させる
+ */
+void DeviceManager::makeTable()
+{
+    for (auto &id : getDevicesList())
+        getDeviceById(id).makeTable();
 }
 
 /*!

@@ -26,8 +26,15 @@ int Device::getId() const { return id_; }
 /*!
  * @return デバイス名
  */
-string Device::getName() const { return "device[" + to_string(getId()) + "]"; }
+string Device::getName() const
+{
+    return "device[" + string(2 - to_string(getId()).length(), '0') +
+           to_string(getId()) + "]";
+}
 
+/*!
+ * @return willingness
+ */
 int Device::getWillingness() const { return willingness_; }
 
 /*!
@@ -61,6 +68,14 @@ set<int> Device::getConnectedDeviceId() const
 }
 
 /*!
+ * @return ルーティングテーブル
+ */
+Table Device::getTable() const
+{
+    return table_;
+}
+
+/*!
  * @return 累計パケット生成数
  */
 int Device::getNumPacket() const { return num_packet_made_; }
@@ -83,7 +98,7 @@ set<int> Device::getMPR() const { return MPR_; }
 pair<size_t, Var> Device::loadData(const size_t data_id) const
 {
 
-    return memory_.at(data_id).getData();
+    return memory_.at(data_id).getDataWithId();
 }
 
 /*!
@@ -195,7 +210,7 @@ void Device::saveData(pair<size_t, Var> idata,
  */
 void Device::saveData(const Packet &packet)
 {
-    pair<size_t, Var> idata = packet.getData();
+    pair<size_t, Var> idata = packet.getDataWithId();
     size_t data_id = idata.first;
     if (memory_.count(data_id))
         return;
@@ -281,12 +296,23 @@ void Device::sendHello()
 {
     auto id_cntds = getConnectedDeviceId();
 
-    for (auto id_cntd : id_cntds)
+    for (auto &id_cntd : id_cntds)
     {
         sendPacket(id_cntd, makePacket(assignIdToData(getWillingness()),
                                        DataAttr::WILLINGNESS));
         sendPacket(id_cntd, makePacket(assignIdToData(id_cntds),
                                        DataAttr::TOPOLOGY));
+    }
+}
+
+/*!
+ * @brief 接続中のデバイスにルーティングテーブルを送信
+ */
+void Device::sendTable()
+{
+    for (auto &id_cntd : getConnectedDeviceId())
+    {
+        sendPacket(id_cntd, makePacket(assignIdToData(getTable()), DataAttr::TABLE));
     }
 }
 
@@ -326,10 +352,7 @@ void Device::flooding(const int flag)
 
     auto itr = find_if(memory_.rbegin(), memory_.rend(),
                        [](pair<size_t, Device::Sell> sell)
-                       {
-                           return sell.second.getDaTaAttribute() ==
-                                  Device::DataAttr::FLOODING;
-                       });
+                       { return sell.second.getDaTaAttribute() == Device::DataAttr::FLOODING; });
     if (itr == memory_.rend())
         return;
 
@@ -340,7 +363,7 @@ void Device::flooding(const int flag)
     for (auto id_cntd : getConnectedDeviceId())
         if (id_cntd != data_in_sell.getSenderId())
             sendPacket(id_cntd,
-                       makePacket(data_in_sell.getData(), DataAttr::FLOODING,
+                       makePacket(data_in_sell.getDataWithId(), DataAttr::FLOODING,
                                   _step_new + 1));
 
     data_in_sell.setDaTaAttribute(DataAttr::NONE);
@@ -356,21 +379,19 @@ void Device::makeMPR()
 
     while (true)
     {
-        auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                           [](pair<size_t, Device::Sell> sell)
-                           {
-                               return sell.second.getDaTaAttribute() ==
-                                      Device::DataAttr::WILLINGNESS;
-                           });
+        auto itr =
+            find_if(memory_.rbegin(), memory_.rend(),
+                    [](pair<size_t, Device::Sell> sell)
+                    { return sell.second.getDaTaAttribute() == Device::DataAttr::WILLINGNESS; });
         if (itr == memory_.rend())
             break;
 
         auto &data_in_sell = itr->second;
         auto id_cntd = data_in_sell.getSenderId();
-        auto willingness = get<int>(data_in_sell.getData().second);
+        auto willingness = get<int>(data_in_sell.getData());
 
         neighbors.emplace(willingness, id_cntd);
-        table_.setEntry(id_cntd, id_cntd);
+        table_.setEntry(id_cntd, id_cntd, 1);
 
         data_in_sell.setDaTaAttribute(DataAttr::NONE);
     }
@@ -379,19 +400,20 @@ void Device::makeMPR()
     {
         auto id_neighbor = neighbor.second;
 
-        auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                           [&](pair<size_t, Device::Sell> sell)
-                           {
-                               auto is_topology = sell.second.getDaTaAttribute() ==
-                                                  Device::DataAttr::TOPOLOGY;
-                               auto is_id = sell.second.getSenderId() == id_neighbor;
-                               return is_topology & is_id;
-                           });
+        auto itr =
+            find_if(memory_.rbegin(), memory_.rend(),
+                    [&](pair<size_t, Device::Sell> sell)
+                    {
+                        auto is_topology =
+                            sell.second.getDaTaAttribute() == Device::DataAttr::TOPOLOGY;
+                        auto is_id = sell.second.getSenderId() == id_neighbor;
+                        return is_topology & is_id;
+                    });
         if (itr == memory_.rend())
             break;
 
         auto &data_in_sell = itr->second;
-        auto neighbor_cntds = get<set<int>>(data_in_sell.getData().second);
+        auto neighbor_cntds = get<set<int>>(data_in_sell.getData());
         for (auto id_tow_hop_neighbor : neighbor_cntds)
         {
             if (isSelf(id_tow_hop_neighbor))
@@ -402,13 +424,43 @@ void Device::makeMPR()
                 continue;
 
             tow_hop_neighbors.emplace(id_tow_hop_neighbor, id_neighbor);
-            table_.setEntry(id_tow_hop_neighbor, id_neighbor);
+            table_.setEntry(id_tow_hop_neighbor, id_neighbor, 2);
         }
     }
 
     for (auto &two_hop_neighbor : tow_hop_neighbors)
-    {
         MPR_.emplace(two_hop_neighbor.second);
+}
+
+/*!
+ * @brief ルーティングテーブルを作成する
+ */
+void Device::makeTable()
+{
+    while (true)
+    {
+        auto itr =
+            find_if(memory_.rbegin(), memory_.rend(),
+                    [](pair<size_t, Device::Sell> sell)
+                    { return sell.second.getDaTaAttribute() == Device::DataAttr::TABLE; });
+        if (itr == memory_.rend())
+            break;
+
+        auto &data_in_sell = itr->second;
+        auto &&id_sender = data_in_sell.getSenderId();
+        auto &&table_neighbor = get<Table>(data_in_sell.getData()).getTable();
+
+        for (auto &entry : table_neighbor)
+        {
+            auto id_dest = entry.first;
+            auto nexthop = id_sender;
+            auto distance = entry.second.getDistance() + 1;
+
+            if (id_dest != getId())
+                table_.setEntry(id_dest, nexthop, distance);
+        }
+
+        data_in_sell.setDaTaAttribute(DataAttr::NONE);
     }
 }
 
@@ -488,9 +540,14 @@ int Device::Sell::getSenderId() const { return sender_id_; }
 size_t Device::Sell::getDataId() const { return idata_.first; }
 
 /*!
+ * @return 識別子無しデータ
+ */
+Var Device::Sell::getData() const { return idata_.second; }
+
+/*!
  * @return 識別子付きデータ
  */
-pair<size_t, Var> Device::Sell::getData() const { return idata_; }
+pair<size_t, Var> Device::Sell::getDataWithId() const { return idata_; }
 
 /*!
  * @return データ属性
@@ -559,9 +616,9 @@ int Device::Packet::getPacketId() const { return packet_id_; }
 int Device::Packet::getSeqNum() const { return seq_num_; }
 
 /*!
- * @return 送信データ
+ * @return 識別子付き送信データ
  */
-pair<size_t, Var> Device::Packet::getData() const { return idata_; }
+pair<size_t, Var> Device::Packet::getDataWithId() const { return idata_; }
 
 /*!
  * @return データ属性

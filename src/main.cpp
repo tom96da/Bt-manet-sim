@@ -68,15 +68,17 @@ int main()
     auto doSim = [&](const int frames)
     {
         newCsv();
+        writeCsv();
         mgr.setDevices();
         mgr.sendHello();
+        mgr.makeMPR();
         for (int f = 0; f < frames; f++)
         {
-            writeCsv();
+            mgr.sendTable();
+            mgr.makeTable();
             // mgr.updatePositionAll();
-            mgr.makeMPR();
         }
-        mgr.startFlooding(45);
+        // mgr.startFlooding(45);
     };
 
     doSim(1);
