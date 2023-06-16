@@ -72,6 +72,8 @@ public:
     void sendTable();
 
     void makeMPR();
+    void showMPR(const int id);
+
     void makeTable();
 
     void startFlooding(const int id);
@@ -113,10 +115,11 @@ public:
 /* 出力モード列挙型 */
 enum class DeviceManager::WriteMode
 {
-    DEFAULT,
-    HIDE,
-    ARRAY,
-    VISIBLE
+    DEFAULT, /* デフォルト 最小限表示 */
+    HIDE,    /* 非表示 */
+    SIMPLE,  /* 簡易表示 */
+    ARRAY,   /* 配列表示 */
+    VISIBLE  /* 詳細表示 */
 };
 
 #include "DeviceManager.cpp"

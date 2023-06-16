@@ -22,12 +22,12 @@ Device::Device(const int id, const int willingness)
 int Device::num_total_packe_ = 0;
 
 /*!
- * @return 累計パケット数
+ * @return int 累計パケット数
  */
 int Device::getTotalPacket() { return num_total_packe_; }
 
 /*!
- * @return 新規パケットID
+ * @return int 新規パケットID
  */
 int Device::getNewSequenceNum() { return num_total_packe_++; }
 
@@ -40,12 +40,12 @@ void Device::showTotalPacket()
 }
 
 /*!
- * @return デバイスID
+ * @return int デバイスID
  */
 int Device::getId() const { return id_; }
 
 /*!
- * @return デバイス名
+ * @return string デバイス名
  */
 string Device::getName() const
 {
@@ -54,22 +54,22 @@ string Device::getName() const
 }
 
 /*!
- * @return willingness
+ * @return int willingness
  */
 int Device::getWillingness() const { return willingness_; }
 
 /*!
- * @return ペアリング済みデバイス数
+ * @return int ペアリング済みデバイス数
  */
 int Device::getNumPaired() const { return paired_devices_.size(); }
 
 /*!
- * @return 接続中のデバイス数
+ * @return int 接続中のデバイス数
  */
-int Device::getNumConnected() const { return connected_devices_.size(); }
+int Device::getNumConnected() const { return id_connected_devices_.size(); }
 
 /*!
- * @return ペアリング済みデバイスのIDリスト
+ * @return set<int> ペアリング済みデバイスのIDリスト
  */
 set<int> Device::getPairedDeviceId() const
 {
@@ -81,15 +81,15 @@ set<int> Device::getPairedDeviceId() const
 }
 
 /*!
- * @return 接続中デバイスのIDリスト
+ * @return set<int> 接続中デバイスのIDリスト
  */
-set<int> Device::getConnectedDeviceId() const
+set<int> Device::getConnectedDevicesId() const
 {
-    return connected_devices_;
+    return id_connected_devices_;
 }
 
 /*!
- * @return ルーティングテーブル
+ * @return RoutingTable ルーティングテーブル
  */
 Table Device::getTable() const
 {
@@ -97,24 +97,24 @@ Table Device::getTable() const
 }
 
 /*!
- * @return 累計パケット生成数
+ * @return int 累計パケット生成数
  */
 int Device::getNumPacket() const { return num_packet_made_; }
 
 /*!
- * @return 新規パケットのID
+ * @return int 新規パケットのID
  */
 int Device::getNewPacketId() const { return num_packet_made_++; }
 
 /*!
- * @return MPR集合
+ * @return set<int> MPR集合
  */
 set<int> Device::getMPR() const { return MPR_; }
 
 /*!
  * @brief メモリからデータを取得
  * @param data_id データ識別子
- * @return 該当データ
+ * @return pair<size_t, variant> 該当データ
  */
 pair<size_t, Var> Device::loadData(const size_t data_id) const
 {
@@ -124,24 +124,24 @@ pair<size_t, Var> Device::loadData(const size_t data_id) const
 
 /*!
  * @brief デバイスがペアリング登録済みか取得
- * @param another_device_id 対象デバイスのID
+ * @param id_another_device 対象デバイスのID
  * @retval true 登録済み
  * @retval false 未登録
  */
-bool Device::isPaired(const int another_device_id) const
+bool Device::isPaired(const int id_another_device) const
 {
-    return paired_devices_.count(another_device_id);
+    return paired_devices_.count(id_another_device);
 }
 
 /*!
  * @brief デバイスが接続中か取得
- * @param another_device_id 対象デバイスのID
+ * @param id_another_device 対象デバイスのID
  * @retval true 接続中
  * @retval false 未接続
  */
-bool Device::isConnected(const int another_device_id) const
+bool Device::isConnected(const int id_another_device) const
 {
-    return connected_devices_.count(another_device_id);
+    return id_connected_devices_.count(id_another_device);
 }
 
 /*!
@@ -169,60 +169,60 @@ void Device::pairing(Device &another_device)
 
 /*!
  * @brief デバイスのペアリング解除
- * @param another_device_id 相手のデバイスID
+ * @param id_another_device 相手のデバイスID
  */
-void Device::unpairing(const int another_device_id)
+void Device::unpairing(const int id_another_device)
 {
-    if (!this->isPaired(another_device_id))
+    if (!isPaired(id_another_device))
         return;
 
-    this->disconnect(another_device_id);
-    this->paired_devices_.erase(another_device_id);
+    disconnect(id_another_device);
+    paired_devices_.erase(id_another_device);
 }
 
 /*!
  * @brief 登録済みのデバイスと接続する
- * @param another_device 接続相手のデバイス
+ * @param id_another_device 接続相手のデバイス
  * @retval true 接続成功
  * @retval false 接続失敗
  */
-bool Device::connect(const int another_device_id)
+bool Device::connect(const int id_another_device)
 {
-    if (this->isConnected(another_device_id))
+    if (isConnected(id_another_device))
         return false;
     if (getNumConnected() >= max_connections_)
         return false;
 
-    this->connected_devices_.emplace(another_device_id);
+    id_connected_devices_.emplace(id_another_device);
     return true;
 }
 
 /*!
  * @brief 接続中デバイスの切断
- * @param another_device
+ * @param id_another_device
  */
-void Device::disconnect(const int another_device_id)
+void Device::disconnect(const int id_another_device)
 {
-    if (!isConnected(another_device_id))
+    if (!isConnected(id_another_device))
         return;
 
-    this->connected_devices_.erase(another_device_id);
+    id_connected_devices_.erase(id_another_device);
 }
 
 /*!
  * @brief データを保存する
- * @param idata 識別子付きデータ
+ * @param data_with_id 識別子付きデータ
  * @param data_attr データ属性
  * @param flood_step フラッディングホップ数
  */
-void Device::saveData(pair<size_t, Var> idata,
+void Device::saveData(pair<size_t, Var> data_with_id,
                       const DataAttr data_attr, int flood_step)
 {
-    size_t data_id = idata.first;
+    size_t data_id = data_with_id.first;
     if (memory_.count(data_id))
         return;
 
-    memory_.emplace(data_id, Sell(getId(), idata, data_attr, flood_step));
+    memory_.emplace(data_id, Sell(getId(), data_with_id, data_attr, flood_step));
 }
 
 /*!
@@ -231,36 +231,36 @@ void Device::saveData(pair<size_t, Var> idata,
  */
 void Device::saveData(const Packet &packet)
 {
-    pair<size_t, Var> idata = packet.getDataWithId();
-    size_t data_id = idata.first;
+    pair<size_t, Var> data_with_id = packet.getDataWithId();
+    size_t data_id = data_with_id.first;
     if (memory_.count(data_id))
         return;
 
     memory_.emplace(data_id,
-                    Sell(packet.getSenderId(), idata, packet.getDaTaAttribute(),
+                    Sell(packet.getSenderId(), data_with_id, packet.getDataAttribute(),
                          packet.getFloodStep()));
 }
 
 /*!
  * @brief 接続中のデバイスに文字列を送信する
- * @param receiver_id 送信先デバイスのID
+ * @param id_receiver 送信先デバイスのID
  * @param message 送信する文字列
  */
-void Device::sendMessage(const int receiver_id, string message)
+void Device::sendMessage(const int id_receiver, string message)
 {
-    if (!isConnected(receiver_id))
+    if (!isConnected(id_receiver))
         return;
 
     std::cout << "ID_" << this->getId() << " -> " << flush;
-    getPairedDevice(receiver_id).receiveMessage(this->getId(), message);
+    getPairedDevice(id_receiver).receiveMessage(this->getId(), message);
 }
 
 /*!
  * @brief 接続中のデバイスから文字列を受信する (保存しない)
- * @param sender_id 送信元デバイスのID
+ * @param id_sender 送信元デバイスのID
  * @param message 受信する文字列
  */
-void Device::receiveMessage(const int sender_id, string message)
+void Device::receiveMessage(const int id_sender, string message)
 {
     std::cout << message << " -> ID_" << this->getId() << endl;
 }
@@ -268,7 +268,7 @@ void Device::receiveMessage(const int sender_id, string message)
 /*!
  * @brief データからパケットを生成する
  * @param data 送信するデータ
- * @return 生成したパケット
+ * @return Packet 生成したパケット
  */
 Device::Packet Device::makePacket(Var data) const
 {
@@ -278,27 +278,27 @@ Device::Packet Device::makePacket(Var data) const
 
 /*!
  * @brief 識別子付きデータパケットを生成する
- * @param idata 送信する識別子付きデータ
+ * @param data_with_id 送信する識別子付きデータ
  * @param data_attr データ属性
  * @param flood_step ホップ数 デフォルト値: 0
- * @return 生成したパケット
+ * @return Packet 生成したパケット
  */
-Device::Packet Device::makePacket(pair<size_t, Var> idata,
+Device::Packet Device::makePacket(pair<size_t, Var> data_with_id,
                                   const DataAttr data_attr, const int flood_step) const
 {
     return Packet(getId(), getNewPacketId(), getNewSequenceNum(),
-                  idata, data_attr, flood_step);
+                  data_with_id, data_attr, flood_step);
 }
 
 /*!
  * @brief 接続中のデバイスにパケットを送信する
- * @param receiver_id 送信先デバイスのID
+ * @param id_receiver 送信先デバイスのID
  * @param packet 送信するパケット
  */
-void Device::sendPacket(const int receiver_id, const Packet &packet)
+void Device::sendPacket(const int id_receiver, const Packet &packet)
 {
-    if (isConnected(receiver_id))
-        getPairedDevice(receiver_id).receivePacket(packet);
+    if (isConnected(id_receiver))
+        getPairedDevice(id_receiver).receivePacket(packet);
 }
 
 /*!
@@ -315,7 +315,7 @@ void Device::receivePacket(const Packet &packet)
  */
 void Device::sendHello()
 {
-    auto id_cntds = getConnectedDeviceId();
+    auto id_cntds = getConnectedDevicesId();
 
     for (auto &id_cntd : id_cntds)
     {
@@ -331,7 +331,7 @@ void Device::sendHello()
  */
 void Device::sendTable()
 {
-    for (auto &id_cntd : getConnectedDeviceId())
+    for (auto &id_cntd : getConnectedDevicesId())
     {
         sendPacket(id_cntd, makePacket(assignIdToData(getTable()), DataAttr::TABLE));
     }
@@ -339,14 +339,15 @@ void Device::sendTable()
 
 /*!
  * @brief フラッディングするデータを作成
- * @return 作成したデータの識別子
+ * @return size_t 作成したデータの識別子
  */
 size_t Device::makeFloodData()
 {
-    pair<size_t, Var> idata = assignIdToData(static_cast<string>("hello!"), true);
-    saveData(idata, DataAttr::FLOODING, 0);
+    pair<size_t, Var> data_with_id =
+        assignIdToData(static_cast<string>("hello!"), true);
+    saveData(data_with_id, DataAttr::FLOODING, 0);
 
-    return idata.first;
+    return data_with_id.first;
 }
 
 /*!
@@ -371,9 +372,10 @@ void Device::flooding(const int flag)
         return;
     }
 
-    auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                       [](pair<size_t, Device::Sell> sell)
-                       { return sell.second.getDaTaAttribute() == Device::DataAttr::FLOODING; });
+    auto itr =
+        find_if(memory_.rbegin(), memory_.rend(),
+                [](pair<size_t, Device::Sell> sell)
+                { return sell.second.getDataAttribute() == DataAttr::FLOODING; });
     if (itr == memory_.rend())
         return;
 
@@ -381,7 +383,7 @@ void Device::flooding(const int flag)
     if (data_in_sell.getFloodStep() > _step_new)
         return;
 
-    for (auto id_cntd : getConnectedDeviceId())
+    for (auto id_cntd : getConnectedDevicesId())
         if (id_cntd != data_in_sell.getSenderId())
             sendPacket(id_cntd,
                        makePacket(data_in_sell.getDataWithId(), DataAttr::FLOODING,
@@ -390,10 +392,13 @@ void Device::flooding(const int flag)
     data_in_sell.setDaTaAttribute(DataAttr::NONE);
 }
 
+/*!
+ * @brief MPR集合を作成する
+ */
 void Device::makeMPR()
 {
     MPR_.clear();
-    /* 隣接 <willingness, id> */
+    /* 隣接 <willingness, id> (降順) */
     multimap<int, int, greater<int>> neighbors;
     /* 2ホップ隣接 <tow hop neighbor, MPR> */
     map<int, int> tow_hop_neighbors;
@@ -403,7 +408,7 @@ void Device::makeMPR()
         auto itr =
             find_if(memory_.rbegin(), memory_.rend(),
                     [](pair<size_t, Device::Sell> sell)
-                    { return sell.second.getDaTaAttribute() == Device::DataAttr::WILLINGNESS; });
+                    { return sell.second.getDataAttribute() == DataAttr::WILLINGNESS; });
         if (itr == memory_.rend())
             break;
 
@@ -426,7 +431,7 @@ void Device::makeMPR()
                     [&](pair<size_t, Device::Sell> sell)
                     {
                         auto is_topology =
-                            sell.second.getDaTaAttribute() == Device::DataAttr::TOPOLOGY;
+                            sell.second.getDataAttribute() == DataAttr::TOPOLOGY;
                         auto is_id = sell.second.getSenderId() == id_neighbor;
                         return is_topology & is_id;
                     });
@@ -463,12 +468,12 @@ void Device::makeTable()
         auto itr =
             find_if(memory_.rbegin(), memory_.rend(),
                     [](pair<size_t, Device::Sell> sell)
-                    { return sell.second.getDaTaAttribute() == Device::DataAttr::TABLE; });
+                    { return sell.second.getDataAttribute() == DataAttr::TABLE; });
         if (itr == memory_.rend())
             break;
 
         auto &data_in_sell = itr->second;
-        auto &&id_sender = data_in_sell.getSenderId();
+        auto id_sender = data_in_sell.getSenderId();
         auto &&table_neighbor = get<Table>(data_in_sell.getData()).getTable();
 
         for (auto &entry : table_neighbor)
@@ -488,7 +493,7 @@ void Device::makeTable()
 /*!
  * @brief ペアリング済みのデバイスの参照を取得
  * @param id 対象デバイスのID
- * @return デバイスオブジェクトの参照
+ * @return Device デバイスオブジェクトの参照
  */
 Device &Device::getPairedDevice(const int id)
 {
@@ -497,19 +502,19 @@ Device &Device::getPairedDevice(const int id)
 
 /*!
  * @brief デバイスが自身かどうか取得
- * @param another_device_id 対象デバイスのID
+ * @param id_another_device 対象デバイスのID
  * @retval true 自身
  * @retval false 自身でない
  */
-bool Device::isSelf(const int another_device_id) const
+bool Device::isSelf(const int id_another_device) const
 {
-    return this->getId() == another_device_id;
+    return this->getId() == id_another_device;
 }
 
 /*!
  * @brief データにデータ識別子を付与する
  * @param data データ
- * @return 識別子が付与されたデータ
+ * @return pair<size_t, variant> 識別子付きデータ
  */
 pair<size_t, Var> Device::assignIdToData(const Var data,
                                          const bool is_flooding,
@@ -536,63 +541,54 @@ pair<size_t, Var> Device::assignIdToData(const Var data,
 
 /*!
  * @brief コンストラクタ
- * @param sender_id 送信元デバイスのID
+ * @param id_sender 送信元デバイスのID
  * @param data 送信データ
  * @param data_attr データ属性
  * @param flood_step ホップ数 デフォルト値: 0
  */
-Device::Sell::Sell(const int sender_id, const pair<size_t, Var> idata,
+Device::Sell::Sell(const int id_sender, const pair<size_t, Var> data_with_id,
                    const DataAttr data_attr, const int flood_step)
-    : sender_id_{sender_id},
-      idata_{idata},
+    : id_sender_{id_sender},
+      data_with_id_{data_with_id},
       data_attr_{data_attr},
       flood_step_{flood_step}
 {
 }
 
 /*!
- * @return 送信元デバイスのID
+ * @return int 送信元デバイスのID
  */
-int Device::Sell::getSenderId() const { return sender_id_; }
+int Device::Sell::getSenderId() const { return id_sender_; }
 
 /*!
- * @return データ識別子
+ * @return size_t データ識別子
  */
-size_t Device::Sell::getDataId() const { return idata_.first; }
+size_t Device::Sell::getDataId() const { return data_with_id_.first; }
 
 /*!
- * @return 識別子無しデータ
+ * @return variant 識別子無しデータ
  */
-Var Device::Sell::getData() const { return idata_.second; }
+Var Device::Sell::getData() const { return data_with_id_.second; }
 
 /*!
- * @return 識別子付きデータ
+ * @return pair<size_t, variant> 識別子付きデータ
  */
-pair<size_t, Var> Device::Sell::getDataWithId() const { return idata_; }
+pair<size_t, Var> Device::Sell::getDataWithId() const { return data_with_id_; }
 
 /*!
- * @return データ属性
+ * @return Device::DataAttr データ属性
  */
-Device::DataAttr Device::Sell::getDaTaAttribute() const { return data_attr_; }
+Device::DataAttr Device::Sell::getDataAttribute() const { return data_attr_; }
 
 /*!
- * @return フラッディングホップ数
+ * @return int フラッディングホップ数
  */
 int Device::Sell::getFloodStep() const { return flood_step_; }
 
 /*!
- * @brief フラッディング属性を持つか取得
- * @retval ture フラッディング属性持ち
- * @retval false フラッディング属性なし
+ * @brief データ属性を変更する
+ * @param data_attr 与えるデータ属性
  */
-bool Device::Sell::isFloodFlag() const
-{
-    if (data_attr_ == DataAttr::FLOODING)
-        return true;
-
-    return false;
-}
-
 void Device::Sell::setDaTaAttribute(const DataAttr data_attr)
 {
     data_attr_ = data_attr;
@@ -602,64 +598,51 @@ void Device::Sell::setDaTaAttribute(const DataAttr data_attr)
 
 /*!
  * @brief コンストラクタ
- * @param sender_id 送信元デバイスのID
+ * @param id_sender 送信元デバイスのID
  * @param packet_id パケットID
  * @param seq_num シーケンスナンバー
  * @param data 送信データ
  * @param data_attr データ属性
  * @param flood_step ホップ数 デフォルト値: 0
  */
-Device::Packet::Packet(const int sender_id, const int packet_id,
+Device::Packet::Packet(const int id_sender, const int packet_id,
                        const int seq_num, const pair<size_t, Var> data,
                        const DataAttr data_attr, const int flood_step)
-    : sender_id_{sender_id},
+    : id_sender_{id_sender},
       packet_id_{packet_id},
       seq_num_{seq_num},
-      idata_{data},
+      data_with_id_{data},
       data_attr_{data_attr},
       flood_step_{flood_step}
 {
 }
 
 /*!
- * @return 送信元デバイスのID
+ * @return int 送信元デバイスのID
  */
-int Device::Packet::getSenderId() const { return sender_id_; }
+int Device::Packet::getSenderId() const { return id_sender_; }
 
 /*!
- * @return パケットID
+ * @return int パケットID
  */
 int Device::Packet::getPacketId() const { return packet_id_; }
 
 /*!
- * @return 送信元デバイスのID
+ * @return int 送信元デバイスのID
  */
 int Device::Packet::getSeqNum() const { return seq_num_; }
 
 /*!
- * @return 識別子付き送信データ
+ * @return pair<size_t, variant> 識別子付き送信データ
  */
-pair<size_t, Var> Device::Packet::getDataWithId() const { return idata_; }
+pair<size_t, Var> Device::Packet::getDataWithId() const { return data_with_id_; }
 
 /*!
- * @return データ属性
+ * @return Device::DataAttr データ属性
  */
-Device::DataAttr Device::Packet::getDaTaAttribute() const { return data_attr_; }
+Device::DataAttr Device::Packet::getDataAttribute() const { return data_attr_; }
 
 /*!
- * @brief フラッディング属性を持つか取得
- * @retval ture フラッディング属性持ち
- * @retval false フラッディング属性なし
- */
-bool Device::Packet::isFloodFlag() const
-{
-    if (data_attr_ == DataAttr::FLOODING)
-        return true;
-
-    return false;
-}
-
-/*!
- * @return フラッディングステップ数
+ * @return int フラッディングステップ数
  */
 int Device::Packet::getFloodStep() const { return flood_step_; }

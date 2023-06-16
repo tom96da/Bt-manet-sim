@@ -39,7 +39,7 @@ private:
     /* ペアリング登録済みデバイス */
     map<int, Device &> paired_devices_;
     /* 接続中デバイス */
-    set<int> connected_devices_;
+    set<int> id_connected_devices_;
     /* MPR集合 */
     set<int> MPR_;
     /* ルーティングテーブル */
@@ -70,7 +70,7 @@ public:
     int getNumPaired() const;
     int getNumConnected() const;
     set<int> getPairedDeviceId() const;
-    set<int> getConnectedDeviceId() const;
+    set<int> getConnectedDevicesId() const;
     Table getTable() const;
 
     int getNumPacket() const;
@@ -80,25 +80,25 @@ public:
 
     pair<size_t, Var> loadData(const size_t data_id) const;
 
-    bool isPaired(const int another_device_id) const;
-    bool isConnected(const int another_device_id) const;
+    bool isPaired(const int id_another_device) const;
+    bool isConnected(const int id_another_device) const;
     bool hasData(const size_t data_id) const;
 
     void pairing(Device &another_device);
-    void unpairing(const int another_device_id);
-    bool connect(const int another_device_id);
-    void disconnect(const int another_device_id);
-    void saveData(pair<size_t, Var> idata,
+    void unpairing(const int id_another_device);
+    bool connect(const int id_another_device);
+    void disconnect(const int id_another_device);
+    void saveData(pair<size_t, Var> data_with_id,
                   const DataAttr data_attr, int flood_step = 0);
     void saveData(const Packet &packet);
 
-    void sendMessage(const int receiver_id, string message);
-    void receiveMessage(const int sender_id, string message);
+    void sendMessage(const int id_receiver, string message);
+    void receiveMessage(const int id_sender, string message);
 
     Packet makePacket(Var data) const;
-    Packet makePacket(pair<size_t, Var> idata,
+    Packet makePacket(pair<size_t, Var> data_with_id,
                       const DataAttr data_attr, const int flood_step = 0) const;
-    void sendPacket(const int receiver_id, const Packet &packet);
+    void sendPacket(const int id_receiver, const Packet &packet);
     void receivePacket(const Packet &packet);
 
     void sendHello();
@@ -113,7 +113,7 @@ public:
 private:
     Device &getPairedDevice(const int id);
 
-    bool isSelf(const int another_device_id) const;
+    bool isSelf(const int id_another_device) const;
 
     pair<size_t, Var> assignIdToData(const Var data, const bool is_flooding = false,
                                      size_t data_id = 0) const;
@@ -134,10 +134,10 @@ class Device::Sell
 {
 private:
     /* 送信元デバイスのID */
-    const int sender_id_;
+    const int id_sender_;
 
     /* 識別子付きデータ */
-    const pair<size_t, Var> idata_;
+    const pair<size_t, Var> data_with_id_;
     /* データ属性 */
     DataAttr data_attr_;
 
@@ -145,7 +145,7 @@ private:
     const int flood_step_;
 
 public:
-    Sell(const int sender_id, const pair<size_t, Var> idata,
+    Sell(const int id_sender, const pair<size_t, Var> data_with_id,
          const DataAttr data_attr, const int flood_step);
 
     int getSenderId() const;
@@ -153,11 +153,8 @@ public:
 
     Var getData() const;
     pair<size_t, Var> getDataWithId() const;
-    DataAttr getDaTaAttribute() const;
-
+    DataAttr getDataAttribute() const;
     int getFloodStep() const;
-
-    bool isFloodFlag() const;
 
     void setDaTaAttribute(const DataAttr data_attr);
 };
@@ -167,14 +164,14 @@ class Device::Packet
 {
 private:
     /* 送信元デバイスのID */
-    const int sender_id_;
+    const int id_sender_;
     /* パケットID */
     const int packet_id_;
     /* シーケンスナンバー */
     const int seq_num_;
 
     /* 識別子付きデータ */
-    const pair<size_t, Var> idata_;
+    const pair<size_t, Var> data_with_id_;
     /* データ属性 */
     DataAttr data_attr_;
 
@@ -182,7 +179,7 @@ private:
     const int flood_step_;
 
 public:
-    Packet(const int sender_id, const int packet_id,
+    Packet(const int id_sender, const int packet_id,
            const int seq_num, const pair<size_t, Var> data,
            const DataAttr data_attr, const int flood_step = 0);
 
@@ -191,9 +188,7 @@ public:
     int getSeqNum() const;
 
     pair<size_t, Var> getDataWithId() const;
-    DataAttr getDaTaAttribute() const;
-
-    bool isFloodFlag() const;
+    DataAttr getDataAttribute() const;
     int getFloodStep() const;
 };
 

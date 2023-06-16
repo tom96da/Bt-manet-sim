@@ -32,20 +32,20 @@ DeviceManager::DeviceManager(double field_size, int init_num_devices)
 double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
 
 /*!
- * @return 接続可能距離
+ * @return double 接続可能距離
  */
 double DeviceManager::getMaxComDistance() { return max_com_distance_; }
 
 /*!
  * @brief 管理下のデバイス数 取得
- * @return 管理化のデバイス数
+ * @return int 管理化のデバイス数
  */
 int DeviceManager::getNumDevices() const { return nodes_.size(); };
 
 /*!
  * @brief IDに合致するデバイスを参照 (不正なIDではないか事前確認)
  * @param id デバイスID
- * @return デバイスの参照
+ * @return Device デバイスの参照
  */
 Device &DeviceManager::getDeviceById(const int id)
 {
@@ -55,7 +55,7 @@ Device &DeviceManager::getDeviceById(const int id)
 /*!
  * @brief IDに合致する座標を参照 (不正なIDではないか事前確認)
  * @param id デバイスID
- * @return デバイスの座標の参照
+ * @return pair<double, double> デバイスの座標の参照
  */
 pair<double, double> &DeviceManager::getPosition(const int id)
 {
@@ -84,8 +84,8 @@ void DeviceManager::addDevices(int num_devices)
 
 /*!
  * @brief デバイス同士をペアリング登録させる
- * @param d1_id デバイスID1
- * @param d2_id デバイスID2
+ * @param id_1 デバイスID1
+ * @param id_2 デバイスID2
  */
 void DeviceManager::pairDevices(const int id_1, const int id_2)
 {
@@ -102,6 +102,11 @@ void DeviceManager::pairDevices(const int id_1, const int id_2)
     getDeviceById(id_2).pairing(getDeviceById(id_1));
 }
 
+/*!
+ * @brief デバイス同士をペアリング解除させる
+ * @param id_1 デバイスID1
+ * @param id_2 デバイスID2
+ */
 void DeviceManager::unpairDevices(const int id_1, const int id_2)
 {
     if (getDistance(id_1, id_2) < 0)
@@ -156,8 +161,8 @@ void DeviceManager::disconnectDevices(const int id_1, const int id_2)
  */
 void DeviceManager::disconnectDevices(const int id)
 {
-    for (auto &cntd : getDeviceById(id).getConnectedDeviceId())
-        disconnectDevices(id, cntd);
+    for (auto id_cntd : getDeviceById(id).getConnectedDevicesId())
+        disconnectDevices(id, id_cntd);
 }
 
 /*!
@@ -238,7 +243,7 @@ void DeviceManager::setDevices()
  */
 void DeviceManager::sendHello()
 {
-    for (auto &id : getDevicesList())
+    for (auto id : getDevicesList())
         getDeviceById(id).sendHello();
 }
 
@@ -247,7 +252,7 @@ void DeviceManager::sendHello()
  */
 void DeviceManager::sendTable()
 {
-    for (auto &id : getDevicesList())
+    for (auto id : getDevicesList())
         getDeviceById(id).sendTable();
 }
 
@@ -256,8 +261,62 @@ void DeviceManager::sendTable()
  */
 void DeviceManager::makeMPR()
 {
-    for (auto &id : getDevicesList())
+    for (auto id : getDevicesList())
         getDeviceById(id).makeMPR();
+}
+
+/*!
+ * @brief MPR集合を出力する
+ * @param id デバイスID
+ */
+void DeviceManager::showMPR(const int id)
+{
+    WriteMode write_mode = WriteMode::SIMPLE;
+
+    auto dev = getDeviceById(id);
+    auto id_cntds = dev.getConnectedDevicesId();
+    auto id_MPR = dev.getMPR();
+
+    std::cout << dev.getName();
+    switch (write_mode)
+    {
+    case WriteMode::VISIBLE:
+        std::cout << "  connected with ";
+        break;
+    case WriteMode::SIMPLE:
+        std::cout << " --> ";
+    default:
+        break;
+    }
+
+    for (auto id_cntd : id_cntds)
+    {
+        std::cout << id_cntd << [&]
+        {
+            if (id_MPR.count(id_cntd) && write_mode == MGR::WriteMode::SIMPLE)
+                return "*";
+
+            return "";
+        }() << ", ";
+    }
+    std::cout << "\e[2D " << std::endl;
+
+    if (write_mode == WriteMode::VISIBLE)
+        for (auto id_cntd : id_cntds)
+        {
+            auto dev__ = getDeviceById(id_cntd);
+            std::cout << dev__.getName()
+                      << [&]
+            {
+                if (id_MPR.count(id_cntd))
+                    return "*";
+
+                return " ";
+            }() << " connected with ";
+            for (auto cntd__ : dev__.getConnectedDevicesId())
+                std::cout << cntd__ << ", ";
+            std::cout << "\e[2D " << std::endl;
+        }
 }
 
 /*!
@@ -265,7 +324,7 @@ void DeviceManager::makeMPR()
  */
 void DeviceManager::makeTable()
 {
-    for (auto &id : getDevicesList())
+    for (auto id : getDevicesList())
         getDeviceById(id).makeTable();
 }
 
@@ -276,7 +335,7 @@ void DeviceManager::makeTable()
  */
 void DeviceManager::startFlooding(const int id)
 {
-    MGR::WriteMode write_mode = WriteMode::DEFAULT;
+    WriteMode write_mode = WriteMode::DEFAULT;
 
     if (!nodes_.count(id))
         return;

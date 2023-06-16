@@ -39,32 +39,6 @@ int main()
         }
     };
 
-    auto showMPR = [&](int id)
-    {
-        auto dev = mgr.getDeviceById(id);
-        auto cntds = dev.getConnectedDeviceId();
-        std::cout << dev.getName() << " connected with ";
-        for (auto cntd : cntds)
-            std::cout << cntd << ", ";
-        std::cout << std::endl;
-        auto MPR = dev.getMPR();
-        for (auto &&cntd : cntds)
-        {
-            auto dev__ = mgr.getDeviceById(cntd);
-            std::cout << dev__.getName()
-                      << [&]
-            {
-                if (MPR.count(cntd))
-                    return "*";
-
-                return " ";
-            }() << " connected with ";
-            for (auto &&cntd__ : dev__.getConnectedDeviceId())
-                std::cout << cntd__ << ", ";
-            std::cout << std::endl;
-        }
-    };
-
     auto doSim = [&](const int frames)
     {
         newCsv();
@@ -72,13 +46,14 @@ int main()
         mgr.setDevices();
         mgr.sendHello();
         mgr.makeMPR();
+        // mgr.showMPR(0);
 
         int f = 0;
         auto pbar = thread(
             [&]()
             {
                 auto p = PBar(frames, f);
-                p.erase();
+                // p.erase();
             });
         for (f = 0; f < frames; f++)
         {
@@ -86,12 +61,12 @@ int main()
             mgr.makeTable();
             // mgr.updatePositionAll();
         }
-        // mgr.startFlooding(45);
         pbar.join();
+
+        // mgr.startFlooding(45);
     };
 
-    doSim(1);
-    // showMPR(0);
+    doSim(15);
 
     Device::showTotalPacket();
 
