@@ -25,15 +25,15 @@ public:
     RoutingTable();
 
     int getNumEntry() const;
-    int getNextHop(const int dest_id) const;
-    map<int, Entry> getTable() const;
+    int getNextHop(const int id_dest) const;
+    map<int, Entry> &getTable();
     vector<int> getDestinations() const;
 
-    bool hasEntry(const int dest_id) const;
+    bool hasEntry(const int id_dest) const;
 
-    void setEntry(const int dest_id, const int nextHop_id,
+    bool setEntry(const int id_dest, const int id_nextHop_,
                   const int distance = 0);
-    void markEntryInvalid(const int dest_id);
+    void markEntryInvalid(const int id_dest);
 };
 
 /* 各デバイスのエントリクラス */
@@ -41,7 +41,7 @@ class RoutingTable::Entry
 {
 private:
     /* 次のホップデバイスのID */
-    int nextHop_id_;
+    int id_nextHop_;
     /* 次ポップデバイスの距離 */
     int distance_;
     /* エントリが有効かどうか */
@@ -49,13 +49,13 @@ private:
 
 public:
     Entry() = default;
-    Entry(const int nextHop_id, const int distance = 0);
+    Entry(const int id_nextHop_, const int distance = 0);
 
     int getNextHop() const;
     int getDistance() const;
     bool isValid() const;
 
-    void setEntry(const int nextHop_id, const int distance = 0);
+    void setEntry(const int id_nextHop_, const int distance = 0);
     void markInvalid();
 };
 

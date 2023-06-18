@@ -20,9 +20,10 @@ ProgressBar::ProgressBar(const int num_task, int &num_done, int length)
              {
                  string tmp = to_string(num_task);
                  return size(tmp);
-             }()}
+             }()},
+      num_task_{num_task},
+      num_done_{num_done}
 {
-    set(num_task, num_done);
 }
 
 /*!
@@ -30,35 +31,47 @@ ProgressBar::ProgressBar(const int num_task, int &num_done, int length)
  * @param num_task タスク数
  * @param num_done 終了済みタスク数
  */
-void ProgressBar::set(const int num_task, int &num_done)
+void ProgressBar::start()
 {
-    cout << "\e[?25l";
+    progress_.clear();
+
+    std::cout << "\e[?25l";
     auto start = chrono::system_clock::now();
 
     do
     {
-        if (num_done > num_task)
-            num_done = num_task;
+        if (num_done_ > num_task_)
+            num_done_ = num_task_;
 
-        percent_ = static_cast<int>(num_done * 100.0 / num_task);
+        percent_ = static_cast<int>(num_done_ * 100.0 / num_task_);
         if (percent_ > 100)
             percent_ = 100;
         while (percent_ > step_ * (size(progress_) + 1) - 1)
             progress_ += "#";
 
-        cout << "\r[" << setfill('_') << setw(length_) << left << progress_ << "]"
-             << " [" << setfill(' ') << setw(digit_) << right
-             << num_done << "/" << num_task << "]"
-             << setw(5) << right << percent_ << "%  " << flush;
+        std::cout << "\r";
+        if (!title_.empty())
+            std::cout << setfill(' ') << setw(28) << left << title_ + ": ";
+
+        std::cout << "[" << setfill('_') << setw(length_) << left << progress_ << "]"
+                  << " [" << setfill(' ') << setw(digit_) << right
+                  << num_done_ << "/" << num_task_ << "]"
+                  << setw(5) << right << percent_ << "%  " << std::flush;
     } while (percent_ != 100);
 
     auto end = chrono::system_clock::now();
     auto dur = end - start;
     auto msec = chrono::duration_cast<chrono::milliseconds>(dur).count();
-    cout << msec << "ms" << flush;
+    std::cout << msec << "ms";
 
-    cout << "\e[?25h" << endl;
+    std::cout << "\e[?25h" << std::endl;
 }
 
+/*!
+ * @brief プログレスバーにタイトルを付ける
+ * @param title
+ */
+void ProgressBar::setTitle(const string title) { title_ = title; }
+
 /* プログレスバーをクリアする */
-void ProgressBar::erase() const { cout << "\e[1A\e[2K" << flush; }
+void ProgressBar::erase() const { std::cout << "\e[1A\e[2K" << std::flush; }

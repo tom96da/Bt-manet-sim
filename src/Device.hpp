@@ -61,6 +61,7 @@ public:
 
     static int getTotalPacket();
     static int getNewSequenceNum();
+    static void resetNumPacket();
     static void showTotalPacket();
 
     int getId() const;
@@ -78,7 +79,7 @@ public:
 
     set<int> getMPR() const;
 
-    pair<size_t, Var> loadData(const size_t data_id) const;
+    pair<size_t, Var> readData(const size_t data_id) const;
 
     bool isPaired(const int id_another_device) const;
     bool isConnected(const int id_another_device) const;
@@ -91,6 +92,7 @@ public:
     void saveData(pair<size_t, Var> data_with_id,
                   const DataAttr data_attr, int flood_step = 0);
     void saveData(const Packet &packet);
+    void clearMemory();
 
     void sendMessage(const int id_receiver, string message);
     void receiveMessage(const int id_sender, string message);
@@ -105,10 +107,10 @@ public:
     void sendTable();
 
     size_t makeFloodData();
-    void flooding(const int flag = false);
+    void flooding(const int flag = 0);
 
     void makeMPR();
-    void makeTable();
+    bool makeTable();
 
 private:
     Device &getPairedDevice(const int id);

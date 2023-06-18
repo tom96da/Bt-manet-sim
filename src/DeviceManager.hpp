@@ -35,8 +35,6 @@ private:
     mt19937 mt_;
     /* 一様実数分布 座標 */
     uniform_real_distribution<> position_random_;
-    /* 一様実数分布 移動角度 */
-    uniform_real_distribution<> move_random_;
     /* 正規分布 移動距離 */
     normal_distribution<> move_randn_;
     /* 一様実数分布 バイアス */
@@ -67,6 +65,8 @@ public:
     void updatePosition(const int id);
     void updatePositionAll();
 
+    void clearMemory();
+
     void setDevices();
     void sendHello();
     void sendTable();
@@ -74,9 +74,10 @@ public:
     void makeMPR();
     void showMPR(const int id);
 
-    void makeTable();
+    int makeTable();
 
-    void startFlooding(const int id);
+    pair<int, int> startFlooding(const int id);
+    int aggregateDevices(size_t data_id);
     int aggregateDevices(size_t data_id, set<int> &devices_have_data,
                          const WriteMode write_mode);
 

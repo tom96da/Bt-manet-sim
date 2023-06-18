@@ -34,39 +34,45 @@ int main()
     {
         for (int id = 0; id < num_dev; id++)
         {
-            auto &[x, y] = mgr.getPosition(id);
+            auto [x, y] = mgr.getPosition(id);
             fs[id] << x << ", " << y << endl;
         }
     };
 
-    auto doSim = [&](const int frames)
+    newCsv();
+    writeCsv();
+
+    mgr.setDevices();
+    auto [_, num_member] = mgr.startFlooding(45);
+    if (num_member < num_dev)
     {
-        newCsv();
-        writeCsv();
-        mgr.setDevices();
-        mgr.sendHello();
-        mgr.makeMPR();
-        // mgr.showMPR(0);
+        std::cout << "mome nodes were not included in the network." << std::endl;
+        return 0;
+    }
 
-        int f = 0;
-        auto pbar = thread(
-            [&]()
-            {
-                auto p = PBar(frames, f);
-                // p.erase();
-            });
-        for (f = 0; f < frames; f++)
+    mgr.clearMemory();
+    Device::resetNumPacket();
+
+    mgr.sendHello();
+    mgr.makeMPR();
+
+    int num_done = 0;
+    auto pbar = thread(
+        [&]()
         {
-            mgr.sendTable();
-            mgr.makeTable();
-            // mgr.updatePositionAll();
-        }
-        pbar.join();
+            auto p = PBar(num_member, num_done);
+            p.setTitle("making routing table");
+            p.start();
+            // p.erase();
+        });
+    while (num_done < num_member)
+    {
+        int cnt = 0;
 
-        // mgr.startFlooding(45);
-    };
-
-    doSim(15);
+        mgr.sendTable();
+        num_done = num_member - mgr.makeTable();
+    }
+    pbar.join();
 
     Device::showTotalPacket();
 

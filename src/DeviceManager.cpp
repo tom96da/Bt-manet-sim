@@ -20,7 +20,6 @@ DeviceManager::DeviceManager(double field_size, int init_num_devices)
     : field_size_{field_size},
       mt_{random_device{}()},
       position_random_{0.0, field_size_},
-      move_random_{0.0, 2 * M_PI},
       move_randn_{0, 0.3},
       bias_random_{-0.4, 0.4},
       willingness_random_{1, 5}
@@ -68,13 +67,14 @@ pair<double, double> &DeviceManager::getPosition(const int id)
  */
 void DeviceManager::addDevices(int num_devices)
 {
-    int device_id_next = 0;
+    int id_next = 0;
     if (!nodes_.empty())
     {
-        device_id_next = nodes_.rbegin()->first + 1;
+        auto &[id_last, _] = *nodes_.rend();
+        id_next = id_last + 1;
     }
 
-    for (int id = device_id_next; id < device_id_next + num_devices; id++)
+    for (int id = id_next; id < id_next + num_devices; id++)
     {
         nodes_.emplace(id, Node(id, willingness_random_(mt_)));
         nodes_.at(id).setBias(bias_random_(mt_), bias_random_(mt_));
@@ -211,6 +211,15 @@ void DeviceManager::updatePositionAll()
 }
 
 /*!
+ * @brief すべてのデバイスのメモリをクリアする
+ */
+void DeviceManager::clearMemory()
+{
+    for (auto id : getDevicesList())
+        getDeviceById(id).clearMemory();
+}
+
+/*!
  * @brief デバイスをペアリングおよび接続する
  */
 void DeviceManager::setDevices()
@@ -321,11 +330,16 @@ void DeviceManager::showMPR(const int id)
 
 /*!
  * @brief すべてのデバイスにルーティングテーブルを作成させる
+ * @return int 更新ありデバイス数
  */
-void DeviceManager::makeTable()
+int DeviceManager::makeTable()
 {
+    int result = 0;
+
     for (auto id : getDevicesList())
-        getDeviceById(id).makeTable();
+        result += static_cast<int>(getDeviceById(id).makeTable());
+
+    return result;
 }
 
 /*!
@@ -333,12 +347,12 @@ void DeviceManager::makeTable()
  * @param id 開始デバイスのID
  * @return データ識別子
  */
-void DeviceManager::startFlooding(const int id)
+pair<int, int> DeviceManager::startFlooding(const int id)
 {
-    WriteMode write_mode = WriteMode::DEFAULT;
+    WriteMode write_mode = WriteMode::HIDE;
 
     if (!nodes_.count(id))
-        return;
+        return {0, 0};
     auto &device_starter = getDeviceById(id);
 
     int num_devices_have_data = 0,
@@ -365,8 +379,8 @@ void DeviceManager::startFlooding(const int id)
     {
         num_devices_have_data = devices_have_data.size();
 
-        for (auto &node : nodes_)
-            node.second.flooding();
+        for (auto &[_, device] : nodes_)
+            device.flooding();
 
         num_step++;
         device_starter.flooding(1);
@@ -388,22 +402,39 @@ void DeviceManager::startFlooding(const int id)
     if (write_mode != WriteMode::HIDE)
         std::cout << "\r"
                   << devices_have_data.size() << " devices have data" << endl;
+
+    return {data_id, devices_have_data.size()};
 }
 
 /*!
+ * @brief データを持っているか集計する
+ * @param data_id データ識別子
+ * @return int データ識別子が合致するデータを保持するデバイス数
+ */
+int DeviceManager::aggregateDevices(size_t data_id)
+{
+    int cnt = 0;
+
+    for (auto &[_, device] : nodes_)
+        if (device.hasData(data_id))
+            cnt++;
+
+    return cnt;
+}
+
+/*!
+ * @brief データを持っているか集計する
  * @param data_id データ識別子
  * @param devices_have_data 集計コンテナ
- * @return データ識別子が合致するデータを保持するデバイス数
+ * @param write_mode 出力モード
+ * @return int データ識別子が合致するデータを保持するデバイス数
  */
 int DeviceManager::aggregateDevices(size_t data_id, set<int> &devices_have_data,
                                     const WriteMode write_mode)
 {
 
-    for (auto &node : nodes_)
+    for (auto &[id, device] : nodes_)
     {
-        auto &device = node.second;
-        int id = device.getId();
-
         if (devices_have_data.count(id))
             continue;
 
@@ -424,8 +455,8 @@ int DeviceManager::aggregateDevices(size_t data_id, set<int> &devices_have_data,
 vector<int> DeviceManager::getDevicesList() const
 {
     vector<int> list;
-    for (auto &node : nodes_)
-        list.emplace_back(node.first);
+    for (auto &[id, _] : nodes_)
+        list.emplace_back(id);
 
     return list;
 }
@@ -454,8 +485,8 @@ double DeviceManager::getDistance(const int id_1, const int id_2)
     if (!nodes_.count(id_2))
         return -1.0;
 
-    auto &[pos_1_x, pos_1_y] = getPosition(id_1);
-    auto &[pos_2_x, pos_2_y] = getPosition(id_2);
+    auto &&[pos_1_x, pos_1_y] = getPosition(id_1);
+    auto &&[pos_2_x, pos_2_y] = getPosition(id_2);
 
     return hypot(pos_1_x - pos_2_x, pos_1_y - pos_2_y);
 }

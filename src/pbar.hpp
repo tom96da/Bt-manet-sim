@@ -28,16 +28,23 @@ private:
     const double step_;
     /* タスクの桁数 */
     const int digit_;
+    /* 総タスク数 */
+    const int num_task_;
 
-    /* バー本体 */
+    /* 完了タスク数 */
+    int &num_done_;
+
+    /* バー進捗 */
     string progress_;
+    /* バータイトル */
+    string title_;
     /* 完了パーセント */
     int percent_;
 
-    void set(const int num_task, int &num_done);
-
 public:
     ProgressBar(const int num_task, int &num_done, int length = PBAR_LENGTH);
+    void start();
+    void setTitle(const string title);
     void erase() const;
 };
 

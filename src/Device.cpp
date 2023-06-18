@@ -1,3 +1,10 @@
+/*!
+ * @file Device.cpp
+ * @author tom96da
+ * @brief Device クラスのメンバ関数
+ * @date 2023-05-15
+ */
+
 #include "Device.hpp"
 #include <iostream>
 #include <string>
@@ -32,11 +39,16 @@ int Device::getTotalPacket() { return num_total_packe_; }
 int Device::getNewSequenceNum() { return num_total_packe_++; }
 
 /*!
+ * @brief 累計パケット数をリセットする
+ */
+void Device::resetNumPacket() { num_total_packe_ = 0; }
+
+/*!
  * @brief 累計パケット数の出力
  */
 void Device::showTotalPacket()
 {
-    std::cout << "total packet: " << getTotalPacket() << std::endl;
+    std::cout << "total packets: " << getTotalPacket() << std::endl;
 }
 
 /*!
@@ -73,11 +85,11 @@ int Device::getNumConnected() const { return id_connected_devices_.size(); }
  */
 set<int> Device::getPairedDeviceId() const
 {
-    set<int> paired_devices_id;
-    for (const auto &paired_device : paired_devices_)
-        paired_devices_id.emplace(paired_device.first);
+    set<int> id_paired_devices;
+    for (const auto &[id_paired_device, _] : paired_devices_)
+        id_paired_devices.emplace(id_paired_device);
 
-    return paired_devices_id;
+    return id_paired_devices;
 }
 
 /*!
@@ -116,7 +128,7 @@ set<int> Device::getMPR() const { return MPR_; }
  * @param data_id データ識別子
  * @return pair<size_t, variant> 該当データ
  */
-pair<size_t, Var> Device::loadData(const size_t data_id) const
+pair<size_t, Var> Device::readData(const size_t data_id) const
 {
 
     return memory_.at(data_id).getDataWithId();
@@ -218,7 +230,7 @@ void Device::disconnect(const int id_another_device)
 void Device::saveData(pair<size_t, Var> data_with_id,
                       const DataAttr data_attr, int flood_step)
 {
-    size_t data_id = data_with_id.first;
+    auto &[data_id, _] = data_with_id;
     if (memory_.count(data_id))
         return;
 
@@ -232,13 +244,21 @@ void Device::saveData(pair<size_t, Var> data_with_id,
 void Device::saveData(const Packet &packet)
 {
     pair<size_t, Var> data_with_id = packet.getDataWithId();
-    size_t data_id = data_with_id.first;
+    auto &[data_id, _] = data_with_id;
     if (memory_.count(data_id))
         return;
 
     memory_.emplace(data_id,
                     Sell(packet.getSenderId(), data_with_id, packet.getDataAttribute(),
                          packet.getFloodStep()));
+}
+
+/*!
+ * @brief メモリをクリアする
+ */
+void Device::clearMemory()
+{
+    memory_.clear();
 }
 
 /*!
@@ -347,7 +367,8 @@ size_t Device::makeFloodData()
         assignIdToData(static_cast<string>("hello!"), true);
     saveData(data_with_id, DataAttr::FLOODING, 0);
 
-    return data_with_id.first;
+    auto [data_id, _] = data_with_id;
+    return data_id;
 }
 
 /*!
@@ -374,12 +395,15 @@ void Device::flooding(const int flag)
 
     auto itr =
         find_if(memory_.rbegin(), memory_.rend(),
-                [](pair<size_t, Device::Sell> sell)
-                { return sell.second.getDataAttribute() == DataAttr::FLOODING; });
+                [](pair<size_t, Device::Sell> &&sell)
+                {
+                    auto &[_, data_in_sell] = sell;
+                    return data_in_sell.getDataAttribute() == DataAttr::FLOODING;
+                });
     if (itr == memory_.rend())
         return;
 
-    auto &data_in_sell = itr->second;
+    auto &[_, data_in_sell] = *itr;
     if (data_in_sell.getFloodStep() > _step_new)
         return;
 
@@ -407,12 +431,15 @@ void Device::makeMPR()
     {
         auto itr =
             find_if(memory_.rbegin(), memory_.rend(),
-                    [](pair<size_t, Device::Sell> sell)
-                    { return sell.second.getDataAttribute() == DataAttr::WILLINGNESS; });
+                    [](pair<size_t, Device::Sell> &&sell)
+                    {
+                        auto &[_, data_in_sell] = sell;
+                        return data_in_sell.getDataAttribute() == DataAttr::WILLINGNESS;
+                    });
         if (itr == memory_.rend())
             break;
 
-        auto &data_in_sell = itr->second;
+        auto &[_, data_in_sell] = *itr;
         auto id_cntd = data_in_sell.getSenderId();
         auto willingness = get<int>(data_in_sell.getData());
 
@@ -422,23 +449,20 @@ void Device::makeMPR()
         data_in_sell.setDaTaAttribute(DataAttr::NONE);
     }
 
-    for (auto &neighbor : neighbors)
+    for (auto &[_, id_neighbor] : neighbors)
     {
-        auto id_neighbor = neighbor.second;
-
         auto itr =
             find_if(memory_.rbegin(), memory_.rend(),
-                    [&](pair<size_t, Device::Sell> sell)
+                    [&](pair<size_t, Device::Sell> &&sell)
                     {
-                        auto is_topology =
-                            sell.second.getDataAttribute() == DataAttr::TOPOLOGY;
-                        auto is_id = sell.second.getSenderId() == id_neighbor;
-                        return is_topology & is_id;
+                        auto &[_, data_in_sell] = sell;
+                        return data_in_sell.getDataAttribute() == DataAttr::TOPOLOGY &&
+                               data_in_sell.getSenderId() == id_neighbor;
                     });
         if (itr == memory_.rend())
             break;
 
-        auto &data_in_sell = itr->second;
+        auto &[__, data_in_sell] = *itr;
         auto neighbor_cntds = get<set<int>>(data_in_sell.getData());
         for (auto id_tow_hop_neighbor : neighbor_cntds)
         {
@@ -454,40 +478,49 @@ void Device::makeMPR()
         }
     }
 
-    for (auto &two_hop_neighbor : tow_hop_neighbors)
-        MPR_.emplace(two_hop_neighbor.second);
+    for (auto &[_, MPR] : tow_hop_neighbors)
+        MPR_.emplace(MPR);
 }
 
 /*!
  * @brief ルーティングテーブルを作成する
+ * @retval true 更新あり
+ * @retval false 更新無し
+ *
  */
-void Device::makeTable()
+bool Device::makeTable()
 {
+    int result = 0;
+
     while (true)
     {
         auto itr =
             find_if(memory_.rbegin(), memory_.rend(),
-                    [](pair<size_t, Device::Sell> sell)
-                    { return sell.second.getDataAttribute() == DataAttr::TABLE; });
+                    [](pair<size_t, Device::Sell> &&sell)
+                    {
+                        auto &[_, data_in_sell] = sell;
+                        return data_in_sell.getDataAttribute() == DataAttr::TABLE;
+                    });
         if (itr == memory_.rend())
             break;
 
-        auto &data_in_sell = itr->second;
+        auto &[__, data_in_sell] = *itr;
         auto id_sender = data_in_sell.getSenderId();
-        auto &&table_neighbor = get<Table>(data_in_sell.getData()).getTable();
+        auto table_neighbor = get<Table>(data_in_sell.getData()).getTable();
 
-        for (auto &entry : table_neighbor)
+        for (auto &[id_dest, entry] : table_neighbor)
         {
-            auto id_dest = entry.first;
-            auto nexthop = id_sender;
-            auto distance = entry.second.getDistance() + 1;
+            auto id_nexthop = id_sender;
+            auto distance = entry.getDistance() + 1;
 
             if (id_dest != getId())
-                table_.setEntry(id_dest, nexthop, distance);
+                result += static_cast<int>(table_.setEntry(id_dest, id_nexthop, distance));
         }
 
         data_in_sell.setDaTaAttribute(DataAttr::NONE);
     }
+
+    return result > 0 ? true : false;
 }
 
 /*!
@@ -495,10 +528,7 @@ void Device::makeTable()
  * @param id 対象デバイスのID
  * @return Device デバイスオブジェクトの参照
  */
-Device &Device::getPairedDevice(const int id)
-{
-    return paired_devices_.at(id);
-}
+Device &Device::getPairedDevice(const int id) { return paired_devices_.at(id); }
 
 /*!
  * @brief デバイスが自身かどうか取得
@@ -508,12 +538,14 @@ Device &Device::getPairedDevice(const int id)
  */
 bool Device::isSelf(const int id_another_device) const
 {
-    return this->getId() == id_another_device;
+    return getId() == id_another_device;
 }
 
 /*!
  * @brief データにデータ識別子を付与する
  * @param data データ
+ * @param is_flooding フラッディングするか
+ * @param data_id データ識別子
  * @return pair<size_t, variant> 識別子付きデータ
  */
 pair<size_t, Var> Device::assignIdToData(const Var data,
@@ -563,12 +595,20 @@ int Device::Sell::getSenderId() const { return id_sender_; }
 /*!
  * @return size_t データ識別子
  */
-size_t Device::Sell::getDataId() const { return data_with_id_.first; }
+size_t Device::Sell::getDataId() const
+{
+    auto [data_id, _] = data_with_id_;
+    return data_id;
+}
 
 /*!
  * @return variant 識別子無しデータ
  */
-Var Device::Sell::getData() const { return data_with_id_.second; }
+Var Device::Sell::getData() const
+{
+    auto &[_, data] = data_with_id_;
+    return data;
+}
 
 /*!
  * @return pair<size_t, variant> 識別子付きデータ
