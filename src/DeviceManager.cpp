@@ -14,17 +14,18 @@
 /*!
  * @brief コンストラクタ
  * @param field_size フィールドサイズ
- * @param init_num_devices 初期デバイス数 デフォルト値: 0
+ * @param sim_mode シミュレーションモード
  */
-DeviceManager::DeviceManager(double field_size, int init_num_devices)
+DeviceManager::DeviceManager(const double field_size,
+                             const SimulationMode sim_mode)
     : field_size_{field_size},
+      sim_mode_{sim_mode},
       mt_{random_device{}()},
       position_random_{0.0, field_size_},
       move_randn_{0, 0.3},
       bias_random_{-0.4, 0.4},
       willingness_random_{1, 5}
 {
-    addDevices(init_num_devices);
 }
 
 /* 接続可能距離 */
@@ -161,7 +162,7 @@ void DeviceManager::disconnectDevices(const int id_1, const int id_2)
  */
 void DeviceManager::disconnectDevices(const int id)
 {
-    for (auto id_cntd : getDeviceById(id).getConnectedDevicesId())
+    for (auto id_cntd : getDeviceById(id).getIdConnectedDevices())
         disconnectDevices(id, id_cntd);
 }
 
@@ -207,7 +208,7 @@ void DeviceManager::updatePositionAll()
 {
     for (auto id : getDevicesList())
         updatePosition(id);
-    setDevices();
+    buildNetwork();
 }
 
 /*!
@@ -220,11 +221,35 @@ void DeviceManager::clearMemory()
 }
 
 /*!
- * @brief デバイスをペアリングおよび接続する
+ * @brief ネットワークを構築する
  */
-void DeviceManager::setDevices()
+void DeviceManager::buildNetwork()
 {
-    vector<int> &&list_1{getDevicesList()};
+    switch (sim_mode_)
+    {
+    case SIMMODE::EXITING:
+        std::cout << "Simulation mode: EXITNG" << std::endl;
+        buildNetworkRandom();
+        break;
+    case SIMMODE::PROPOSAL:
+        std::cout << "Simulation mode: PROPOSAL" << std::endl;
+        buildNetworkByDistance();
+        break;
+    default:
+        std::cout << "Please execute after specifying "
+                  << "either EXITING or PROPOSAL for the simulation mode."
+                  << std::endl;
+        std::exit(EXIT_SUCCESS);
+        break;
+    }
+}
+
+/*!
+ * @brief ランダムにネットワークを構築する
+ */
+void DeviceManager::buildNetworkRandom()
+{
+    auto &&list_1 = getDevicesList();
 
     for (auto const id : list_1)
         disconnectDevices(id);
@@ -244,6 +269,33 @@ void DeviceManager::setDevices()
         auto itr = find(list_2.begin(), list_2.end(), id_1);
         list_2.erase(itr);
         shuffle(list_2.begin(), list_2.end(), mt_);
+    }
+}
+
+/*!
+ * @brief デバイス間距離が大きい順にネットワークを構築する
+ */
+void DeviceManager::buildNetworkByDistance()
+{
+    auto &&list = getDevicesList();
+    for (auto id : list)
+        disconnectDevices(id);
+
+    for (auto id_1 : list)
+        for (auto id_2 : list)
+            pairDevices(id_1, id_2);
+
+    for (auto id : list)
+    {
+        auto &&id_pairs = getDeviceById(id).getIdPairedDevices();
+        map<double, int, greater<double>> tmp;
+        transform(id_pairs.begin(), id_pairs.end(), inserter(tmp, tmp.begin()),
+                  [&](const int id_pair) -> pair<double, int>
+                  {
+                      return {getDistance(id, id_pair), id_pair};
+                  });
+        for (auto [distance, id_pair] : tmp)
+            connectDevices(id, id_pair);
     }
 }
 
@@ -283,7 +335,7 @@ void DeviceManager::showMPR(const int id)
     WriteMode write_mode = WriteMode::SIMPLE;
 
     auto dev = getDeviceById(id);
-    auto id_cntds = dev.getConnectedDevicesId();
+    auto id_cntds = dev.getIdConnectedDevices();
     auto id_MPR = dev.getMPR();
 
     std::cout << dev.getName();
@@ -300,9 +352,9 @@ void DeviceManager::showMPR(const int id)
 
     for (auto id_cntd : id_cntds)
     {
-        std::cout << id_cntd << [&]
+        std::cout << id_cntd << [&]()
         {
-            if (id_MPR.count(id_cntd) && write_mode == MGR::WriteMode::SIMPLE)
+            if (id_MPR.count(id_cntd) && write_mode == WriteMode::SIMPLE)
                 return "*";
 
             return "";
@@ -322,7 +374,7 @@ void DeviceManager::showMPR(const int id)
 
                 return " ";
             }() << " connected with ";
-            for (auto cntd__ : dev__.getConnectedDevicesId())
+            for (auto cntd__ : dev__.getIdConnectedDevices())
                 std::cout << cntd__ << ", ";
             std::cout << "\e[2D " << std::endl;
         }
@@ -347,7 +399,7 @@ int DeviceManager::makeTable()
  * @param id 開始デバイスのID
  * @return データ識別子
  */
-pair<int, int> DeviceManager::startFlooding(const int id)
+pair<size_t, int> DeviceManager::startFlooding(const int id)
 {
     WriteMode write_mode = WriteMode::HIDE;
 

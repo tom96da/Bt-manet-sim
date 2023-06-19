@@ -17,7 +17,10 @@ int main()
 {
     double field_size = 60.0;
     int num_dev = 100;
-    MGR mgr(field_size, num_dev);
+    SIMMODE sim_mode = SIMMODE::PROPOSAL;
+
+    auto mgr = MGR{field_size, sim_mode};
+    mgr.addDevices(num_dev);
     vector<ofstream> fs;
 
     auto newCsv = [&]()
@@ -42,11 +45,12 @@ int main()
     newCsv();
     writeCsv();
 
-    mgr.setDevices();
+    mgr.buildNetwork();
     auto [_, num_member] = mgr.startFlooding(45);
     if (num_member < num_dev)
     {
-        std::cout << "mome nodes were not included in the network." << std::endl;
+        std::cout << "Smome nodes were not included in the network.\n"
+                  << "Please retry." << std::endl;
         return 0;
     }
 
@@ -56,25 +60,24 @@ int main()
     mgr.sendHello();
     mgr.makeMPR();
 
+    int num_packet = 0;
     int num_done = 0;
     auto pbar = thread(
         [&]()
         {
             auto p = PBar(num_member, num_done);
-            p.setTitle("making routing table");
+            p.setTitle("Making routing table");
             p.start();
             // p.erase();
         });
     while (num_done < num_member)
     {
-        int cnt = 0;
-
+        num_packet = Device::getTotalPacket();
         mgr.sendTable();
         num_done = num_member - mgr.makeTable();
     }
     pbar.join();
-
-    Device::showTotalPacket();
+    std::cout << "Total packets: " << num_packet << std::endl;
 
     return 0;
 }

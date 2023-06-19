@@ -83,7 +83,7 @@ int Device::getNumConnected() const { return id_connected_devices_.size(); }
 /*!
  * @return set<int> ペアリング済みデバイスのIDリスト
  */
-set<int> Device::getPairedDeviceId() const
+set<int> Device::getIdPairedDevices() const
 {
     set<int> id_paired_devices;
     for (const auto &[id_paired_device, _] : paired_devices_)
@@ -95,7 +95,7 @@ set<int> Device::getPairedDeviceId() const
 /*!
  * @return set<int> 接続中デバイスのIDリスト
  */
-set<int> Device::getConnectedDevicesId() const
+set<int> Device::getIdConnectedDevices() const
 {
     return id_connected_devices_;
 }
@@ -335,13 +335,11 @@ void Device::receivePacket(const Packet &packet)
  */
 void Device::sendHello()
 {
-    auto id_cntds = getConnectedDevicesId();
-
-    for (auto &id_cntd : id_cntds)
+    for (auto id_cncts = getIdConnectedDevices(); auto &id_cnct : id_cncts)
     {
-        sendPacket(id_cntd, makePacket(assignIdToData(getWillingness()),
+        sendPacket(id_cnct, makePacket(assignIdToData(getWillingness()),
                                        DataAttr::WILLINGNESS));
-        sendPacket(id_cntd, makePacket(assignIdToData(id_cntds),
+        sendPacket(id_cnct, makePacket(assignIdToData(id_cncts),
                                        DataAttr::TOPOLOGY));
     }
 }
@@ -351,9 +349,9 @@ void Device::sendHello()
  */
 void Device::sendTable()
 {
-    for (auto &id_cntd : getConnectedDevicesId())
+    for (auto &id_cnct : getIdConnectedDevices())
     {
-        sendPacket(id_cntd, makePacket(assignIdToData(getTable()), DataAttr::TABLE));
+        sendPacket(id_cnct, makePacket(assignIdToData(getTable()), DataAttr::TABLE));
     }
 }
 
@@ -407,9 +405,9 @@ void Device::flooding(const int flag)
     if (data_in_sell.getFloodStep() > _step_new)
         return;
 
-    for (auto id_cntd : getConnectedDevicesId())
-        if (id_cntd != data_in_sell.getSenderId())
-            sendPacket(id_cntd,
+    for (auto id_cnct : getIdConnectedDevices())
+        if (id_cnct != data_in_sell.getSenderId())
+            sendPacket(id_cnct,
                        makePacket(data_in_sell.getDataWithId(), DataAttr::FLOODING,
                                   _step_new + 1));
 
@@ -440,11 +438,11 @@ void Device::makeMPR()
             break;
 
         auto &[_, data_in_sell] = *itr;
-        auto id_cntd = data_in_sell.getSenderId();
+        auto id_cnct = data_in_sell.getSenderId();
         auto willingness = get<int>(data_in_sell.getData());
 
-        neighbors.emplace(willingness, id_cntd);
-        table_.setEntry(id_cntd, id_cntd, 1);
+        neighbors.emplace(willingness, id_cnct);
+        table_.setEntry(id_cnct, id_cnct, 1);
 
         data_in_sell.setDaTaAttribute(DataAttr::NONE);
     }
@@ -463,8 +461,9 @@ void Device::makeMPR()
             break;
 
         auto &[__, data_in_sell] = *itr;
-        auto neighbor_cntds = get<set<int>>(data_in_sell.getData());
-        for (auto id_tow_hop_neighbor : neighbor_cntds)
+
+        for (auto id_neighbor_cncts = get<set<int>>(data_in_sell.getData());
+             auto id_tow_hop_neighbor : id_neighbor_cncts)
         {
             if (isSelf(id_tow_hop_neighbor))
                 continue;
@@ -485,8 +484,7 @@ void Device::makeMPR()
 /*!
  * @brief ルーティングテーブルを作成する
  * @retval true 更新あり
- * @retval false 更新無し
- *
+ * @retval false 更新無し *
  */
 bool Device::makeTable()
 {
@@ -574,7 +572,7 @@ pair<size_t, Var> Device::assignIdToData(const Var data,
 /*!
  * @brief コンストラクタ
  * @param id_sender 送信元デバイスのID
- * @param data 送信データ
+ * @param data_with_id 送信データ
  * @param data_attr データ属性
  * @param flood_step ホップ数 デフォルト値: 0
  */
@@ -641,17 +639,17 @@ void Device::Sell::setDaTaAttribute(const DataAttr data_attr)
  * @param id_sender 送信元デバイスのID
  * @param packet_id パケットID
  * @param seq_num シーケンスナンバー
- * @param data 送信データ
+ * @param data_with_id 送信データ
  * @param data_attr データ属性
  * @param flood_step ホップ数 デフォルト値: 0
  */
 Device::Packet::Packet(const int id_sender, const int packet_id,
-                       const int seq_num, const pair<size_t, Var> data,
+                       const int seq_num, const pair<size_t, Var> data_with_id,
                        const DataAttr data_attr, const int flood_step)
     : id_sender_{id_sender},
       packet_id_{packet_id},
       seq_num_{seq_num},
-      data_with_id_{data},
+      data_with_id_{data_with_id},
       data_attr_{data_attr},
       flood_step_{flood_step}
 {

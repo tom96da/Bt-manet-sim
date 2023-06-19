@@ -20,11 +20,18 @@ const double MAX_COM_DISTANCE = 10.0;
 /* デバイスマネージャー クラス */
 class DeviceManager
 {
+public:
+    /* シミュレーションモード列挙型 */
+    enum class SimulationMode;
+
 private:
     /* 接続可能距離 */
     static double max_com_distance_;
+
     /* フィールドサイズ */
     const double field_size_;
+    /* シミュレーションモード */
+    const SimulationMode sim_mode_;
 
     /* ノード クラス */
     class Node;
@@ -42,11 +49,12 @@ private:
     /* 一様分布 willingness */
     uniform_int_distribution<> willingness_random_;
 
-    /* 出力モード */
+    /* 出力モード列挙型 */
     enum class WriteMode;
 
 public:
-    DeviceManager(double field_size, int init_num_devices = 0);
+    DeviceManager(const double field_size,
+                  const SimulationMode sim_mode);
 
     static double getMaxComDistance();
 
@@ -67,7 +75,10 @@ public:
 
     void clearMemory();
 
-    void setDevices();
+    void buildNetwork();
+    void buildNetworkRandom();
+    void buildNetworkByDistance();
+
     void sendHello();
     void sendTable();
 
@@ -76,7 +87,7 @@ public:
 
     int makeTable();
 
-    pair<int, int> startFlooding(const int id);
+    pair<size_t, int> startFlooding(const int id);
     int aggregateDevices(size_t data_id);
     int aggregateDevices(size_t data_id, set<int> &devices_have_data,
                          const WriteMode write_mode);
@@ -93,6 +104,15 @@ private:
 
 /* デバイスマネージャー クラス */
 using MGR = DeviceManager;
+
+/* シミュレーションモード */
+enum class DeviceManager::SimulationMode
+{
+    NONE,
+    EXITING, /* 既存手法 */
+    PROPOSAL /* 提案手法 */
+};
+using SIMMODE = DeviceManager::SimulationMode;
 
 /* ノード クラス */
 class DeviceManager::Node : public Device

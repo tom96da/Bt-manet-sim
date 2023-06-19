@@ -70,8 +70,8 @@ public:
 
     int getNumPaired() const;
     int getNumConnected() const;
-    set<int> getPairedDeviceId() const;
-    set<int> getConnectedDevicesId() const;
+    set<int> getIdPairedDevices() const;
+    set<int> getIdConnectedDevices() const;
     Table getTable() const;
 
     int getNumPacket() const;
@@ -182,7 +182,7 @@ private:
 
 public:
     Packet(const int id_sender, const int packet_id,
-           const int seq_num, const pair<size_t, Var> data,
+           const int seq_num, const pair<size_t, Var> data_with_id,
            const DataAttr data_attr, const int flood_step = 0);
 
     int getSenderId() const;
