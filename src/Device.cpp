@@ -26,22 +26,22 @@ Device::Device(const int id, const int willingness)
 }
 
 /* 累計パケット数 */
-int Device::num_total_packe_ = 0;
+int Device::_num_total_packe_ = 0;
 
 /*!
  * @return int 累計パケット数
  */
-int Device::getTotalPacket() { return num_total_packe_; }
+int Device::getTotalPacket() { return _num_total_packe_; }
 
 /*!
  * @return int 新規パケットID
  */
-int Device::getNewSequenceNum() { return num_total_packe_++; }
+int Device::getNewSequenceNum() { return _num_total_packe_++; }
 
 /*!
  * @brief 累計パケット数をリセットする
  */
-void Device::resetNumPacket() { num_total_packe_ = 0; }
+void Device::resetNumPacket() { _num_total_packe_ = 0; }
 
 /*!
  * @brief 累計パケット数の出力
@@ -83,11 +83,11 @@ int Device::getNumConnected() const { return id_connected_devices_.size(); }
 /*!
  * @return set<int> ペアリング済みデバイスのIDリスト
  */
-set<int> Device::getIdPairedDevices() const
+vector<int> Device::getIdPairedDevices() const
 {
-    set<int> id_paired_devices;
+    vector<int> id_paired_devices;
     for (const auto &[id_paired_device, _] : paired_devices_)
-        id_paired_devices.emplace(id_paired_device);
+        id_paired_devices.emplace_back(id_paired_device);
 
     return id_paired_devices;
 }

@@ -62,8 +62,15 @@ void ProgressBar::start()
     auto end = chrono::system_clock::now();
     auto dur = end - start;
     auto msec = chrono::duration_cast<chrono::milliseconds>(dur).count();
-    std::cout << msec << "ms";
-
+    if (msec < 1000)
+        std::cout << msec << "ms";
+    else if (msec < 10000)
+        std::cout << setprecision(3) << static_cast<double>(msec) / 1000 << "s";
+    else
+    {
+        auto sec = chrono::duration_cast<chrono::seconds>(dur).count();
+        std::cout << sec << "s";
+    }
     std::cout << "\e[?25h" << std::endl;
 }
 

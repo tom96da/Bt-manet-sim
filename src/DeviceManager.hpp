@@ -26,7 +26,7 @@ public:
 
 private:
     /* 接続可能距離 */
-    static double max_com_distance_;
+    static double _max_com_distance_;
 
     /* フィールドサイズ */
     const double field_size_;
@@ -59,7 +59,7 @@ public:
     static double getMaxComDistance();
 
     int getNumDevices() const;
-    Device &getDeviceById(const int id);
+    Node &getDeviceById(const int id);
     pair<double, double> &getPosition(const int id);
 
     void addDevices(int num_devices);
@@ -131,6 +131,8 @@ public:
 
     void setBias(double bias_x, double bias_y);
     void setPositon(double pos_x, double pos_y);
+
+    void showMPR(const WriteMode write_mode);
 };
 
 /* 出力モード列挙型 */

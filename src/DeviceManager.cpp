@@ -29,12 +29,12 @@ DeviceManager::DeviceManager(const double field_size,
 }
 
 /* 接続可能距離 */
-double DeviceManager::max_com_distance_ = MAX_COM_DISTANCE;
+double DeviceManager::_max_com_distance_ = MAX_COM_DISTANCE;
 
 /*!
  * @return double 接続可能距離
  */
-double DeviceManager::getMaxComDistance() { return max_com_distance_; }
+double DeviceManager::getMaxComDistance() { return _max_com_distance_; }
 
 /*!
  * @brief 管理下のデバイス数 取得
@@ -47,7 +47,7 @@ int DeviceManager::getNumDevices() const { return nodes_.size(); };
  * @param id デバイスID
  * @return Device デバイスの参照
  */
-Device &DeviceManager::getDeviceById(const int id)
+DeviceManager::Node &DeviceManager::getDeviceById(const int id)
 {
     return nodes_.at(id);
 }
@@ -90,7 +90,7 @@ void DeviceManager::addDevices(int num_devices)
  */
 void DeviceManager::pairDevices(const int id_1, const int id_2)
 {
-    if (getDistance(id_1, id_2) > max_com_distance_)
+    if (getDistance(id_1, id_2) > _max_com_distance_)
         return;
     if (getDistance(id_1, id_2) < 0)
         return;
@@ -126,7 +126,7 @@ void DeviceManager::unpairDevices(const int id_1, const int id_2)
  */
 void DeviceManager::connectDevices(const int id_1, const int id_2)
 {
-    if (getDistance(id_1, id_2) > max_com_distance_)
+    if (getDistance(id_1, id_2) > _max_com_distance_)
         return;
     if (getDistance(id_1, id_2) < 0)
         return;
@@ -147,7 +147,7 @@ void DeviceManager::connectDevices(const int id_1, const int id_2)
  */
 void DeviceManager::disconnectDevices(const int id_1, const int id_2)
 {
-    if (getDistance(id_1, id_2) <= max_com_distance_)
+    if (getDistance(id_1, id_2) <= _max_com_distance_)
         return;
     if (getDistance(id_1, id_2) < 0)
         return;
@@ -285,17 +285,17 @@ void DeviceManager::buildNetworkByDistance()
         for (auto id_2 : list)
             pairDevices(id_1, id_2);
 
-    for (auto id : list)
+    for (auto id_1 : list)
     {
-        auto &&id_pairs = getDeviceById(id).getIdPairedDevices();
+        auto &&id_pairs = getDeviceById(id_1).getIdPairedDevices();
         map<double, int, greater<double>> tmp;
         transform(id_pairs.begin(), id_pairs.end(), inserter(tmp, tmp.begin()),
-                  [&](const int id_pair) -> pair<double, int>
+                  [&](const int id_2) -> pair<double, int>
                   {
-                      return {getDistance(id, id_pair), id_pair};
+                      return {getDistance(id_1, id_2), id_2};
                   });
-        for (auto [distance, id_pair] : tmp)
-            connectDevices(id, id_pair);
+        for (auto [_, id_2] : tmp)
+            connectDevices(id_1, id_2);
     }
 }
 
@@ -334,50 +334,7 @@ void DeviceManager::showMPR(const int id)
 {
     WriteMode write_mode = WriteMode::SIMPLE;
 
-    auto dev = getDeviceById(id);
-    auto id_cntds = dev.getIdConnectedDevices();
-    auto id_MPR = dev.getMPR();
-
-    std::cout << dev.getName();
-    switch (write_mode)
-    {
-    case WriteMode::VISIBLE:
-        std::cout << "  connected with ";
-        break;
-    case WriteMode::SIMPLE:
-        std::cout << " --> ";
-    default:
-        break;
-    }
-
-    for (auto id_cntd : id_cntds)
-    {
-        std::cout << id_cntd << [&]()
-        {
-            if (id_MPR.count(id_cntd) && write_mode == WriteMode::SIMPLE)
-                return "*";
-
-            return "";
-        }() << ", ";
-    }
-    std::cout << "\e[2D " << std::endl;
-
-    if (write_mode == WriteMode::VISIBLE)
-        for (auto id_cntd : id_cntds)
-        {
-            auto dev__ = getDeviceById(id_cntd);
-            std::cout << dev__.getName()
-                      << [&]
-            {
-                if (id_MPR.count(id_cntd))
-                    return "*";
-
-                return " ";
-            }() << " connected with ";
-            for (auto cntd__ : dev__.getIdConnectedDevices())
-                std::cout << cntd__ << ", ";
-            std::cout << "\e[2D " << std::endl;
-        }
+    getDeviceById(id).showMPR(write_mode);
 }
 
 /*!
@@ -623,4 +580,55 @@ void DeviceManager::Node::setBias(double bias_x, double bias_y)
 void DeviceManager::Node::setPositon(double pos_x, double pos_y)
 {
     position_ = {pos_x, pos_y};
+}
+
+/*!
+ * @brief MPR集合を出力する
+ * @param write_mode 出力モード
+ */
+void DeviceManager::Node::showMPR(const WriteMode write_mode)
+{
+    auto id_cntds = getIdConnectedDevices();
+    auto id_MPR = getMPR();
+
+    std::cout << getName();
+    switch (write_mode)
+    {
+    case WriteMode::VISIBLE:
+        std::cout << "  connected with ";
+        break;
+    case WriteMode::SIMPLE:
+        std::cout << " --> ";
+    default:
+        break;
+    }
+
+    for (auto id_cntd : id_cntds)
+    {
+        std::cout << id_cntd << [&]()
+        {
+            if (id_MPR.count(id_cntd) && write_mode == WriteMode::SIMPLE)
+                return "*";
+
+            return "";
+        }() << ", ";
+    }
+    std::cout << "\e[2D " << std::endl;
+
+    if (write_mode == WriteMode::VISIBLE)
+        for (auto id_cntd : id_cntds)
+        {
+            auto dev__ = getPairedDevice(id_cntd);
+            std::cout << dev__.getName()
+                      << [&]
+            {
+                if (id_MPR.count(id_cntd))
+                    return "*";
+
+                return " ";
+            }() << " connected with ";
+            for (auto cntd__ : dev__.getIdConnectedDevices())
+                std::cout << cntd__ << ", ";
+            std::cout << "\e[2D " << std::endl;
+        }
 }

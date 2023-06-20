@@ -25,7 +25,7 @@ class Device
 {
 private:
     /* 累計パケット数 */
-    static int num_total_packe_;
+    static int _num_total_packe_;
 
     /* デバイスID */
     const int id_;
@@ -70,7 +70,7 @@ public:
 
     int getNumPaired() const;
     int getNumConnected() const;
-    set<int> getIdPairedDevices() const;
+    vector<int> getIdPairedDevices() const;
     set<int> getIdConnectedDevices() const;
     Table getTable() const;
 
@@ -112,9 +112,10 @@ public:
     void makeMPR();
     bool makeTable();
 
-private:
+protected:
     Device &getPairedDevice(const int id);
 
+private:
     bool isSelf(const int id_another_device) const;
 
     pair<size_t, Var> assignIdToData(const Var data, const bool is_flooding = false,

@@ -10,6 +10,7 @@
 #include "pbar.hpp"
 #include <iostream>
 #include <fstream>
+#include <thread>
 
 using namespace std;
 
@@ -46,7 +47,7 @@ int main()
     writeCsv();
 
     mgr.buildNetwork();
-    auto [_, num_member] = mgr.startFlooding(45);
+    const auto [_, num_member] = mgr.startFlooding(45);
     if (num_member < num_dev)
     {
         std::cout << "Smome nodes were not included in the network.\n"
@@ -59,24 +60,27 @@ int main()
 
     mgr.sendHello();
     mgr.makeMPR();
-
     int num_packet = 0;
-    int num_done = 0;
-    auto pbar = thread(
-        [&]()
-        {
-            auto p = PBar(num_member, num_done);
-            p.setTitle("Making routing table");
-            p.start();
-            // p.erase();
-        });
-    while (num_done < num_member)
+
+    /* make Routing Table */
     {
-        num_packet = Device::getTotalPacket();
-        mgr.sendTable();
-        num_done = num_member - mgr.makeTable();
+        int num_done = 0;
+        auto pbar = thread(
+            [&]()
+            {
+                auto p = PBar(num_member, num_done);
+                p.setTitle("Making routing table");
+                p.start();
+                // p.erase();
+            });
+        while (num_done < num_member)
+        {
+            num_packet = Device::getTotalPacket();
+            mgr.sendTable();
+            num_done = num_member - mgr.makeTable();
+        }
+        pbar.join();
     }
-    pbar.join();
     std::cout << "Total packets: " << num_packet << std::endl;
 
     return 0;
