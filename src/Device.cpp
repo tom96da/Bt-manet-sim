@@ -231,10 +231,10 @@ void Device::saveData(pair<size_t, Var> data_with_id,
                       const DataAttr data_attr, int flood_step)
 {
     auto &[data_id, _] = data_with_id;
-    if (memory_.count(data_id))
+    if (hasData(data_id))
         return;
 
-    memory_.emplace(data_id, Sell(getId(), data_with_id, data_attr, flood_step));
+    memory_.emplace(data_id, Sell(getId(), -1, data_with_id, data_attr, flood_step));
 }
 
 /*!
@@ -245,11 +245,12 @@ void Device::saveData(const Packet &packet)
 {
     pair<size_t, Var> data_with_id = packet.getDataWithId();
     auto &[data_id, _] = data_with_id;
-    if (memory_.count(data_id))
+    if (hasData(data_id))
         return;
 
     memory_.emplace(data_id,
-                    Sell(packet.getSenderId(), data_with_id, packet.getDataAttribute(),
+                    Sell(packet.getIdSender(), packet.getIdDestinaiton(),
+                         data_with_id, packet.getDataAttribute(),
                          packet.getFloodStep()));
 }
 
@@ -290,9 +291,9 @@ void Device::receiveMessage(const int id_sender, string message)
  * @param data 送信するデータ
  * @return Packet 生成したパケット
  */
-Device::Packet Device::makePacket(Var data) const
+Device::Packet Device::makePacket(const int id_dest, Var data) const
 {
-    return Packet(getId(), getNewPacketId(), getNewSequenceNum(),
+    return Packet(getId(), id_dest, getNewPacketId(), getNewSequenceNum(),
                   assignIdToData(data), DataAttr::NONE);
 }
 
@@ -303,10 +304,11 @@ Device::Packet Device::makePacket(Var data) const
  * @param flood_step ホップ数 デフォルト値: 0
  * @return Packet 生成したパケット
  */
-Device::Packet Device::makePacket(pair<size_t, Var> data_with_id,
-                                  const DataAttr data_attr, const int flood_step) const
+Device::Packet Device::makePacket(const int id_dest, pair<size_t, Var> data_with_id,
+                                  const DataAttr data_attr,
+                                  const int flood_step) const
 {
-    return Packet(getId(), getNewPacketId(), getNewSequenceNum(),
+    return Packet(getId(), id_dest, getNewPacketId(), getNewSequenceNum(),
                   data_with_id, data_attr, flood_step);
 }
 
@@ -337,9 +339,9 @@ void Device::sendHello()
 {
     for (auto id_cncts = getIdConnectedDevices(); auto &id_cnct : id_cncts)
     {
-        sendPacket(id_cnct, makePacket(assignIdToData(getWillingness()),
+        sendPacket(id_cnct, makePacket(id_cnct, assignIdToData(getWillingness()),
                                        DataAttr::WILLINGNESS));
-        sendPacket(id_cnct, makePacket(assignIdToData(id_cncts),
+        sendPacket(id_cnct, makePacket(id_cnct, assignIdToData(id_cncts),
                                        DataAttr::TOPOLOGY));
     }
 }
@@ -350,9 +352,8 @@ void Device::sendHello()
 void Device::sendTable()
 {
     for (auto &id_cnct : getIdConnectedDevices())
-    {
-        sendPacket(id_cnct, makePacket(assignIdToData(getTable()), DataAttr::TABLE));
-    }
+        sendPacket(id_cnct, makePacket(id_cnct, assignIdToData(getTable()),
+                                       DataAttr::TABLE));
 }
 
 /*!
@@ -406,12 +407,63 @@ void Device::flooding(const int flag)
         return;
 
     for (auto id_cnct : getIdConnectedDevices())
-        if (id_cnct != data_in_sell.getSenderId())
+        if (id_cnct != data_in_sell.getIdSender())
             sendPacket(id_cnct,
-                       makePacket(data_in_sell.getDataWithId(), DataAttr::FLOODING,
-                                  _step_new + 1));
+                       makePacket(-1, data_in_sell.getDataWithId(),
+                                  DataAttr::FLOODING, _step_new + 1));
 
     data_in_sell.setDaTaAttribute(DataAttr::NONE);
+}
+
+/*!
+ * @brief ルーティングテーブルに従ってメッセージを送信する
+ * @param id_dest 宛先デバイスのID
+ * @return pair<int, int> 次ホップデバイスのID, 宛先までの距離
+ */
+pair<int, int> Device::startUnicast(const int id_dest)
+{
+    auto &&table = getTable();
+    if (!table.hasEntry(id_dest))
+        return {-1, 0};
+
+    int id_nextHop = table.getIdNextHop(id_dest);
+    sendPacket(id_nextHop,
+               makePacket(id_dest, assignIdToData(static_cast<string>("hello!")),
+                          DataAttr::HOPPING));
+
+    return {id_nextHop, table.getDistance(id_dest)};
+}
+
+/*!
+ * @brief ルーティングテーブルに従ってメッセージをホップする
+ * @return pair<int, int> 次ホップデバイスのID, 継続フラク
+ */
+pair<int, int> Device::hopping()
+{
+    auto itr =
+        find_if(memory_.rbegin(), memory_.rend(),
+                [](pair<size_t, Device::Sell> &&sell)
+                {
+                    auto &[_, data_in_sell] = sell;
+                    return data_in_sell.getDataAttribute() == DataAttr::HOPPING;
+                });
+    if (itr == memory_.rend())
+        return {0, -1};
+
+    auto &[_, data_in_sell] = *itr;
+    int id_dest = data_in_sell.getIdDestinaiton();
+    if (id_dest == getId())
+        return {0, 0};
+
+    if (!getTable().hasEntry(id_dest))
+        return {0, -1};
+
+    int id_nextHop = getTable().getIdNextHop(id_dest);
+    auto data_with_id = data_in_sell.getDataWithId();
+    sendPacket(id_nextHop,
+               makePacket(id_dest, data_with_id, DataAttr::HOPPING));
+
+    return {id_nextHop, 1};
 }
 
 /*!
@@ -438,7 +490,7 @@ void Device::makeMPR()
             break;
 
         auto &[_, data_in_sell] = *itr;
-        auto id_cnct = data_in_sell.getSenderId();
+        auto id_cnct = data_in_sell.getIdSender();
         auto willingness = get<int>(data_in_sell.getData());
 
         neighbors.emplace(willingness, id_cnct);
@@ -455,7 +507,7 @@ void Device::makeMPR()
                     {
                         auto &[_, data_in_sell] = sell;
                         return data_in_sell.getDataAttribute() == DataAttr::TOPOLOGY &&
-                               data_in_sell.getSenderId() == id_neighbor;
+                               data_in_sell.getIdSender() == id_neighbor;
                     });
         if (itr == memory_.rend())
             break;
@@ -503,7 +555,7 @@ bool Device::makeTable()
             break;
 
         auto &[__, data_in_sell] = *itr;
-        auto id_sender = data_in_sell.getSenderId();
+        auto id_sender = data_in_sell.getIdSender();
         auto table_neighbor = get<Table>(data_in_sell.getData()).getTable();
 
         for (auto &[id_dest, entry] : table_neighbor)
@@ -512,7 +564,8 @@ bool Device::makeTable()
             auto distance = entry.getDistance() + 1;
 
             if (id_dest != getId())
-                result += static_cast<int>(table_.setEntry(id_dest, id_nexthop, distance));
+                result +=
+                    static_cast<int>(table_.setEntry(id_dest, id_nexthop, distance));
         }
 
         data_in_sell.setDaTaAttribute(DataAttr::NONE);
@@ -576,9 +629,11 @@ pair<size_t, Var> Device::assignIdToData(const Var data,
  * @param data_attr データ属性
  * @param flood_step ホップ数 デフォルト値: 0
  */
-Device::Sell::Sell(const int id_sender, const pair<size_t, Var> data_with_id,
-                   const DataAttr data_attr, const int flood_step)
+Device::Sell::Sell(const int id_sender, const int id_dest,
+                   const pair<size_t, Var> data_with_id, const DataAttr data_attr,
+                   const int flood_step)
     : id_sender_{id_sender},
+      id_dest_{id_dest},
       data_with_id_{data_with_id},
       data_attr_{data_attr},
       flood_step_{flood_step}
@@ -588,7 +643,12 @@ Device::Sell::Sell(const int id_sender, const pair<size_t, Var> data_with_id,
 /*!
  * @return int 送信元デバイスのID
  */
-int Device::Sell::getSenderId() const { return id_sender_; }
+int Device::Sell::getIdSender() const { return id_sender_; }
+
+/*!
+ * @return int 宛先デバイスのID
+ */
+int Device::Sell::getIdDestinaiton() const { return id_dest_; }
 
 /*!
  * @return size_t データ識別子
@@ -643,10 +703,11 @@ void Device::Sell::setDaTaAttribute(const DataAttr data_attr)
  * @param data_attr データ属性
  * @param flood_step ホップ数 デフォルト値: 0
  */
-Device::Packet::Packet(const int id_sender, const int packet_id,
+Device::Packet::Packet(const int id_sender, const int id_dest, const int packet_id,
                        const int seq_num, const pair<size_t, Var> data_with_id,
                        const DataAttr data_attr, const int flood_step)
     : id_sender_{id_sender},
+      id_dest_{id_dest},
       packet_id_{packet_id},
       seq_num_{seq_num},
       data_with_id_{data_with_id},
@@ -658,7 +719,9 @@ Device::Packet::Packet(const int id_sender, const int packet_id,
 /*!
  * @return int 送信元デバイスのID
  */
-int Device::Packet::getSenderId() const { return id_sender_; }
+int Device::Packet::getIdSender() const { return id_sender_; }
+
+int Device::Packet::getIdDestinaiton() const { return id_dest_; }
 
 /*!
  * @return int パケットID

@@ -92,6 +92,8 @@ public:
     int aggregateDevices(size_t data_id, set<int> &devices_have_data,
                          const WriteMode write_mode);
 
+    void unicast(const int id_source, const int id_dest);
+
 private:
     vector<int> getDevicesList() const;
     pair<double, double> &getBias(const int id);

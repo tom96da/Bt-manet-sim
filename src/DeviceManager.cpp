@@ -8,6 +8,7 @@
 #include "DeviceManager.hpp"
 #include <iostream>
 #include <algorithm>
+#include <utility>
 
 /* デバイスマネージャー クラス */
 
@@ -456,6 +457,40 @@ int DeviceManager::aggregateDevices(size_t data_id, set<int> &devices_have_data,
     }
 
     return devices_have_data.size();
+}
+
+/*!
+ * @brief
+ * @param id_source 発信元デバイスID
+ * @param id_dest 宛先デバイスのID
+ */
+void DeviceManager::unicast(const int id_source, const int id_dest)
+{
+    WriteMode write_mode = WriteMode::SIMPLE;
+
+    if (getDistance(id_source, id_dest) < 0)
+        return;
+
+    int num_hop = 0;
+    auto [id_nextHop, distance] = getDeviceById(id_source).startUnicast(id_dest);
+    if (write_mode != WriteMode::HIDE)
+        std::cout << "Unicast distance: " << distance << "\n"
+                  << id_source << " -> " << id_nextHop;
+    num_hop++;
+
+    for (int flag = 1; flag > 0;)
+    {
+        tie(id_nextHop, flag) = getDeviceById(id_nextHop).hopping();
+        if (flag == 0)
+            break;
+
+        if (write_mode != WriteMode::HIDE)
+            std::cout << " -> " << id_nextHop;
+        num_hop++;
+    }
+    if (write_mode != WriteMode::HIDE)
+        std::cout << "\n"
+                  << num_hop << " times hop." << std::endl;
 }
 
 /*!

@@ -51,7 +51,7 @@ void ProgressBar::start()
 
         std::cout << "\r";
         if (!title_.empty())
-            std::cout << setfill(' ') << setw(28) << left << title_ + ": ";
+            std::cout << setfill(' ') << setw(25) << left << title_ + ": ";
 
         std::cout << "[" << setfill('_') << setw(length_) << left << progress_ << "]"
                   << " [" << setfill(' ') << setw(digit_) << right

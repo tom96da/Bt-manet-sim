@@ -97,8 +97,8 @@ public:
     void sendMessage(const int id_receiver, string message);
     void receiveMessage(const int id_sender, string message);
 
-    Packet makePacket(Var data) const;
-    Packet makePacket(pair<size_t, Var> data_with_id,
+    Packet makePacket(const int id_dest, Var data) const;
+    Packet makePacket(const int id_dest, pair<size_t, Var> data_with_id,
                       const DataAttr data_attr, const int flood_step = 0) const;
     void sendPacket(const int id_receiver, const Packet &packet);
     void receivePacket(const Packet &packet);
@@ -108,6 +108,8 @@ public:
 
     size_t makeFloodData();
     void flooding(const int flag = 0);
+    pair<int, int> startUnicast(const int id_diet);
+    pair<int, int> hopping();
 
     void makeMPR();
     bool makeTable();
@@ -129,7 +131,8 @@ enum class Device::DataAttr
     TOPOLOGY,
     TABLE,
     FLOODING,
-    NEXT_FLOOD
+    NEXT_FLOOD,
+    HOPPING
 };
 
 /* メモリセルクラス */
@@ -138,6 +141,8 @@ class Device::Sell
 private:
     /* 送信元デバイスのID */
     const int id_sender_;
+    /* 宛先デバイスのID */
+    const int id_dest_;
 
     /* 識別子付きデータ */
     const pair<size_t, Var> data_with_id_;
@@ -148,10 +153,12 @@ private:
     const int flood_step_;
 
 public:
-    Sell(const int id_sender, const pair<size_t, Var> data_with_id,
-         const DataAttr data_attr, const int flood_step);
+    Sell(const int id_sender, const int id_dest,
+         const pair<size_t, Var> data_with_id, const DataAttr data_attr,
+         const int flood_step);
 
-    int getSenderId() const;
+    int getIdSender() const;
+    int getIdDestinaiton() const;
     size_t getDataId() const;
 
     Var getData() const;
@@ -168,6 +175,8 @@ class Device::Packet
 private:
     /* 送信元デバイスのID */
     const int id_sender_;
+    /* 宛先デバイスのID */
+    const int id_dest_;
     /* パケットID */
     const int packet_id_;
     /* シーケンスナンバー */
@@ -182,11 +191,12 @@ private:
     const int flood_step_;
 
 public:
-    Packet(const int id_sender, const int packet_id,
+    Packet(const int id_sender, const int id_dest, const int packet_id,
            const int seq_num, const pair<size_t, Var> data_with_id,
            const DataAttr data_attr, const int flood_step = 0);
 
-    int getSenderId() const;
+    int getIdSender() const;
+    int getIdDestinaiton() const;
     int getPacketId() const;
     int getSeqNum() const;
 

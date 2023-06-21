@@ -24,12 +24,24 @@ int RoutingTable::getNumEntry() const
  * @param id_dest 宛先デバイスID
  * @return 次ホップデバイスID
  */
-int RoutingTable::getNextHop(const int id_dest) const
+int RoutingTable::getIdNextHop(const int id_dest) const
 {
     if (!table_.count(id_dest))
         return -1;
 
-    return table_.at(id_dest).getNextHop();
+    return table_.at(id_dest).getIdNextHop();
+}
+
+/*!
+ * @param id_dest 宛先デバイスID
+ * @return 宛先デバイスまでのホップ距離
+ */
+int RoutingTable::getDistance(const int id_dest) const
+{
+    if (!table_.count(id_dest))
+        return -1;
+
+    return table_.at(id_dest).getDistance();
 }
 
 /*!
@@ -111,7 +123,7 @@ RoutingTable::Entry::Entry(const int id_nextHop, const int distance)
 /*!
  * @return 次ホップデバイスのID
  */
-int RoutingTable::Entry::getNextHop() const { return id_nextHop_; }
+int RoutingTable::Entry::getIdNextHop() const { return id_nextHop_; }
 
 /*!
  * @return マルチホップ距離
