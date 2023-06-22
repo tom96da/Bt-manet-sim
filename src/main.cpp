@@ -10,7 +10,7 @@
 #include "pbar.hpp"
 #include <iostream>
 #include <fstream>
-#include <thread>
+#include <future>
 
 using namespace std;
 
@@ -42,54 +42,61 @@ int main()
         }
     };
 
-    bool retry = false;
-    do
+    auto doSim = [&](const int repeat)
     {
-        mgr.addDevices(num_dev);
-        mgr.buildNetwork();
-        const auto [_, num_member] = mgr.flooding(45);
-        retry = false;
-
-        if (num_member < num_dev)
+        for (int i = 0; i < repeat; ++i)
         {
-            retry = true;
-            mgr.ResetManager();
-        }
-    } while (retry);
-
-    newCsv();
-    writeCsv();
-
-    // mgr.clearMemory();
-    // Device::resetNumPacket();
-
-    mgr.sendHello();
-    mgr.makeMPR();
-
-    /* make Routing Table */
-    {
-        int num_packet_start = Device::getTotalPacket(),
-            num_packet_end = 0;
-        int num_done = 0;
-        auto pbar = thread(
-            [&]()
+            bool retry = false;
+            do
             {
-                auto p = PBar(num_dev, num_done);
-                p.setTitle("Making routing table");
-                p.start();
-                // p.erase();
-            });
-        while (num_done < num_dev)
-        {
-            num_packet_end = Device::getTotalPacket();
-            mgr.sendTable();
-            num_done = num_dev - mgr.makeTable();
+                mgr.ResetManager();
+                mgr.addDevices(num_dev);
+                mgr.buildNetwork();
+                const auto [_, num_member] = mgr.flooding(45);
+                retry = false;
+
+                if (num_member < num_dev)
+                    retry = true;
+            } while (retry);
+
+            newCsv();
+            writeCsv();
+
+            // mgr.clearMemory();
+            // Device::resetNumPacket();
+
+            mgr.sendHello();
+            mgr.makeMPR();
+
+            /* make Routing Table */
+            {
+                int num_packet_start = Device::getTotalPacket(),
+                    num_packet_end = 0;
+                int num_done = 0;
+                auto pbar = async(launch::async,
+                                  [&]()
+                                  {
+                                      auto p = PBar(num_dev, num_done);
+                                      p.setTitle("Making routing table");
+                                      p.start();
+                                      p.erase();
+                                      return p.getTime();
+                                  });
+                while (num_done < num_dev)
+                {
+                    num_packet_end = Device::getTotalPacket();
+                    mgr.sendTable();
+                    num_done = num_dev - mgr.makeTable();
+                }
+                auto time = pbar.get();
+                std::cout << "packets: " << num_packet_end - num_packet_start
+                          << ", time: " << time << "msec" << std::endl;
+            }
+            // mgr.unicast(0, 99);
         }
-        pbar.join();
-        std::cout << "Number of communications made for the routing table: "
-                  << num_packet_end - num_packet_start << std::endl;
-    }
-    // mgr.unicast(0, 99);
+    };
+
+    doSim(10);
     std::cout << "complete." << std::endl;
 
     return 0;

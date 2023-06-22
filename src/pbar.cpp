@@ -72,6 +72,8 @@ void ProgressBar::start()
         std::cout << sec << "s";
     }
     std::cout << "\e[?25h" << std::endl;
+
+    time_ = msec;
 }
 
 /*!
@@ -82,3 +84,8 @@ void ProgressBar::setTitle(const string title) { title_ = title; }
 
 /* プログレスバーをクリアする */
 void ProgressBar::erase() const { std::cout << "\e[1A\e[2K" << std::flush; }
+
+/*!
+ * @return かかった時間
+ */
+int64_t ProgressBar::getTime() const { return time_; }

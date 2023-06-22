@@ -40,11 +40,16 @@ private:
     /* 完了パーセント */
     int percent_;
 
+    /* かかった時間 */
+    int64_t time_;
+
 public:
     ProgressBar(const int num_task, int &num_done, int length = PBAR_LENGTH);
     void start();
     void setTitle(const string title);
     void erase() const;
+
+    int64_t getTime() const;
 };
 
 /* プログレスバークラス */
