@@ -5,11 +5,35 @@
  * @date 2023-05-25
  */
 
+/**
+ * 想定する使い方
+ *
+ * int main()
+ * {
+ *     int task, done;
+ *     auto pbar = PBar();
+ *     auto pb1 = pbar.add(task, done);
+ *     pb1.set_title("");
+ *     pb1.start();
+ *
+ *     // 進捗の処理
+ *
+ *     auto time1 = pb1.time();
+ *     pb1.erase();
+ *
+ *     return 0;
+ * }
+ *
+ */
+
 #ifndef PBAR_HPP
 #define PBAR_HPP
 
 #include <iostream>
+#include <vector>
 #include <string>
+#include <future>
+#include <thread>
 #include <chrono>
 #include <iomanip>
 
@@ -21,6 +45,23 @@ const int PBAR_LENGTH = 20;
 class ProgressBar
 {
 private:
+    /* バー本体クラス */
+    class BarBody;
+    /* バー本体 */
+    vector<BarBody> pbars_;
+
+public:
+    ProgressBar();
+
+    BarBody &add(const int num_task, int &num_done, const int layer = 0);
+};
+
+/* バー本体 */
+class ProgressBar::BarBody
+{
+private:
+    /* レイヤー */
+    const int layer_;
     /* バーの長さ */
     const int length_;
     /* 1ステップの大きさ */
@@ -43,13 +84,18 @@ private:
     /* かかった時間 */
     int64_t time_;
 
+    future<int64_t> future_;
+    thread thread_;
+
 public:
-    ProgressBar(const int num_task, int &num_done, int length = PBAR_LENGTH);
+    BarBody(const int num_task, int &num_done, const int layer);
     void start();
-    void setTitle(const string title);
+    void close();
+    void set_title(const string title);
+    void clear() const;
     void erase() const;
 
-    int64_t getTime() const;
+    int64_t time();
 };
 
 /* プログレスバークラス */
