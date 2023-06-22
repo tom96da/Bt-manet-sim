@@ -18,11 +18,10 @@ int main()
 {
     double field_size = 60.0;
     int num_dev = 100;
-    SIMMODE sim_mode = SIMMODE::PROPOSAL;
+    SIMMODE sim_mode = SIMMODE::EXITING;
     auto fs = vector<ofstream>{};
 
     auto mgr = MGR{field_size, sim_mode};
-    mgr.addDevices(num_dev);
 
     auto newCsv = [&]()
     {
@@ -43,17 +42,23 @@ int main()
         }
     };
 
+    bool retry = false;
+    do
+    {
+        mgr.addDevices(num_dev);
+        mgr.buildNetwork();
+        const auto [_, num_member] = mgr.flooding(45);
+        retry = false;
+
+        if (num_member < num_dev)
+        {
+            retry = true;
+            mgr.ResetManager();
+        }
+    } while (retry);
+
     newCsv();
     writeCsv();
-
-    mgr.buildNetwork();
-    const auto [_, num_member] = mgr.startFlooding(45);
-    if (num_member < num_dev)
-    {
-        std::cout << "Some nodes do not belong to the network.\n"
-                  << "Please retry." << std::endl;
-        return 0;
-    }
 
     // mgr.clearMemory();
     // Device::resetNumPacket();
@@ -69,22 +74,22 @@ int main()
         auto pbar = thread(
             [&]()
             {
-                auto p = PBar(num_member, num_done);
+                auto p = PBar(num_dev, num_done);
                 p.setTitle("Making routing table");
                 p.start();
                 // p.erase();
             });
-        while (num_done < num_member)
+        while (num_done < num_dev)
         {
             num_packet_end = Device::getTotalPacket();
             mgr.sendTable();
-            num_done = num_member - mgr.makeTable();
+            num_done = num_dev - mgr.makeTable();
         }
         pbar.join();
-        std::cout << "Total packets: "
+        std::cout << "Number of communications made for the routing table: "
                   << num_packet_end - num_packet_start << std::endl;
     }
-    mgr.unicast(0, 99);
+    // mgr.unicast(0, 99);
     std::cout << "complete." << std::endl;
 
     return 0;

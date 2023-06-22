@@ -27,6 +27,27 @@ DeviceManager::DeviceManager(const double field_size,
       bias_random_{-0.4, 0.4},
       willingness_random_{1, 5}
 {
+    switch (sim_mode_)
+    {
+    case SIMMODE::EXITING:
+        std::cout << "Simulation mode: EXITNG" << std::endl;
+        break;
+    case SIMMODE::PROPOSAL:
+        std::cout << "Simulation mode: PROPOSAL" << std::endl;
+        break;
+    default:
+        std::cout << "Please execute after specifying "
+                  << "either EXITING or PROPOSAL for the simulation mode."
+                  << std::endl;
+        std::exit(EXIT_SUCCESS);
+        break;
+    }
+}
+
+void DeviceManager::ResetManager()
+{
+    Device::resetNumPacket();
+    nodes_.clear();
 }
 
 /* 接続可能距離 */
@@ -67,10 +88,10 @@ pair<double, double> &DeviceManager::getPosition(const int id)
  * @brief デバイスを追加する
  * @param num_devices デバイス数
  */
-void DeviceManager::addDevices(int num_devices)
+void DeviceManager::addDevices(const int num_devices)
 {
     int id_next = 0;
-    if (!nodes_.empty())
+    if (getNumDevices() > 0)
     {
         auto &[id_last, _] = *nodes_.rend();
         id_next = id_last + 1;
@@ -229,18 +250,12 @@ void DeviceManager::buildNetwork()
     switch (sim_mode_)
     {
     case SIMMODE::EXITING:
-        std::cout << "Simulation mode: EXITNG" << std::endl;
         buildNetworkRandom();
         break;
     case SIMMODE::PROPOSAL:
-        std::cout << "Simulation mode: PROPOSAL" << std::endl;
         buildNetworkByDistance();
         break;
     default:
-        std::cout << "Please execute after specifying "
-                  << "either EXITING or PROPOSAL for the simulation mode."
-                  << std::endl;
-        std::exit(EXIT_SUCCESS);
         break;
     }
 }
@@ -357,7 +372,7 @@ int DeviceManager::makeTable()
  * @param id 開始デバイスのID
  * @return データ識別子
  */
-pair<size_t, int> DeviceManager::startFlooding(const int id)
+pair<size_t, int> DeviceManager::flooding(const int id)
 {
     WriteMode write_mode = WriteMode::HIDE;
 

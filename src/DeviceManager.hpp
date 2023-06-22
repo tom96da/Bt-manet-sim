@@ -55,6 +55,7 @@ private:
 public:
     DeviceManager(const double field_size,
                   const SimulationMode sim_mode);
+    void ResetManager();
 
     static double getMaxComDistance();
 
@@ -62,7 +63,8 @@ public:
     Node &getDeviceById(const int id);
     pair<double, double> &getPosition(const int id);
 
-    void addDevices(int num_devices);
+    void addDevices(const int num_devices);
+    void removeDevice(const int id);
 
     void pairDevices(const int id_1, const int id_2);
     void unpairDevices(const int id_1, const int id_2);
@@ -72,6 +74,7 @@ public:
 
     void updatePosition(const int id);
     void updatePositionAll();
+    void relocatePosition();
 
     void clearMemory();
 
@@ -87,7 +90,7 @@ public:
 
     int makeTable();
 
-    pair<size_t, int> startFlooding(const int id);
+    pair<size_t, int> flooding(const int id);
     int aggregateDevices(size_t data_id);
     int aggregateDevices(size_t data_id, set<int> &devices_have_data,
                          const WriteMode write_mode);
