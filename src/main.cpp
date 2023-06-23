@@ -62,9 +62,6 @@ int main()
             newCsv();
             writeCsv();
 
-            // mgr.clearMemory();
-            // Device::resetNumPacket();
-
             mgr.sendHello();
             mgr.makeMPR();
 
@@ -73,30 +70,29 @@ int main()
                 int num_packet_start = Device::getTotalPacket(),
                     num_packet_end = 0;
                 int num_done = 0;
-                auto pbar = async(launch::async,
-                                  [&]()
-                                  {
-                                      auto p = PBar(num_dev, num_done);
-                                      p.setTitle("Making routing table");
-                                      p.start();
-                                      p.erase();
-                                      return p.getTime();
-                                  });
+
+                auto pbars = PBar();
+                auto &pb1 = pbars.add(num_dev, num_done);
+                pb1.set_title("Making routing table");
+                pb1.start();
+
                 while (num_done < num_dev)
                 {
                     num_packet_end = Device::getTotalPacket();
                     mgr.sendTable();
                     num_done = num_dev - mgr.makeTable();
                 }
-                auto time = pbar.get();
+
+                pb1.close();
+                // pb1.erase();
                 std::cout << "packets: " << num_packet_end - num_packet_start
-                          << ", time: " << time << "msec" << std::endl;
+                          << ", time: " << pb1.time() << " msec" << std::endl;
             }
             // mgr.unicast(0, 99);
         }
     };
 
-    doSim(10);
+    doSim(1);
     std::cout << "complete." << std::endl;
 
     return 0;
