@@ -10,7 +10,7 @@
 #include "pbar.hpp"
 #include <iostream>
 #include <fstream>
-#include <future>
+#include <vector>
 
 using namespace std;
 
@@ -20,6 +20,9 @@ int main()
     int num_dev = 100;
     SIMMODE sim_mode = SIMMODE::EXITING;
     auto fs = vector<ofstream>{};
+
+    const int num_repeat = 20;
+    vector<pair<int, int>> result;
 
     auto mgr = MGR{field_size, sim_mode};
 
@@ -44,6 +47,11 @@ int main()
 
     auto doSim = [&](const int repeat)
     {
+        auto pbar = PBar();
+        auto &pb_make_table = pbar.add();
+        pb_make_table.set_title("Making routing table");
+        newCsv();
+
         for (int i = 0; i < repeat; ++i)
         {
             bool retry = false;
@@ -59,7 +67,6 @@ int main()
                     retry = true;
             } while (retry);
 
-            newCsv();
             writeCsv();
 
             mgr.sendHello();
@@ -68,13 +75,9 @@ int main()
             /* make Routing Table */
             {
                 int num_packet_start = Device::getTotalPacket(),
-                    num_packet_end = 0;
-                int num_done = 0;
-
-                auto pbars = PBar();
-                auto &pb1 = pbars.add(num_dev, num_done);
-                pb1.set_title("Making routing table");
-                pb1.start();
+                    num_packet_end = 0,
+                    num_done = 0;
+                pb_make_table.start(num_dev, num_done);
 
                 while (num_done < num_dev)
                 {
@@ -83,17 +86,30 @@ int main()
                     num_done = num_dev - mgr.makeTable();
                 }
 
-                pb1.close();
-                // pb1.erase();
-                std::cout << "packets: " << num_packet_end - num_packet_start
-                          << ", time: " << pb1.time() << " msec" << std::endl;
+                pb_make_table.close();
+                result.emplace_back(num_packet_end - num_packet_start,
+                                    static_cast<int>(pb_make_table.time()));
             }
-            // mgr.unicast(0, 99);
         }
+        pb_make_table.erase();
     };
 
-    doSim(1);
-    std::cout << "complete." << std::endl;
+    doSim(num_repeat);
+    std::cout << num_repeat << " tiomes complete." << std::endl;
+
+    auto average = [&]() -> std::pair<int, int64_t>
+    {
+        auto sum = reduce(
+            result.begin(), result.end(), std::pair<int, int64_t>{0, 0},
+            [&](const auto &acc, const auto &elem) -> std::pair<int, int64_t>
+            {
+                return {acc.first + elem.first, acc.second + elem.second};
+            });
+        return {sum.first / num_repeat, sum.second / num_repeat};
+    }();
+
+    std::cout << "average packets: " << average.first
+              << ", time: " << average.second << " msec" << std::endl;
 
     return 0;
 }
