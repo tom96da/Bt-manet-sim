@@ -15,19 +15,16 @@ RoutingTable::RoutingTable() {}
 /*!
  * @return 総エントリ数
  */
-int RoutingTable::getNumEntry() const
-{
-    return table_.size();
-}
+int RoutingTable::getNumEntry() const { return table_.size(); }
 
 /*!
  * @param id_dest 宛先デバイスID
  * @return 次ホップデバイスID
  */
-int RoutingTable::getIdNextHop(const int id_dest) const
-{
-    if (!table_.count(id_dest))
+int RoutingTable::getIdNextHop(const int id_dest) const {
+    if (!table_.count(id_dest)) {
         return -1;
+    }
 
     return table_.at(id_dest).getIdNextHop();
 }
@@ -36,10 +33,10 @@ int RoutingTable::getIdNextHop(const int id_dest) const
  * @param id_dest 宛先デバイスID
  * @return 宛先デバイスまでのホップ距離
  */
-int RoutingTable::getDistance(const int id_dest) const
-{
-    if (!table_.count(id_dest))
+int RoutingTable::getDistance(const int id_dest) const {
+    if (!table_.count(id_dest)) {
         return -1;
+    }
 
     return table_.at(id_dest).getDistance();
 }
@@ -47,19 +44,16 @@ int RoutingTable::getDistance(const int id_dest) const
 /*!
  * @return ルーティングテーブル
  */
-map<int, Table::Entry> &RoutingTable::getTable()
-{
-    return table_;
-}
+map<int, Table::Entry> &RoutingTable::getTable() { return table_; }
 
 /*!
  * @return エントリ済みデバイスのID
  */
-vector<int> RoutingTable::getDestinations() const
-{
+vector<int> RoutingTable::getDestinations() const {
     vector<int> destinations;
-    for (const auto &[id_dest, _] : table_)
+    for (const auto &[id_dest, _] : table_) {
         destinations.push_back(id_dest);
+    }
 
     return destinations;
 }
@@ -70,7 +64,9 @@ vector<int> RoutingTable::getDestinations() const
  * @retval true 存在する
  * @retval false 存在しない
  */
-bool RoutingTable::hasEntry(const int id_dest) const { return table_.count(id_dest); }
+bool RoutingTable::hasEntry(const int id_dest) const {
+    return table_.count(id_dest);
+}
 
 /*!
  * @brief エントリの更新
@@ -81,17 +77,18 @@ bool RoutingTable::hasEntry(const int id_dest) const { return table_.count(id_de
  * @retval false 更新無し
  */
 bool RoutingTable::setEntry(const int id_dest, const int id_nextHop,
-                            const int distance)
-{
-    if (table_.count(id_dest))
+                            const int distance) {
+    if (table_.count(id_dest)) {
         // 既にエントリが存在する場合は、距離が近ければ更新する
-        if (table_.at(id_dest).getDistance() > distance)
+        if (table_.at(id_dest).getDistance() > distance) {
             table_[id_dest].setEntry(id_nextHop, distance);
-        else
+        } else {
             return false;
-    else
+        }
+    } else {
         // エントリが存在しない場合は、新たに作成する
         table_.emplace(id_dest, Entry(id_nextHop, distance));
+    }
 
     return true;
 }
@@ -100,10 +97,10 @@ bool RoutingTable::setEntry(const int id_dest, const int id_nextHop,
  * @brief 宛先に対するエントリを無効にする
  * @param id_dest 宛先デバイスID
  */
-void RoutingTable::markEntryInvalid(const int id_dest)
-{
-    if (table_.count(id_dest))
+void RoutingTable::markEntryInvalid(const int id_dest) {
+    if (table_.count(id_dest)) {
         table_.at(id_dest).markInvalid();
+    }
 }
 
 /* 各デバイスのエントリクラス */
@@ -114,11 +111,7 @@ void RoutingTable::markEntryInvalid(const int id_dest)
  * @param distance 次ホップデバイスの距離
  */
 RoutingTable::Entry::Entry(const int id_nextHop, const int distance)
-    : id_nextHop_{id_nextHop},
-      distance_{distance},
-      isValid_{true}
-{
-}
+    : id_nextHop_{id_nextHop}, distance_{distance}, isValid_{true} {}
 
 /*!
  * @return 次ホップデバイスのID
@@ -128,10 +121,7 @@ int RoutingTable::Entry::getIdNextHop() const { return id_nextHop_; }
 /*!
  * @return マルチホップ距離
  */
-int RoutingTable::Entry::getDistance() const
-{
-    return distance_;
-}
+int RoutingTable::Entry::getDistance() const { return distance_; }
 
 /*!
  * @brief エントリが無効か取得
@@ -145,8 +135,7 @@ bool RoutingTable::Entry::isValid() const { return isValid_; }
  * @param id_nextHop 次のホップデバイスのID
  * @param distance 次ポップデバイスの距離
  */
-void RoutingTable::Entry::setEntry(const int id_nextHop, const int distance)
-{
+void RoutingTable::Entry::setEntry(const int id_nextHop, const int distance) {
     id_nextHop_ = id_nextHop;
     distance_ = distance;
     isValid_ = true;

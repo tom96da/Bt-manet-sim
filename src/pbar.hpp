@@ -12,9 +12,9 @@
  * {
  *     int task, done;
  *     auto pbar = PBar();
- *     auto pb1 = pbar.add(task, done);
+ *     auto pb1 = pbar.add();
  *     pb1.set_title("");
- *     pb1.start();
+ *     pb1.start(task, done);
  *
  *     // 進捗の処理
  *
@@ -29,37 +29,35 @@
 #ifndef PBAR_HPP
 #define PBAR_HPP
 
-#include <iostream>
-#include <vector>
-#include <string>
-#include <future>
-#include <thread>
 #include <chrono>
+#include <future>
 #include <iomanip>
+#include <iostream>
+#include <string>
+#include <thread>
+#include <vector>
 
 using namespace std;
 
 const int PBAR_LENGTH = 20;
 
 /* プログレスバークラス */
-class ProgressBar
-{
-private:
+class ProgressBar {
+   private:
     /* バー本体クラス */
     class BarBody;
     /* バー本体 */
     vector<BarBody> pbars_;
 
-public:
+   public:
     ProgressBar();
 
     BarBody &add(const int layer = 0);
 };
 
 /* バー本体 */
-class ProgressBar::BarBody
-{
-private:
+class ProgressBar::BarBody {
+   private:
     /* レイヤー */
     const int layer_;
     /* バーの長さ */
@@ -76,7 +74,7 @@ private:
     /* 並列スレッド */
     thread thread_;
 
-public:
+   public:
     BarBody(const int layer);
     void start(const int num_task, int &num_done);
     void close();

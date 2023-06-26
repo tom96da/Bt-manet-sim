@@ -8,11 +8,12 @@
 #ifndef DEVICE_HPP
 #define DEVICE_HPP
 
-#include "routingTable.hpp"
-#include <string>
 #include <map>
 #include <set>
+#include <string>
 #include <variant>
+
+#include "routingTable.hpp"
 
 using namespace std;
 using Var = variant<int, double, string, set<int>, Table>;
@@ -21,9 +22,8 @@ using Var = variant<int, double, string, set<int>, Table>;
 const int MAX_CONNECTIONS = 6;
 
 /* Bluetooth デバイスクラス */
-class Device
-{
-private:
+class Device {
+   private:
     /* 累計パケット数 */
     static int _num_total_packe_;
 
@@ -56,7 +56,7 @@ private:
     /* パケットクラス */
     class Packet;
 
-public:
+   public:
     Device(const int id, const int willingness);
 
     static int getTotalPacket();
@@ -89,8 +89,8 @@ public:
     void unpairing(const int id_another_device);
     bool connect(const int id_another_device);
     void disconnect(const int id_another_device);
-    void saveData(pair<size_t, Var> data_with_id,
-                  const DataAttr data_attr, int flood_step = 0);
+    void saveData(pair<size_t, Var> data_with_id, const DataAttr data_attr,
+                  int flood_step = 0);
     void saveData(const Packet &packet);
     void clearMemory();
 
@@ -114,18 +114,18 @@ public:
     void makeMPR();
     bool makeTable();
 
-protected:
+   protected:
     Device &getPairedDevice(const int id);
 
-private:
+   private:
     bool isSelf(const int id_another_device) const;
 
-    pair<size_t, Var> assignIdToData(const Var data, const bool is_flooding = false,
+    pair<size_t, Var> assignIdToData(const Var data,
+                                     const bool is_flooding = false,
                                      size_t data_id = 0) const;
 };
 
-enum class Device::DataAttr
-{
+enum class Device::DataAttr {
     NONE,
     WILLINGNESS,
     TOPOLOGY,
@@ -136,9 +136,8 @@ enum class Device::DataAttr
 };
 
 /* メモリセルクラス */
-class Device::Sell
-{
-private:
+class Device::Sell {
+   private:
     /* 送信元デバイスのID */
     const int id_sender_;
     /* 宛先デバイスのID */
@@ -152,7 +151,7 @@ private:
     /* フラッディングホップ数 */
     const int flood_step_;
 
-public:
+   public:
     Sell(const int id_sender, const int id_dest,
          const pair<size_t, Var> data_with_id, const DataAttr data_attr,
          const int flood_step);
@@ -170,9 +169,8 @@ public:
 };
 
 /* パケットクラス */
-class Device::Packet
-{
-private:
+class Device::Packet {
+   private:
     /* 送信元デバイスのID */
     const int id_sender_;
     /* 宛先デバイスのID */
@@ -190,7 +188,7 @@ private:
     /* フラッディングホップ数 */
     const int flood_step_;
 
-public:
+   public:
     Packet(const int id_sender, const int id_dest, const int packet_id,
            const int seq_num, const pair<size_t, Var> data_with_id,
            const DataAttr data_attr, const int flood_step = 0);
@@ -207,4 +205,4 @@ public:
 
 #include "Device.cpp"
 
-#endif // DEVICE_HPP
+#endif  // DEVICE_HPP

@@ -13,15 +13,14 @@
 using namespace std;
 
 /* ルーティングテーブルクラス */
-class RoutingTable
-{
-private:
+class RoutingTable {
+   private:
     /* 各デバイスのエントリクラス */
     class Entry;
     /* ルーティングテーブル */
     map<int, Entry> table_;
 
-public:
+   public:
     RoutingTable();
 
     int getNumEntry() const;
@@ -39,9 +38,8 @@ public:
 };
 
 /* 各デバイスのエントリクラス */
-class RoutingTable::Entry
-{
-private:
+class RoutingTable::Entry {
+   private:
     /* 次のホップデバイスのID */
     int id_nextHop_;
     /* 宛先デバイスまでのホップ距離 */
@@ -49,7 +47,7 @@ private:
     /* エントリが有効かどうか */
     bool isValid_;
 
-public:
+   public:
     Entry() = default;
     Entry(const int id_nextHop_, const int distance = 0);
 
@@ -66,4 +64,4 @@ using Table = RoutingTable;
 
 #include "routingTable.cpp"
 
-#endif // ROUTINGTABLE_HPP
+#endif  // ROUTINGTABLE_HPP

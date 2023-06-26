@@ -8,9 +8,10 @@
 #ifndef DEVICEMANAGER_HPP
 #define DEVICEMANAGER_HPP
 
-#include <random>
 #include <map>
+#include <random>
 #include <vector>
+
 #include "Device.hpp"
 using namespace std;
 
@@ -18,13 +19,12 @@ using namespace std;
 const double MAX_COM_DISTANCE = 10.0;
 
 /* デバイスマネージャー クラス */
-class DeviceManager
-{
-public:
+class DeviceManager {
+   public:
     /* シミュレーションモード列挙型 */
     enum class SimulationMode;
 
-private:
+   private:
     /* 接続可能距離 */
     static double _max_com_distance_;
 
@@ -52,9 +52,8 @@ private:
     /* 出力モード列挙型 */
     enum class WriteMode;
 
-public:
-    DeviceManager(const double field_size,
-                  const SimulationMode sim_mode);
+   public:
+    DeviceManager(const double field_size, const SimulationMode sim_mode);
     void ResetManager();
 
     static double getMaxComDistance();
@@ -97,7 +96,7 @@ public:
 
     void unicast(const int id_source, const int id_dest);
 
-private:
+   private:
     vector<int> getDevicesList() const;
     pair<double, double> &getBias(const int id);
     double getDistance(const int id_1, const int id_2);
@@ -111,8 +110,7 @@ private:
 using MGR = DeviceManager;
 
 /* シミュレーションモード */
-enum class DeviceManager::SimulationMode
-{
+enum class DeviceManager::SimulationMode {
     NONE,
     EXITING, /* 既存手法 */
     PROPOSAL /* 提案手法 */
@@ -120,15 +118,14 @@ enum class DeviceManager::SimulationMode
 using SIMMODE = DeviceManager::SimulationMode;
 
 /* ノード クラス */
-class DeviceManager::Node : public Device
-{
-private:
+class DeviceManager::Node : public Device {
+   private:
     /* 移動バイアス */
     pair<double, double> bias_;
     /* 座標 */
     pair<double, double> position_;
 
-public:
+   public:
     Node(const int id, const int willingness = 3);
 
     pair<double, double> &getBias();
@@ -141,8 +138,7 @@ public:
 };
 
 /* 出力モード列挙型 */
-enum class DeviceManager::WriteMode
-{
+enum class DeviceManager::WriteMode {
     DEFAULT, /* デフォルト 最小限表示 */
     HIDE,    /* 非表示 */
     SIMPLE,  /* 簡易表示 */
