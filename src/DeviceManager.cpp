@@ -18,35 +18,13 @@
  * @param field_size フィールドサイズ
  * @param sim_mode シミュレーションモード
  */
-DeviceManager::DeviceManager(const double field_size,
-                             const SimulationMode sim_mode)
+DeviceManager::DeviceManager(const double field_size)
     : field_size_{field_size},
-      sim_mode_{sim_mode},
       mt_{random_device{}()},
       position_random_{0.0, field_size_},
       move_randn_{0, 0.3},
       bias_random_{-0.4, 0.4},
-      willingness_random_{1, 5} {
-    switch (sim_mode_) {
-        case SIMMODE::EXITING:
-            std::cout << "Simulation mode: EXITNG" << std::endl;
-            break;
-        case SIMMODE::PROPOSAL:
-            std::cout << "Simulation mode: PROPOSAL" << std::endl;
-            break;
-        default:
-            std::cout << "Please execute after specifying "
-                      << "either EXITING or PROPOSAL for the simulation mode."
-                      << std::endl;
-            std::exit(EXIT_SUCCESS);
-            break;
-    }
-}
-
-void DeviceManager::ResetManager() {
-    Device::resetNumPacket();
-    nodes_.clear();
-}
+      willingness_random_{1, 5} {}
 
 /* 接続可能距離 */
 double DeviceManager::_max_com_distance_ = MAX_COM_DISTANCE;
@@ -55,6 +33,29 @@ double DeviceManager::_max_com_distance_ = MAX_COM_DISTANCE;
  * @return double 接続可能距離
  */
 double DeviceManager::getMaxComDistance() { return _max_com_distance_; }
+
+/*!
+ * @brief シミュレーションモードを設定する
+ * @param sim_mode
+ */
+void DeviceManager::setSimMode(const SimulationMode sim_mode) {
+    sim_mode_ = sim_mode;
+
+    switch (sim_mode_) {
+        case SIMMODE::EXITING:
+            std::cout << "Simulation mode: EXITNG" << std::endl;
+            break;
+        case SIMMODE::PROPOSAL_1:
+            std::cout << "Simulation mode: PROPOSAL_1" << std::endl;
+            break;
+        default:
+            std::cout << "Please execute after specifying "
+                      << "either EXITING or PROPOSAL_1 for the simulation mode."
+                      << std::endl;
+            std::exit(EXIT_SUCCESS);
+            break;
+    }
+}
 
 /*!
  * @brief 管理下のデバイス数 取得
@@ -96,6 +97,14 @@ void DeviceManager::addDevices(const int num_devices) {
         nodes_.at(id).setBias(bias_random_(mt_), bias_random_(mt_));
         nodes_.at(id).setPositon(position_random_(mt_), position_random_(mt_));
     }
+}
+
+/*!
+ * @brief すべてのデバイスを削除する
+ */
+void DeviceManager::deleteDeviceAll() {
+    Device::resetNumPacket();
+    nodes_.clear();
 }
 
 /*!
@@ -251,10 +260,14 @@ void DeviceManager::buildNetwork() {
         case SIMMODE::EXITING:
             buildNetworkRandom();
             break;
-        case SIMMODE::PROPOSAL:
+        case SIMMODE::PROPOSAL_1:
             buildNetworkByDistance();
             break;
         default:
+            std::cout << "Please execute after specifying "
+                      << "either EXITING or PROPOSAL_1 for the simulation mode."
+                      << std::endl;
+            std::exit(EXIT_SUCCESS);
             break;
     }
 }
@@ -309,6 +322,23 @@ void DeviceManager::buildNetworkByDistance() {
                   });
         for (auto [_, id_2] : tmp) {
             connectDevices(id_1, id_2);
+        }
+    }
+}
+
+/*!
+ * @brief ネットワークをリセットする
+ */
+void DeviceManager::resetNetwork() {
+    auto &&list = getDevicesList();
+
+    for (auto id_1 : list) {
+        auto &device = getDeviceById(id_1);
+        device.clearMPR();
+        device.clearTable();
+        device.clearMemory();
+        for (auto &&id_2 : device.getIdPairedDevices()) {
+            unpairDevices(id_1, id_2);
         }
     }
 }

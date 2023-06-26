@@ -112,7 +112,9 @@ class Device {
     pair<int, int> hopping();
 
     void makeMPR();
+    void clearMPR();
     bool makeTable();
+    void clearTable();
 
    protected:
     Device &getPairedDevice(const int id);

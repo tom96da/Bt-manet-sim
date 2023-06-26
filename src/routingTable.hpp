@@ -35,6 +35,7 @@ class RoutingTable {
     bool setEntry(const int id_dest, const int id_nextHop_,
                   const int distance = 0);
     void markEntryInvalid(const int id_dest);
+    void clearEntryAll();
 };
 
 /* 各デバイスのエントリクラス */

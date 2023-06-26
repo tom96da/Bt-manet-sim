@@ -4,7 +4,6 @@
  * @brief RoutingTable クラスのソースファイル
  * @date 2023-05-25
  */
-
 #include "routingTable.hpp"
 
 /* ルーティングテーブルクラス */
@@ -102,6 +101,11 @@ void RoutingTable::markEntryInvalid(const int id_dest) {
         table_.at(id_dest).markInvalid();
     }
 }
+
+/*!
+ * @brief すべてのエントリをクリアする
+ */
+void RoutingTable::clearEntryAll() { table_.clear(); }
 
 /* 各デバイスのエントリクラス */
 

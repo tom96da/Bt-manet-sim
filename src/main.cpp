@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <tuple>
 #include <vector>
 
 #include "Device.hpp"
@@ -18,50 +19,49 @@ using namespace std;
 int main() {
     double field_size = 60.0;
     int num_dev = 100;
-    SIMMODE sim_mode = SIMMODE::EXITING;
     auto fs = vector<ofstream>{};
 
-    const int num_repeat = 20;
-    vector<pair<int, int>> result;
+    const int num_repeat = 1;
+    vector<tuple<int, double, int64_t>> result;
 
-    auto mgr = MGR{field_size, sim_mode};
+    auto mgr = MGR{field_size};
 
-    auto newCsv = [&]() {
-        for (int id = 0; id < num_dev; id++) {
-            string fname = "../tmp/dev_pos" + to_string(id) + ".csv";
-            fs.emplace_back(fname);
-            fs[id] << "x,y" << endl;
-        }
-    };
+    // auto newCsv = [&]() {
+    //     for (int id = 0; id < num_dev; id++) {
+    //         string fname = "../tmp/dev_pos" + to_string(id) + ".csv";
+    //         fs.emplace_back(fname);
+    //         fs[id] << "x,y" << endl;
+    //     }
+    // };
 
-    auto writeCsv = [&]() {
-        for (int id = 0; id < num_dev; id++) {
-            auto [x, y] = mgr.getPosition(id);
-            fs[id] << x << ", " << y << endl;
-        }
-    };
+    // auto writeCsv = [&]() {
+    //     for (int id = 0; id < num_dev; id++) {
+    //         auto [x, y] = mgr.getPosition(id);
+    //         fs[id] << x << ", " << y << endl;
+    //     }
+    // };
 
     auto doSim = [&](const int repeat) {
+        mgr.setSimMode(SIMMODE::EXITING);
+
         auto pbar = PBar();
         auto &pb_make_table = pbar.add();
         pb_make_table.set_title("Making routing table");
-        newCsv();
+        // newCsv();
 
         for (int i = 0; i < repeat; ++i) {
-            bool retry = false;
-            do {
-                mgr.ResetManager();
+            while (true) {
+                mgr.deleteDeviceAll();
                 mgr.addDevices(num_dev);
                 mgr.buildNetwork();
                 const auto [_, num_member] = mgr.flooding(45);
-                retry = false;
 
-                if (num_member < num_dev) {
-                    retry = true;
+                if (num_member == num_dev) {
+                    break;
                 }
-            } while (retry);
+            }
 
-            writeCsv();
+            // writeCsv();
 
             mgr.sendHello();
             mgr.makeMPR();
@@ -71,6 +71,7 @@ int main() {
                 int num_packet_start = Device::getTotalPacket();
                 int num_packet_end = 0;
                 int num_done = 0;
+                int num_update = 0;
                 pb_make_table.start(num_dev, num_done);
 
                 while (true) {
@@ -78,6 +79,7 @@ int main() {
                     num_done = num_dev - mgr.makeTable();
                     if (num_done < num_dev) {
                         num_packet_end = Device::getTotalPacket();
+                        ++num_update;
                     } else {
                         break;
                     }
@@ -85,8 +87,10 @@ int main() {
 
                 pb_make_table.close();
                 result.emplace_back(num_packet_end - num_packet_start,
+                                    num_update,
                                     static_cast<int>(pb_make_table.time()));
             }
+            mgr.resetNetwork();
         }
         pb_make_table.erase();
     };
@@ -94,17 +98,21 @@ int main() {
     doSim(num_repeat);
     std::cout << num_repeat << " tiomes complete." << std::endl;
 
-    auto average = [&]() -> std::pair<int, int64_t> {
+    auto average = [&]() -> tuple<int, double, int64_t> {
         auto sum = reduce(
-            result.begin(), result.end(), std::pair<int, int64_t>{0, 0},
-            [&](const auto &acc, const auto &elem) -> std::pair<int, int64_t> {
-                return {acc.first + elem.first, acc.second + elem.second};
+            result.begin(), result.end(), tuple<int, double, int64_t>{0, 0, 0},
+            [&](const auto &acc,
+                const auto &elem) -> tuple<int, double, int64_t> {
+                return {get<0>(acc) + get<0>(elem), get<1>(acc) + get<1>(elem),
+                        get<2>(acc) + get<2>(elem)};
             });
-        return {sum.first / num_repeat, sum.second / num_repeat};
+        return {get<0>(sum) / num_repeat, get<1>(sum) / num_repeat,
+                get<2>(sum) / num_repeat};
     }();
 
-    std::cout << "average packets: " << average.first
-              << ", time: " << average.second << " msec" << std::endl;
+    std::cout << "average packets: " << get<0>(average)
+              << ", update: " << get<1>(average)
+              << ", time: " << get<2>(average) << " msec" << std::endl;
 
     return 0;
 }

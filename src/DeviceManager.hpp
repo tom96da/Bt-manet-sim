@@ -30,8 +30,9 @@ class DeviceManager {
 
     /* フィールドサイズ */
     const double field_size_;
+
     /* シミュレーションモード */
-    const SimulationMode sim_mode_;
+    SimulationMode sim_mode_;
 
     /* ノード クラス */
     class Node;
@@ -53,10 +54,11 @@ class DeviceManager {
     enum class WriteMode;
 
    public:
-    DeviceManager(const double field_size, const SimulationMode sim_mode);
-    void ResetManager();
+    DeviceManager(const double field_size);
 
     static double getMaxComDistance();
+
+    void setSimMode(const SimulationMode sim_mode);
 
     int getNumDevices() const;
     Node &getDeviceById(const int id);
@@ -64,6 +66,7 @@ class DeviceManager {
 
     void addDevices(const int num_devices);
     void removeDevice(const int id);
+    void deleteDeviceAll();
 
     void pairDevices(const int id_1, const int id_2);
     void unpairDevices(const int id_1, const int id_2);
@@ -80,6 +83,7 @@ class DeviceManager {
     void buildNetwork();
     void buildNetworkRandom();
     void buildNetworkByDistance();
+    void resetNetwork();
 
     void sendHello();
     void sendTable();
@@ -112,8 +116,9 @@ using MGR = DeviceManager;
 /* シミュレーションモード */
 enum class DeviceManager::SimulationMode {
     NONE,
-    EXITING, /* 既存手法 */
-    PROPOSAL /* 提案手法 */
+    EXITING,    /* 既存手法 */
+    PROPOSAL_1, /* 提案手法 遠距離接続 */
+    PROPOSAL_2  /* 提案手法 遠距離MPR */
 };
 using SIMMODE = DeviceManager::SimulationMode;
 

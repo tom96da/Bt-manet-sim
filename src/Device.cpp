@@ -513,6 +513,11 @@ void Device::makeMPR() {
 }
 
 /*!
+ * @brief MPR集合をクリアする
+ */
+void Device::clearMPR() { MPR_.clear(); }
+
+/*!
  * @brief ルーティングテーブルを作成する
  * @retval true 更新あり
  * @retval false 更新無し *
@@ -550,6 +555,11 @@ bool Device::makeTable() {
 
     return result > 0 ? true : false;
 }
+
+/*!
+ * @brief ルーティングテーブルをクリアする
+ */
+void Device::clearTable() { table_.clearEntryAll(); }
 
 /*!
  * @brief ペアリング済みのデバイスの参照を取得
