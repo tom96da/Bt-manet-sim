@@ -49,6 +49,14 @@ void Device::showTotalPacket() {
     std::cout << "total packets: " << getTotalPacket() << std::endl;
 }
 
+/* シミュレーションモード */
+Device::SimulationMode Device::sim_mode_{Device::SimulationMode::NONE};
+
+/*!
+ * @brief シミュレーションモードの設定
+ */
+void Device::setSimMode(const SimulationMode sim_mode) { sim_mode_ = sim_mode; }
+
 /*!
  * @return int デバイスID
  */

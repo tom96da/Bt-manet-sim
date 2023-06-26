@@ -44,9 +44,16 @@ void DeviceManager::setSimMode(const SimulationMode sim_mode) {
     switch (sim_mode_) {
         case SIMMODE::EXITING:
             std::cout << "Simulation mode: EXITNG" << std::endl;
+            Device::setSimMode(Device::SimulationMode::EXITING);
             break;
         case SIMMODE::PROPOSAL_1:
-            std::cout << "Simulation mode: PROPOSAL_1" << std::endl;
+            std::cout << "Simulation mode: PROPOSAL_LONG_CONNECTION"
+                      << std::endl;
+            Device::setSimMode(Device::SimulationMode::PROPOSAL_1);
+            break;
+        case SIMMODE::PROPOSAL_2:
+            std::cout << "Simulation mode: PROPOSAL_LONG_MPR" << std::endl;
+            Device::setSimMode(Device::SimulationMode::PROPOSAL_2);
             break;
         default:
             std::cout << "Please execute after specifying "
@@ -258,6 +265,7 @@ void DeviceManager::clearMemory() {
 void DeviceManager::buildNetwork() {
     switch (sim_mode_) {
         case SIMMODE::EXITING:
+        case SIMMODE::PROPOSAL_2:
             buildNetworkRandom();
             break;
         case SIMMODE::PROPOSAL_1:

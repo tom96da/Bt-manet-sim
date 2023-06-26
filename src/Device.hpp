@@ -23,9 +23,15 @@ const int MAX_CONNECTIONS = 6;
 
 /* Bluetooth デバイスクラス */
 class Device {
+   public:
+    /* シミュレーションモード列挙型 */
+    enum class SimulationMode;
+
    private:
     /* 累計パケット数 */
     static int _num_total_packe_;
+    /* シミュレーションモード */
+    static SimulationMode sim_mode_;
 
     /* デバイスID */
     const int id_;
@@ -63,6 +69,7 @@ class Device {
     static int getNewSequenceNum();
     static void resetNumPacket();
     static void showTotalPacket();
+    static void setSimMode(const SimulationMode sim_mode);
 
     int getId() const;
     string getName() const;
@@ -125,6 +132,14 @@ class Device {
     pair<size_t, Var> assignIdToData(const Var data,
                                      const bool is_flooding = false,
                                      size_t data_id = 0) const;
+};
+
+/* シミュレーションモード */
+enum class Device::SimulationMode {
+    NONE,
+    EXITING,    /* 既存手法 */
+    PROPOSAL_1, /* 提案手法 遠距離接続 */
+    PROPOSAL_2  /* 提案手法 遠距離MPR */
 };
 
 enum class Device::DataAttr {
