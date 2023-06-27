@@ -8,6 +8,7 @@
 #include "DeviceManager.hpp"
 
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <utility>
 
@@ -43,21 +44,23 @@ void DeviceManager::setSimMode(const SimulationMode sim_mode) {
 
     switch (sim_mode_) {
         case SIMMODE::EXITING:
-            std::cout << "Simulation mode: EXITNG" << std::endl;
+            // std::cout << "Simulation mode: EXITNG" << std::endl;
             Device::setSimMode(Device::SimulationMode::EXITING);
             break;
-        case SIMMODE::PROPOSAL_1:
-            std::cout << "Simulation mode: PROPOSAL_LONG_CONNECTION"
-                      << std::endl;
-            Device::setSimMode(Device::SimulationMode::PROPOSAL_1);
+        case SIMMODE::PROPOSAL_LONG_CONNECTION:
+            // std::cout << "Simulation mode: PROPOSAL_LONG_CONNECTION"
+            //   << std::endl;
+            Device::setSimMode(
+                Device::SimulationMode::PROPOSAL_LONG_CONNECTION);
             break;
-        case SIMMODE::PROPOSAL_2:
-            std::cout << "Simulation mode: PROPOSAL_LONG_MPR" << std::endl;
-            Device::setSimMode(Device::SimulationMode::PROPOSAL_2);
+        case SIMMODE::PROPOSAL_LONG_MPR:
+            // std::cout << "Simulation mode: PROPOSAL_LONG_MPR" << std::endl;
+            Device::setSimMode(Device::SimulationMode::PROPOSAL_LONG_MPR);
             break;
         default:
             std::cout << "Please execute after specifying "
-                      << "either EXITING or PROPOSAL_1 for the simulation mode."
+                      << "either EXITING or PROPOSAL_LONG_CONNECTION for the "
+                         "simulation mode."
                       << std::endl;
             std::exit(EXIT_SUCCESS);
             break;
@@ -100,7 +103,7 @@ void DeviceManager::addDevices(const int num_devices) {
     }
 
     for (int id = id_next; id < id_next + num_devices; id++) {
-        nodes_.emplace(id, Node(id, willingness_random_(mt_)));
+        nodes_.emplace(id, Node(id, willingness_random_(mt_), this));
         nodes_.at(id).setBias(bias_random_(mt_), bias_random_(mt_));
         nodes_.at(id).setPositon(position_random_(mt_), position_random_(mt_));
     }
@@ -251,11 +254,14 @@ void DeviceManager::updatePositionAll() {
 }
 
 /*!
- * @brief すべてのデバイスのメモリをクリアする
+ * @brief すべてのデバイスの記録をクリアする
  */
-void DeviceManager::clearMemory() {
+void DeviceManager::clearDevice() {
     for (auto id : getDevicesList()) {
-        getDeviceById(id).clearMemory();
+        auto &device = getDeviceById(id);
+        device.clearMPR();
+        device.clearTable();
+        device.clearMemory();
     }
 }
 
@@ -265,15 +271,16 @@ void DeviceManager::clearMemory() {
 void DeviceManager::buildNetwork() {
     switch (sim_mode_) {
         case SIMMODE::EXITING:
-        case SIMMODE::PROPOSAL_2:
+        case SIMMODE::PROPOSAL_LONG_MPR:
             buildNetworkRandom();
             break;
-        case SIMMODE::PROPOSAL_1:
+        case SIMMODE::PROPOSAL_LONG_CONNECTION:
             buildNetworkByDistance();
             break;
         default:
             std::cout << "Please execute after specifying "
-                      << "either EXITING or PROPOSAL_1 for the simulation mode."
+                      << "either EXITING or PROPOSAL_LONG_CONNECTION for the "
+                         "simulation mode."
                       << std::endl;
             std::exit(EXIT_SUCCESS);
             break;
@@ -338,9 +345,7 @@ void DeviceManager::buildNetworkByDistance() {
  * @brief ネットワークをリセットする
  */
 void DeviceManager::resetNetwork() {
-    auto &&list = getDevicesList();
-
-    for (auto id_1 : list) {
+    for (auto id_1 : getDevicesList()) {
         auto &device = getDeviceById(id_1);
         device.clearMPR();
         device.clearTable();
@@ -385,7 +390,60 @@ void DeviceManager::makeMPR() {
 void DeviceManager::showMPR(const int id) {
     WriteMode write_mode = WriteMode::SIMPLE;
 
-    getDeviceById(id).showMPR(write_mode);
+    auto device_target = getDeviceById(id);
+    auto id_cncts = device_target.getIdConnectedDevices();
+    auto id_MPR = device_target.getMPR();
+
+    std::cout << device_target.getName();
+    switch (write_mode) {
+        case WriteMode::VISIBLE:
+            std::cout << "  connected with ";
+            break;
+        case WriteMode::SIMPLE:
+            std::cout << " ──> ";
+        default:
+            break;
+    }
+
+    for (auto id_cnct : id_cncts) {
+        if (write_mode == WriteMode::SIMPLE && id_MPR.count(id_cnct)) {
+            continue;
+        }
+        std::cout << id_cnct << ", ";
+    }
+    std::cout << "\e[2D " << std::endl;
+
+    for (auto id_cnct : id_cncts) {
+        if (write_mode == WriteMode::SIMPLE && (id_MPR.count(id_cnct) == 0)) {
+            continue;
+        }
+
+        auto dev_cnct = getDeviceById(id_cnct);
+        switch (write_mode) {
+            case WriteMode::VISIBLE:
+                std::cout << dev_cnct.getName() << [&] {
+                    if (id_MPR.count(id_cnct)) {
+                        return "*";
+                    }
+
+                    return " ";
+                }() << " connected with ";
+                break;
+            case WriteMode::SIMPLE:
+                std::cout << string(device_target.getName().size(), ' ')
+                          << " └─> " << id_cnct << " ──> ";
+            default:
+                break;
+        }
+        for (auto cnct__ : dev_cnct.getIdConnectedDevices()) {
+            if (write_mode == WriteMode::SIMPLE &&
+                device_target.getTable().getIdNextHop(cnct__) != id_cnct) {
+                continue;
+            }
+            std::cout << cnct__ << ", ";
+        }
+        std::cout << "\e[2D " << std::endl;
+    }
 }
 
 /*!
@@ -626,8 +684,21 @@ bool DeviceManager::isConnected(const int id_1, const int id_2) {
  * @param id デバイスID
  * @param willingness willingness
  */
-DeviceManager::Node::Node(const int id, const int willingness)
-    : Device{id, willingness}, bias_{0.0, 0.0}, position_{0.0, 0.0} {}
+DeviceManager::Node::Node(const int id, const int willingness, MGR *manager)
+    : Device{id, willingness},
+      bias_{0.0, 0.0},
+      position_{0.0, 0.0},
+      manager_{manager} {}
+
+/*!
+ * @brief デバイス名を取得(オーバーライド)
+ * @return デバイス名
+ */
+string DeviceManager::Node::getName() {
+    const int digit = to_string(manager_->getNumDevices() - 1).size();
+    return "device[" + string(digit - to_string(getId()).length(), '0') +
+           to_string(getId()) + "]";
+}
 
 /*!
  * @return 移動バイアス
@@ -658,49 +729,92 @@ void DeviceManager::Node::setPositon(double pos_x, double pos_y) {
 }
 
 /*!
- * @brief MPR集合を出力する
- * @param write_mode 出力モード
+ * @brief MPR集合を作成する(オーバーライド)
  */
-void DeviceManager::Node::showMPR(const WriteMode write_mode) {
-    auto id_cntds = getIdConnectedDevices();
-    auto id_MPR = getMPR();
+void DeviceManager::Node::makeMPR() {
+    auto sim_mode = sim_mode_;
 
-    std::cout << getName();
-    switch (write_mode) {
-        case WriteMode::VISIBLE:
-            std::cout << "  connected with ";
+    struct Neighbor {
+        int id;
+        int willingness;
+        double distance;
+    };
+
+    MPR_.clear();
+    tow_hop_neighbors_.clear();
+    /* 隣接 <id, willingness,distance> (降順) */
+    vector<Neighbor> neighbors;
+
+    while (true) {
+        // willingness 属性のデータをメモリの末尾から探す
+        auto itr = find_if(memory_.rbegin(), memory_.rend(),
+                           [](pair<size_t, Device::Sell> &&sell) {
+                               auto &[_, data_in_sell] = sell;
+                               return data_in_sell.getDataAttribute() ==
+                                      DataAttr::WILLINGNESS;
+                           });
+        if (itr == memory_.rend()) {
             break;
-        case WriteMode::SIMPLE:
-            std::cout << " --> ";
-        default:
-            break;
-    }
-
-    for (auto id_cntd : id_cntds) {
-        std::cout << id_cntd << [&]() {
-            if (id_MPR.count(id_cntd) && write_mode == WriteMode::SIMPLE) {
-                return "*";
-            }
-
-            return "";
-        }() << ", ";
-    }
-    std::cout << "\e[2D " << std::endl;
-
-    if (write_mode == WriteMode::VISIBLE) {
-        for (auto id_cntd : id_cntds) {
-            auto dev__ = getPairedDevice(id_cntd);
-            std::cout << dev__.getName() << [&] {
-                if (id_MPR.count(id_cntd)) {
-                    return "*";
-                }
-
-                return " ";
-            }() << " connected with ";
-            for (auto cntd__ : dev__.getIdConnectedDevices()) {
-                std::cout << cntd__ << ", ";
-            }
-            std::cout << "\e[2D " << std::endl;
         }
+
+        auto &[_, data_in_sell] = *itr;
+        auto id_neighbor = data_in_sell.getIdSender();
+        auto willingness = get<int>(data_in_sell.getData());
+
+        neighbors.emplace_back(id_neighbor, willingness,
+                               manager_->getDistance(getId(), id_neighbor));
+        table_.setEntry(id_neighbor, id_neighbor, 1);
+
+        data_in_sell.setDaTaAttribute(DataAttr::NONE);
+    }
+
+    // neighbors を willingness の降順にソート
+    sort(neighbors.begin(), neighbors.end(),
+         [&](Neighbor &left, Neighbor &right) {
+             switch (sim_mode) {
+                 case Device::SimulationMode::EXITING:
+                 case Device::SimulationMode::PROPOSAL_LONG_CONNECTION:
+                     return left.willingness > right.willingness;
+                 case Device::SimulationMode::PROPOSAL_LONG_MPR:
+                     return left.willingness + left.distance >
+                            right.willingness + right.distance;
+                 default:
+                     return false;
+             }
+         });
+
+    for (auto [id_neighbor, _, __] : neighbors) {
+        auto itr = find_if(memory_.rbegin(), memory_.rend(),
+                           [&](pair<size_t, Device::Sell> &&sell) {
+                               auto &[_, data_in_sell] = sell;
+                               return data_in_sell.getDataAttribute() ==
+                                          DataAttr::TOPOLOGY &&
+                                      data_in_sell.getIdSender() == id_neighbor;
+                           });
+        if (itr == memory_.rend()) {
+            break;
+        }
+
+        auto &[___, data_in_sell] = *itr;
+
+        for (auto id_neighbor_cncts = get<set<int>>(data_in_sell.getData());
+             auto id_tow_hop_neighbor : id_neighbor_cncts) {
+            if (isSelf(id_tow_hop_neighbor)) {
+                continue;
+            }
+            if (isConnected(id_tow_hop_neighbor)) {
+                continue;
+            }
+            if (tow_hop_neighbors_.count(id_tow_hop_neighbor)) {
+                continue;
+            }
+
+            tow_hop_neighbors_.emplace(id_tow_hop_neighbor, id_neighbor);
+            table_.setEntry(id_tow_hop_neighbor, id_neighbor, 2);
+        }
+    }
+
+    for (auto &[_, MPR] : tow_hop_neighbors_) {
+        MPR_.emplace(MPR);
     }
 }

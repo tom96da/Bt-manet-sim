@@ -65,7 +65,7 @@ int Device::getId() const { return id_; }
 /*!
  * @return string デバイス名
  */
-string Device::getName() const {
+string Device::getName() {
     return "device[" + string(2 - to_string(getId()).length(), '0') +
            to_string(getId()) + "]";
 }

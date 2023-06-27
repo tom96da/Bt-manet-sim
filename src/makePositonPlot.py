@@ -23,9 +23,10 @@ dev_y = []
 pos_x = []
 pos_y = []
 
-target = [45]
-paired = []
-connected = [11, 15, 49, 52, 62, 81]
+target = [0]
+first = []
+second = []
+label = []
 
 for i in range(num_dev):
     fname.append("../tmp/dev_pos" + str(i) + ".csv")
@@ -62,14 +63,18 @@ def update(frame):
     ax.plot(pos_x[frame], pos_y[frame], "o", c='k', ms=2)
     for id in target:
         ax.plot(pos_x[frame][id], pos_y[frame][id], "o", c='r', ms=5)
+        ax.text(pos_x[frame][id], pos_y[frame][id], str(id), size=10)
         c = patches.Circle(
             xy=(pos_x[frame][id], pos_y[frame][id]), radius=10, ec='k', fill=False)
         ax.add_patch(c)
-    for id in paired:
+    for id in first:
         ax.plot(pos_x[frame][id], pos_y[frame][id], "o", c='y', ms=3)
-    for id in connected:
+        ax.text(pos_x[frame][id], pos_y[frame][id], str(id), size=10)
+    for id in second:
         ax.plot(pos_x[frame][id], pos_y[frame][id], "o", c='g', ms=3)
-
+        ax.text(pos_x[frame][id], pos_y[frame][id], str(id), size=10)
+    for id in label:
+        ax.text(pos_x[frame][id], pos_y[frame][id], str(id), size=10)
     ax.plot(-1, -1, "o", c='y', ms=3, label='paired')
     ax.plot(-1, -1, "o", c='g', ms=3, label='connected')
     plt.legend(fontsize=12, prop={"weight": "bold"},

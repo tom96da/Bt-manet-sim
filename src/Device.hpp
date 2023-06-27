@@ -27,7 +27,7 @@ class Device {
     /* シミュレーションモード列挙型 */
     enum class SimulationMode;
 
-   private:
+   protected:
     /* 累計パケット数 */
     static int _num_total_packe_;
     /* シミュレーションモード */
@@ -48,6 +48,8 @@ class Device {
     set<int> id_connected_devices_;
     /* MPR集合 */
     set<int> MPR_;
+    /* 2ホップ隣接 <tow hop neighbor, MPR> */
+    map<int, int> tow_hop_neighbors_;
     /* ルーティングテーブル */
     Table table_;
 
@@ -72,7 +74,7 @@ class Device {
     static void setSimMode(const SimulationMode sim_mode);
 
     int getId() const;
-    string getName() const;
+    virtual string getName();
     int getWillingness() const;
 
     int getNumPaired() const;
@@ -118,7 +120,7 @@ class Device {
     pair<int, int> startUnicast(const int id_diet);
     pair<int, int> hopping();
 
-    void makeMPR();
+    virtual void makeMPR();
     void clearMPR();
     bool makeTable();
     void clearTable();
@@ -126,7 +128,6 @@ class Device {
    protected:
     Device &getPairedDevice(const int id);
 
-   private:
     bool isSelf(const int id_another_device) const;
 
     pair<size_t, Var> assignIdToData(const Var data,
@@ -137,9 +138,9 @@ class Device {
 /* シミュレーションモード */
 enum class Device::SimulationMode {
     NONE,
-    EXITING,    /* 既存手法 */
-    PROPOSAL_1, /* 提案手法 遠距離接続 */
-    PROPOSAL_2  /* 提案手法 遠距離MPR */
+    EXITING,                  /* 既存手法 */
+    PROPOSAL_LONG_CONNECTION, /* 提案手法 遠距離接続 */
+    PROPOSAL_LONG_MPR         /* 提案手法 遠距離MPR */
 };
 
 enum class Device::DataAttr {

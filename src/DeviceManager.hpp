@@ -63,6 +63,7 @@ class DeviceManager {
     int getNumDevices() const;
     Node &getDeviceById(const int id);
     pair<double, double> &getPosition(const int id);
+    double getDistance(const int id_1, const int id_2);
 
     void addDevices(const int num_devices);
     void removeDevice(const int id);
@@ -78,7 +79,7 @@ class DeviceManager {
     void updatePositionAll();
     void relocatePosition();
 
-    void clearMemory();
+    void clearDevice();
 
     void buildNetwork();
     void buildNetworkRandom();
@@ -103,7 +104,6 @@ class DeviceManager {
    private:
     vector<int> getDevicesList() const;
     pair<double, double> &getBias(const int id);
-    double getDistance(const int id_1, const int id_2);
 
     bool isSameDevice(const int id_1, const int id_2) const;
     bool isPaired(const int id_1, const int id_2);
@@ -116,9 +116,9 @@ using MGR = DeviceManager;
 /* シミュレーションモード */
 enum class DeviceManager::SimulationMode {
     NONE,
-    EXITING,    /* 既存手法 */
-    PROPOSAL_1, /* 提案手法 遠距離接続 */
-    PROPOSAL_2  /* 提案手法 遠距離MPR */
+    EXITING,                  /* 既存手法 */
+    PROPOSAL_LONG_CONNECTION, /* 提案手法 遠距離接続 */
+    PROPOSAL_LONG_MPR         /* 提案手法 遠距離MPR */
 };
 using SIMMODE = DeviceManager::SimulationMode;
 
@@ -129,17 +129,20 @@ class DeviceManager::Node : public Device {
     pair<double, double> bias_;
     /* 座標 */
     pair<double, double> position_;
+    /* マネージャー */
+    MGR *manager_;
 
    public:
-    Node(const int id, const int willingness = 3);
+    Node(const int id, const int willingness, MGR *manager);
 
+    string getName() override;
     pair<double, double> &getBias();
     pair<double, double> &getPosition();
 
     void setBias(double bias_x, double bias_y);
     void setPositon(double pos_x, double pos_y);
 
-    void showMPR(const WriteMode write_mode);
+    void makeMPR() override;
 };
 
 /* 出力モード列挙型 */
