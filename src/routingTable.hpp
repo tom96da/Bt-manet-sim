@@ -25,7 +25,7 @@ class RoutingTable {
 
     int getNumEntry() const;
     int getIdNextHop(const int id_dest) const;
-    int getDistance(const int id_dest) const;
+    int getNumHop(const int id_dest) const;
 
     map<int, Entry> &getTable();
     vector<int> getDestinations() const;
@@ -44,7 +44,7 @@ class RoutingTable::Entry {
     /* 次のホップデバイスのID */
     int id_nextHop_;
     /* 宛先デバイスまでのホップ距離 */
-    int distance_;
+    int num_hop_;
     /* エントリが有効かどうか */
     bool isValid_;
 
@@ -53,7 +53,7 @@ class RoutingTable::Entry {
     Entry(const int id_nextHop_, const int distance = 0);
 
     int getIdNextHop() const;
-    int getDistance() const;
+    int getNumHop() const;
     bool isValid() const;
 
     void setEntry(const int id_nextHop_, const int distance = 0);

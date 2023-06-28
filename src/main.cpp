@@ -24,7 +24,7 @@ int main() {
     /* 座標を記録するファイル */
     auto fs = vector<ofstream>{};
     /* 試行回数 */
-    const int num_repeat = 10;
+    const int num_repeat = 1;
     /* 結果 */
     vector<tuple<int, double, int64_t>> result_exiting, result_proposal;
 
@@ -92,7 +92,7 @@ int main() {
 
             mgr.sendHello();
             mgr.makeMPR();
-            // mgr.showMPR(0);
+            mgr.showMPR(0);
 
             /* make Routing Table */
             {
@@ -120,16 +120,18 @@ int main() {
             }
 
             pb_make_table.erase();
+            mgr.getDeviceById(0).calculateTableFrequency();
             mgr.clearDevice();
             // mgr.resetNetwork();
 
             mgr.setSimMode(SIMMODE::PROPOSAL_LONG_MPR);
+            // mgr.buildNetwork();
             pb_title = ("PROPOSAL_LONG_MPR");
             pb_make_table.set_title(pb_title);
 
             mgr.sendHello();
             mgr.makeMPR();
-            // mgr.showMPR(0);
+            mgr.showMPR(0);
 
             /* make Routing Table */
             {
@@ -157,6 +159,7 @@ int main() {
             }
         }
         pb_make_table.erase();
+        mgr.getDeviceById(0).calculateTableFrequency();
     };
 
     doSim(num_repeat);

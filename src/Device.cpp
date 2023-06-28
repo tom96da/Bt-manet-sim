@@ -417,7 +417,7 @@ pair<int, int> Device::startUnicast(const int id_dest) {
         makePacket(id_dest, assignIdToData(static_cast<string>("hello!")),
                    DataAttr::HOPPING));
 
-    return {id_nextHop, table.getDistance(id_dest)};
+    return {id_nextHop, table.getNumHop(id_dest)};
 }
 
 /*!
@@ -425,6 +425,7 @@ pair<int, int> Device::startUnicast(const int id_dest) {
  * @return pair<int, int> 次ホップデバイスのID, 継続フラク
  */
 pair<int, int> Device::hopping() {
+    // メモリからホップするメッセージを走査する
     auto itr =
         find_if(memory_.rbegin(), memory_.rend(),
                 [](pair<size_t, Device::Sell> &&sell) {
@@ -432,6 +433,7 @@ pair<int, int> Device::hopping() {
                     return data_in_sell.getDataAttribute() == DataAttr::HOPPING;
                 });
     if (itr == memory_.rend()) {
+        // ホップするメッセージがなければ終了
         return {0, -1};
     }
 
@@ -441,11 +443,12 @@ pair<int, int> Device::hopping() {
         return {0, 0};
     }
 
-    if (!getTable().hasEntry(id_dest)) {
+    auto &&table = getTable();
+    if (!table.hasEntry(id_dest)) {
         return {0, -1};
     }
 
-    int id_nextHop = getTable().getIdNextHop(id_dest);
+    int id_nextHop = table.getIdNextHop(id_dest);
     auto data_with_id = data_in_sell.getDataWithId();
     sendPacket(id_nextHop,
                makePacket(id_dest, data_with_id, DataAttr::HOPPING));
@@ -457,67 +460,68 @@ pair<int, int> Device::hopping() {
  * @brief MPR集合を作成する
  */
 void Device::makeMPR() {
-    MPR_.clear();
-    /* 隣接 <willingness, id> (降順) */
-    multimap<int, int, greater<int>> neighbors;
-    /* 2ホップ隣接 <tow hop neighbor, MPR> */
-    map<int, int> tow_hop_neighbors;
+    // MPR_.clear();
+    // /* 隣接 <willingness, id> (降順) */
+    // multimap<int, int, greater<int>> neighbors;
+    // /* 2ホップ隣接 <tow hop neighbor, MPR> */
+    // map<int, int> tow_hop_neighbors;
 
-    while (true) {
-        auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                           [](pair<size_t, Device::Sell> &&sell) {
-                               auto &[_, data_in_sell] = sell;
-                               return data_in_sell.getDataAttribute() ==
-                                      DataAttr::WILLINGNESS;
-                           });
-        if (itr == memory_.rend()) {
-            break;
-        }
+    // while (true) {
+    //     auto itr = find_if(memory_.rbegin(), memory_.rend(),
+    //                        [](pair<size_t, Device::Sell> &&sell) {
+    //                            auto &[_, data_in_sell] = sell;
+    //                            return data_in_sell.getDataAttribute() ==
+    //                                   DataAttr::WILLINGNESS;
+    //                        });
+    //     if (itr == memory_.rend()) {
+    //         break;
+    //     }
 
-        auto &[_, data_in_sell] = *itr;
-        auto id_cnct = data_in_sell.getIdSender();
-        auto willingness = get<int>(data_in_sell.getData());
+    //     auto &[_, data_in_sell] = *itr;
+    //     auto id_cnct = data_in_sell.getIdSender();
+    //     auto willingness = get<int>(data_in_sell.getData());
 
-        neighbors.emplace(willingness, id_cnct);
-        table_.setEntry(id_cnct, id_cnct, 1);
+    //     neighbors.emplace(willingness, id_cnct);
+    //     table_.setEntry(id_cnct, id_cnct, 1);
 
-        data_in_sell.setDaTaAttribute(DataAttr::NONE);
-    }
+    //     data_in_sell.setDaTaAttribute(DataAttr::NONE);
+    // }
 
-    for (auto &[_, id_neighbor] : neighbors) {
-        auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                           [&](pair<size_t, Device::Sell> &&sell) {
-                               auto &[_, data_in_sell] = sell;
-                               return data_in_sell.getDataAttribute() ==
-                                          DataAttr::TOPOLOGY &&
-                                      data_in_sell.getIdSender() == id_neighbor;
-                           });
-        if (itr == memory_.rend()) {
-            break;
-        }
+    // for (auto &[_, id_neighbor] : neighbors) {
+    //     auto itr = find_if(memory_.rbegin(), memory_.rend(),
+    //                        [&](pair<size_t, Device::Sell> &&sell) {
+    //                            auto &[_, data_in_sell] = sell;
+    //                            return data_in_sell.getDataAttribute() ==
+    //                                       DataAttr::TOPOLOGY &&
+    //                                   data_in_sell.getIdSender() ==
+    //                                   id_neighbor;
+    //                        });
+    //     if (itr == memory_.rend()) {
+    //         break;
+    //     }
 
-        auto &[__, data_in_sell] = *itr;
+    //     auto &[__, data_in_sell] = *itr;
 
-        for (auto id_neighbor_cncts = get<set<int>>(data_in_sell.getData());
-             auto id_tow_hop_neighbor : id_neighbor_cncts) {
-            if (isSelf(id_tow_hop_neighbor)) {
-                continue;
-            }
-            if (isConnected(id_tow_hop_neighbor)) {
-                continue;
-            }
-            if (tow_hop_neighbors.count(id_tow_hop_neighbor)) {
-                continue;
-            }
+    //     for (auto id_neighbor_cncts = get<set<int>>(data_in_sell.getData());
+    //          auto id_tow_hop_neighbor : id_neighbor_cncts) {
+    //         if (isSelf(id_tow_hop_neighbor)) {
+    //             continue;
+    //         }
+    //         if (isConnected(id_tow_hop_neighbor)) {
+    //             continue;
+    //         }
+    //         if (tow_hop_neighbors.count(id_tow_hop_neighbor)) {
+    //             continue;
+    //         }
 
-            tow_hop_neighbors.emplace(id_tow_hop_neighbor, id_neighbor);
-            table_.setEntry(id_tow_hop_neighbor, id_neighbor, 2);
-        }
-    }
+    //         tow_hop_neighbors.emplace(id_tow_hop_neighbor, id_neighbor);
+    //         table_.setEntry(id_tow_hop_neighbor, id_neighbor, 2);
+    //     }
+    // }
 
-    for (auto &[_, MPR] : tow_hop_neighbors) {
-        MPR_.emplace(MPR);
-    }
+    // for (auto &[_, MPR] : tow_hop_neighbors) {
+    //     MPR_.emplace(MPR);
+    // }
 }
 
 /*!
@@ -550,7 +554,7 @@ bool Device::makeTable() {
 
         for (auto &[id_dest, entry] : table_neighbor) {
             auto id_nexthop = id_sender;
-            auto distance = entry.getDistance() + 1;
+            auto distance = entry.getNumHop() + 1;
 
             if (id_dest != getId()) {
                 result += static_cast<int>(
@@ -568,6 +572,25 @@ bool Device::makeTable() {
  * @brief ルーティングテーブルをクリアする
  */
 void Device::clearTable() { table_.clearEntryAll(); }
+
+/*!
+ * @brief ルーティングテーブルの度数分布を集計する
+ * @return
+ */
+map<int, int> Device::calculateTableFrequency() const {
+    map<int, int> tableFrequency;
+    auto &&table = getTable();
+
+    for (auto id_dest : table.getDestinations()) {
+        tableFrequency[table.getNumHop(id_dest)]++;
+    }
+
+    for (const auto &[num_hop, num_dev] : tableFrequency) {
+        std::cout << num_hop << ": " << num_dev << std::endl;
+    }
+
+    return tableFrequency;
+}
 
 /*!
  * @brief ペアリング済みのデバイスの参照を取得

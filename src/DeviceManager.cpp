@@ -768,7 +768,7 @@ void DeviceManager::Node::makeMPR() {
         data_in_sell.setDaTaAttribute(DataAttr::NONE);
     }
 
-    // neighbors を willingness の降順にソート
+    // neighbors を指標の降順にソート
     sort(neighbors.begin(), neighbors.end(),
          [&](Neighbor &left, Neighbor &right) {
              switch (sim_mode) {
@@ -776,8 +776,7 @@ void DeviceManager::Node::makeMPR() {
                  case Device::SimulationMode::PROPOSAL_LONG_CONNECTION:
                      return left.willingness > right.willingness;
                  case Device::SimulationMode::PROPOSAL_LONG_MPR:
-                     return left.willingness + left.distance >
-                            right.willingness + right.distance;
+                     return left.distance > right.distance;
                  default:
                      return false;
              }

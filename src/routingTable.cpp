@@ -32,12 +32,12 @@ int RoutingTable::getIdNextHop(const int id_dest) const {
  * @param id_dest 宛先デバイスID
  * @return 宛先デバイスまでのホップ距離
  */
-int RoutingTable::getDistance(const int id_dest) const {
+int RoutingTable::getNumHop(const int id_dest) const {
     if (!table_.count(id_dest)) {
         return -1;
     }
 
-    return table_.at(id_dest).getDistance();
+    return table_.at(id_dest).getNumHop();
 }
 
 /*!
@@ -79,7 +79,7 @@ bool RoutingTable::setEntry(const int id_dest, const int id_nextHop,
                             const int distance) {
     if (table_.count(id_dest)) {
         // 既にエントリが存在する場合は、距離が近ければ更新する
-        if (table_.at(id_dest).getDistance() > distance) {
+        if (table_.at(id_dest).getNumHop() > distance) {
             table_[id_dest].setEntry(id_nextHop, distance);
         } else {
             return false;
@@ -115,7 +115,7 @@ void RoutingTable::clearEntryAll() { table_.clear(); }
  * @param distance 次ホップデバイスの距離
  */
 RoutingTable::Entry::Entry(const int id_nextHop, const int distance)
-    : id_nextHop_{id_nextHop}, distance_{distance}, isValid_{true} {}
+    : id_nextHop_{id_nextHop}, num_hop_{distance}, isValid_{true} {}
 
 /*!
  * @return 次ホップデバイスのID
@@ -125,7 +125,7 @@ int RoutingTable::Entry::getIdNextHop() const { return id_nextHop_; }
 /*!
  * @return マルチホップ距離
  */
-int RoutingTable::Entry::getDistance() const { return distance_; }
+int RoutingTable::Entry::getNumHop() const { return num_hop_; }
 
 /*!
  * @brief エントリが無効か取得
@@ -141,7 +141,7 @@ bool RoutingTable::Entry::isValid() const { return isValid_; }
  */
 void RoutingTable::Entry::setEntry(const int id_nextHop, const int distance) {
     id_nextHop_ = id_nextHop;
-    distance_ = distance;
+    num_hop_ = distance;
     isValid_ = true;
 }
 

@@ -122,8 +122,10 @@ class Device {
 
     virtual void makeMPR();
     void clearMPR();
+
     bool makeTable();
     void clearTable();
+    map<int, int> calculateTableFrequency() const;
 
    protected:
     Device &getPairedDevice(const int id);
