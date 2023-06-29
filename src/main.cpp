@@ -24,7 +24,7 @@ int main() {
     /* 座標を記録するファイル */
     auto fs = vector<ofstream>{};
     /* 試行回数 */
-    const int num_repeat = 500;
+    const int num_repeat = 20;
     /* 結果 */
     vector<tuple<int, double, int64_t>> result_exiting, result_proposal_1,
         result_proposal_2;
@@ -69,14 +69,16 @@ int main() {
 
     auto doSim = [&](const int num_repeat) {
         auto pbar = PBar();
-        auto &pb_make_table = pbar.add();
+        // auto &pb_make_table = pbar.add();
+        auto &pb_repeat = pbar.add();
+        int count_repeat = 0;
+        pb_repeat.start(num_repeat, count_repeat);
         newCsv();
 
-        for (int count_repeat = 0; count_repeat < num_repeat;) {
+        for (; count_repeat < num_repeat;) {
             mgr.setSimMode(SIMMODE::EXITING);
-            string pb_title = ("EXITING");
-            pb_make_table.set_title(pb_title);
 
+            // 孤立しないネットワークを構築する
             while (true) {
                 // 孤立するノードがないネットワークができるまで繰り返す
                 mgr.deleteDeviceAll();
@@ -98,7 +100,7 @@ int main() {
                     int num_packet_end = 0;
                     int num_done = 0;
                     int num_update = 0;
-                    pb_make_table.start(num_node, num_done);
+                    // pb_make_table.start(num_node, num_done);
 
                     while (true) {
                         mgr.sendTable();
@@ -111,80 +113,66 @@ int main() {
                         }
                     }
 
-                    pb_make_table.close();
+                    // pb_make_table.close();
+                    // result.emplace_back(num_packet_end - num_packet_start,
+                    //                     num_update,
+                    //                     static_cast<int>(pb_make_table.time()));
                     result.emplace_back(num_packet_end - num_packet_start,
-                                        num_update,
-                                        static_cast<int>(pb_make_table.time()));
+                                        num_update, static_cast<int>(0));
                 };
 
-            mgr.sendHello();
-            mgr.makeMPR();
-            // mgr.showMPR(0);
+            {  // 既存手法
+                // pb_make_table.set_title("EXITING");
+                mgr.sendHello();
+                mgr.makeMPR();
+                // mgr.showMPR(0);
 
-            makingTableUntilcomplete(result_exiting);
-            pb_make_table.erase();
+                makingTableUntilcomplete(result_exiting);
+                // pb_make_table.erase();
 
-            // mgr.getDeviceById(0).calculateTableFrequency();
-            mgr.clearDevice();
-
-            mgr.setSimMode(SIMMODE::PROPOSAL_LONG_MPR);
-            pb_title = ("PROPOSAL_LONG_MPR");
-            pb_make_table.set_title(pb_title);
-
-            mgr.sendHello();
-            mgr.makeMPR();
-            // mgr.showMPR(0);
-
-            /* make Routing Table */
-            makingTableUntilcomplete(result_proposal_1);
-            // {
-            //     int num_packet_start = Device::getTotalPacket();
-            //     int num_packet_end = 0;
-            //     int num_done = 0;
-            //     int num_update = 0;
-            //     pb_make_table.start(num_node, num_done);
-
-            //     while (true) {
-            //         mgr.sendTable();
-            //         num_done = num_node - mgr.makeTable();
-            //         if (num_done < num_node) {
-            //             num_packet_end = Device::getTotalPacket();
-            //             ++num_update;
-            //         } else {
-            //             break;
-            //         }
-            //     }
-
-            //     pb_make_table.close();
-            //     result_proposal_1.emplace_back(
-            //         num_packet_end - num_packet_start, num_update,
-            //         static_cast<int>(pb_make_table.time()));
-            // }
-
-            pb_make_table.erase();
-
-            mgr.resetNetwork();
-            mgr.setSimMode(SIMMODE::PROPOSAL_LONG_CONNECTION);
-            mgr.buildNetwork();
-            pb_title = ("PROPOSAL_LONG_MPR");
-            pb_make_table.set_title(pb_title);
-            const auto [_, num_member] = mgr.flooding(45);
-            if (num_member != num_node) {
-                // 孤立するノードがあれば上の2つの結果を消してループに戻る
-                result_exiting.pop_back();
-                result_proposal_2.pop_back();
-                continue;
+                // mgr.getDeviceById(0).calculateTableFrequency();
             }
 
-            mgr.sendHello();
-            mgr.makeMPR();
-            // mgr.showMPR(0);
+            mgr.clearDevice();
 
-            makingTableUntilcomplete(result_proposal_2);
-            pb_make_table.erase();
+            {  // 提案手法 遠距離選択MPR
+                mgr.setSimMode(SIMMODE::PROPOSAL_LONG_MPR);
+                // pb_make_table.set_title("PROPOSAL_LONG_MPR");
+
+                mgr.sendHello();
+                mgr.makeMPR();
+                // mgr.showMPR(0);
+
+                makingTableUntilcomplete(result_proposal_1);
+
+                // pb_make_table.erase();
+            }
+
+            mgr.resetNetwork();
+
+            {  // 提案手法 遠距離選択接続
+                mgr.setSimMode(SIMMODE::PROPOSAL_LONG_CONNECTION);
+                mgr.buildNetwork();
+                // pb_make_table.set_title("PROPOSAL_LONG_MPR");
+                const auto [_, num_member] = mgr.flooding(45);
+                if (num_member != num_node) {
+                    // 孤立するノードがあれば上の2つの結果を消してループに戻る
+                    result_exiting.pop_back();
+                    result_proposal_2.pop_back();
+                    continue;
+                }
+
+                mgr.sendHello();
+                mgr.makeMPR();
+                // mgr.showMPR(0);
+
+                makingTableUntilcomplete(result_proposal_2);
+                // pb_make_table.erase();
+            }
 
             ++count_repeat;
         }
+        pb_repeat.close();
     };
 
     doSim(num_repeat);

@@ -460,6 +460,10 @@ int DeviceManager::makeTable() {
     return result;
 }
 
+vector<map<int, int>> DeviceManager::calculateTableFrequency() const {
+    return vector<map<int, int>>{};
+}
+
 /*!
  * @brief フラッディングを開始する
  * @param id 開始デバイスのID
