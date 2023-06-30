@@ -73,7 +73,8 @@ class ProgressBar::BarBody {
 
     /* バータイトル */
     string title_;
-
+    /* タスク数の履歴 */
+    int num_task_;
     /* かかった時間 */
     int64_t time_;
 
@@ -85,6 +86,7 @@ class ProgressBar::BarBody {
     void start(const int num_task, int &num_done);
     void close();
     void set_title(const string title);
+    void clear() const;
     void erase() const;
 
     int64_t time();

@@ -24,7 +24,7 @@ int main() {
     /* 座標を記録するファイル */
     auto fs = vector<ofstream>{};
     /* 試行回数 */
-    const int num_repeat = 2;
+    const int num_repeat = 200;
     /* 結果 */
     vector<tuple<int, double, int64_t>> result_exiting, result_proposal_1,
         result_proposal_2;
@@ -70,16 +70,23 @@ int main() {
     auto doSim = [&](const int num_repeat) {
         auto pbar = PBar();
         auto &pb_repeat = pbar.add();
-        pb_repeat.set_title("Simulation progress");
         auto &pb_proposal_2 = pbar.add();
         auto &pb_proposal_1 = pbar.add();
         auto &pb_exiting = pbar.add();
+        pb_repeat.set_title("Simulation progress");
+        pb_exiting.set_title("EXITING");
+        pb_proposal_1.set_title("LONG_MPR");
+        pb_proposal_2.set_title("LONG_CONNECTION");
 
         int count_repeat = 0;
         pb_repeat.start(num_repeat, count_repeat);
         newCsv();
 
         for (; count_repeat < num_repeat;) {
+            pb_exiting.clear();
+            pb_proposal_1.clear();
+            pb_proposal_2.clear();
+
             mgr.setSimMode(SIMMODE::EXITING);
 
             // 孤立しないネットワークを構築する
@@ -101,12 +108,11 @@ int main() {
             auto makingTableUntilcomplete =
                 [&mgr, num_node](
                     std::vector<std::tuple<int, double, int64_t>> &result,
-                    ProgressBar::BarBody &pb, string pb_title) {
+                    ProgressBar::BarBody &pb) {
                     int num_packet_start = Device::getTotalPacket();
                     int num_packet_end = 0;
                     int num_done = 0;
                     int num_update = 0;
-                    pb.set_title(pb_title);
                     pb.start(num_node, num_done);
 
                     while (true) {
@@ -122,8 +128,7 @@ int main() {
 
                     pb.close();
                     result.emplace_back(num_packet_end - num_packet_start,
-                                        num_update,
-                                        static_cast<int>(pb.time()));
+                                        num_update, pb.time());
                 };
 
             {  // 既存手法
@@ -131,7 +136,7 @@ int main() {
                 mgr.makeMPR();
                 // mgr.showMPR(0);
 
-                makingTableUntilcomplete(result_exiting, pb_exiting, "EXITING");
+                makingTableUntilcomplete(result_exiting, pb_exiting);
                 // pb_make_table.erase();
 
                 // mgr.getDeviceById(0).calculateTableFrequency();
@@ -146,8 +151,7 @@ int main() {
                 mgr.makeMPR();
                 // mgr.showMPR(0);
 
-                makingTableUntilcomplete(result_proposal_1, pb_proposal_1,
-                                         "LONG_MPR");
+                makingTableUntilcomplete(result_proposal_1, pb_proposal_1);
 
                 // pb_make_table.erase();
             }
@@ -169,8 +173,7 @@ int main() {
                 mgr.makeMPR();
                 // mgr.showMPR(0);
 
-                makingTableUntilcomplete(result_proposal_2, pb_proposal_2,
-                                         "LONG_CONNECTION");
+                makingTableUntilcomplete(result_proposal_2, pb_proposal_2);
                 // pb_make_table.erase();
             }
 

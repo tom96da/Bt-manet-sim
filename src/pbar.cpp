@@ -38,7 +38,10 @@ ProgressBar::BarBody &ProgressBar::add() {
  * @param layer 深さ
  */
 ProgressBar::BarBody::BarBody(const int layer)
-    : layer_{layer}, length_{PBAR_LENGTH}, step_{100.0 / length_} {}
+    : layer_{layer},
+      length_{PBAR_LENGTH},
+      step_{100.0 / length_},
+      num_task_{0} {}
 
 /*!
  * @brief プログレスバーのセット
@@ -46,6 +49,7 @@ ProgressBar::BarBody::BarBody(const int layer)
  * @param num_done 終了済みタスク数
  */
 void ProgressBar::BarBody::start(const int num_task, int &num_done) {
+    num_task_ = num_task;
     thread_ = thread([&, num_task]() {
         string progress;
         const int digit = to_string(num_task).size();
@@ -134,7 +138,39 @@ void ProgressBar::BarBody::close() { thread_.join(); }
  */
 void ProgressBar::BarBody::set_title(const string title) { title_ = title; }
 
-/* プログレスバーをクリアする */
+/*!
+ * @brief 進捗をクリアする
+ */
+void ProgressBar::BarBody::clear() const {
+    string progress;
+    const int digit = to_string(num_task_).size();
+    int num_done = 0, percent = 0;
+
+    mutex_.lock();
+
+    std::cout << "\r";
+    for (int i = 0; i < layer_; i++) {
+        std::cout << "\e[1A";
+    }
+
+    if (!title_.empty()) {
+        std::cout << setfill(' ') << setw(25) << left << title_ + ": ";
+    }
+
+    std::cout << "[" << setfill('_') << setw(length_) << left << progress << "]"
+              << " [" << setfill(' ') << setw(digit) << right << num_done << "/"
+              << num_task_ << "]" << setw(5) << right << percent << "%  ";
+
+    for (int i = 0; i < layer_; i++) {
+        std::cout << "\e[1B";
+    }
+
+    std::cout << std::flush;
+
+    mutex_.unlock();
+}
+
+/* プログレスバーを削除する */
 void ProgressBar::BarBody::erase() const {
     std::cout << "\e[1A\e[2K\r" << std::flush;
 }
