@@ -12,20 +12,30 @@
 /*!
  * @brief コンストラクタ
  */
-ProgressBar::ProgressBar() {}
+ProgressBar::ProgressBar() { std::cout << "\e[?25l" << std::flush; }
 
-ProgressBar::BarBody &ProgressBar::add(const int layer) {
-    pbars_.emplace_back(layer);
-    return pbars_.at(layer);
+/*!
+ * @brief デストラクタ
+ */
+ProgressBar::~ProgressBar() { std::cout << "\e[?25h" << std::flush; }
+
+/*!
+ * @brief 新規プログレスバー領域を確保する
+ * @return 新規プログレスバーの参照
+ */
+ProgressBar::BarBody &ProgressBar::add() {
+    int index = pbars_.size();
+    pbars_.emplace_back(make_unique<BarBody>(index + 1));
+    std::cout << std::endl;
+
+    return *(pbars_.back());
 }
 
 /* バー本体クラス */
 
 /*!
  * @brief コンストラクタ
- * @param num_task タスク数
- * @param num_done 終了済みタスク数
- * @param length バーの長さ
+ * @param layer 深さ
  */
 ProgressBar::BarBody::BarBody(const int layer)
     : layer_{layer}, length_{PBAR_LENGTH}, step_{100.0 / length_} {}
@@ -41,7 +51,6 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
         const int digit = to_string(num_task).size();
         int percent = 0;
 
-        std::cout << "\e[?25l";
         auto start = chrono::system_clock::now();
 
         do {
@@ -57,7 +66,13 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                 progress += "#";
             }
 
+            mutex_.lock();
+
             std::cout << "\r";
+            for (int i = 0; i < layer_; i++) {
+                std::cout << "\e[1A";
+            }
+
             if (!title_.empty()) {
                 std::cout << setfill(' ') << setw(25) << left << title_ + ": ";
             }
@@ -66,12 +81,27 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                       << progress << "]"
                       << " [" << setfill(' ') << setw(digit) << right
                       << num_done << "/" << num_task << "]" << setw(5) << right
-                      << percent << "%  " << std::flush;
+                      << percent << "%  ";
+
+            for (int i = 0; i < layer_; i++) {
+                std::cout << "\e[1B";
+            }
+
+            std::cout << std::flush;
+
+            mutex_.unlock();
         } while (percent != 100);
 
         auto end = chrono::system_clock::now();
         auto dur = end - start;
         auto msec = chrono::duration_cast<chrono::milliseconds>(dur).count();
+
+        mutex_.lock();
+
+        for (int i = 0; i < layer_; i++) {
+            std::cout << "\e[1A";
+        }
+
         if (msec < 1000) {
             std::cout << msec << "ms";
         } else if (msec < 10000) {
@@ -81,12 +111,21 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
             auto sec = chrono::duration_cast<chrono::seconds>(dur).count();
             std::cout << sec << "s";
         }
-        std::cout << "\e[?25h" << std::flush;
+
+        for (int i = 0; i < layer_; i++) {
+            std::cout << "\e[1B\r";
+        }
+
+        std::cout << std::flush;
+        mutex_.unlock();
 
         time_ = msec;
     });
 }
 
+/*!
+ * @brief プログレスバーを閉じる
+ */
 void ProgressBar::BarBody::close() { thread_.join(); }
 
 /*!
@@ -97,7 +136,7 @@ void ProgressBar::BarBody::set_title(const string title) { title_ = title; }
 
 /* プログレスバーをクリアする */
 void ProgressBar::BarBody::erase() const {
-    std::cout << "\r\e[2K" << std::flush;
+    std::cout << "\e[1A\e[2K\r" << std::flush;
 }
 
 /*!

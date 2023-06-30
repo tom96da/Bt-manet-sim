@@ -10,16 +10,18 @@
  *
  * int main()
  * {
- *     int task, done;
  *     auto pbar = PBar();
- *     auto pb1 = pbar.add();
- *     pb1.set_title("");
+ *     auto &pb1 = pbar.add();
+ *     pb1.set_title("Sample");
+ *
+ *     int task, done;
  *     pb1.start(task, done);
  *
  *     // 進捗の処理
  *
- *     auto time1 = pb1.time();
+ *     pb1.close();
  *     pb1.erase();
+ *     auto time1 = pb1.time();
  *
  *     return 0;
  * }
@@ -29,10 +31,9 @@
 #ifndef PBAR_HPP
 #define PBAR_HPP
 
-#include <chrono>
-#include <future>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -41,18 +42,23 @@ using namespace std;
 
 const int PBAR_LENGTH = 20;
 
+std::mutex mutex_;
+
 /* プログレスバークラス */
 class ProgressBar {
-   private:
+   public:
     /* バー本体クラス */
     class BarBody;
+
+   private:
     /* バー本体 */
-    vector<BarBody> pbars_;
+    vector<std::unique_ptr<BarBody>> pbars_;
 
    public:
     ProgressBar();
+    ~ProgressBar();
 
-    BarBody &add(const int layer = 0);
+    BarBody &add();
 };
 
 /* バー本体 */
@@ -75,11 +81,10 @@ class ProgressBar::BarBody {
     thread thread_;
 
    public:
-    BarBody(const int layer);
+    BarBody(const int index);
     void start(const int num_task, int &num_done);
     void close();
     void set_title(const string title);
-    void clear() const;
     void erase() const;
 
     int64_t time();
