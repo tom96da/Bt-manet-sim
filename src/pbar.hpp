@@ -74,7 +74,7 @@ class ProgressBar::BarBody {
     /* バータイトル */
     string title_;
     /* タスク数の履歴 */
-    int num_task_;
+    int previous_num_task_;
     /* かかった時間 */
     int64_t time_;
 
