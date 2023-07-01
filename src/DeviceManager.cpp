@@ -751,17 +751,15 @@ void DeviceManager::Node::makeMPR() {
 
     while (true) {
         // willingness 属性のデータをメモリの末尾から探す
-        auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                           [](pair<size_t, Device::Sell> &&sell) {
-                               auto &[_, data_in_sell] = sell;
-                               return data_in_sell.getDataAttribute() ==
-                                      DataAttr::WILLINGNESS;
-                           });
+        auto itr = find_if(
+            memory_.rbegin(), memory_.rend(), [](Device::Sell &data_in_sell) {
+                return data_in_sell.getDataAttribute() == DataAttr::WILLINGNESS;
+            });
         if (itr == memory_.rend()) {
             break;
         }
 
-        auto &[_, data_in_sell] = *itr;
+        auto &data_in_sell = *itr;
         auto id_neighbor = data_in_sell.getIdSender();
         auto willingness = get<int>(data_in_sell.getData());
 
@@ -787,18 +785,16 @@ void DeviceManager::Node::makeMPR() {
          });
 
     for (auto [id_neighbor, _, __] : neighbors) {
-        auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                           [&](pair<size_t, Device::Sell> &&sell) {
-                               auto &[_, data_in_sell] = sell;
-                               return data_in_sell.getDataAttribute() ==
-                                          DataAttr::TOPOLOGY &&
-                                      data_in_sell.getIdSender() == id_neighbor;
-                           });
+        auto itr = find_if(
+            memory_.rbegin(), memory_.rend(), [=](Device::Sell &data_in_sell) {
+                return data_in_sell.getDataAttribute() == DataAttr::TOPOLOGY &&
+                       data_in_sell.getIdSender() == id_neighbor;
+            });
         if (itr == memory_.rend()) {
             break;
         }
 
-        auto &[___, data_in_sell] = *itr;
+        auto &data_in_sell = *itr;
 
         for (auto id_neighbor_cncts = get<set<int>>(data_in_sell.getData());
              auto id_tow_hop_neighbor : id_neighbor_cncts) {

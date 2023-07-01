@@ -79,6 +79,7 @@ int main() {
         pb_proposal_2.set_title("LONG_CONNECTION");
 
         int count_repeat = 0;
+        pb_repeat.clear();
         pb_repeat.start(num_repeat, count_repeat);
         newCsv();
 
@@ -137,9 +138,6 @@ int main() {
                 // mgr.showMPR(0);
 
                 makingTableUntilcomplete(result_exiting, pb_exiting);
-                // pb_make_table.erase();
-
-                // mgr.getDeviceById(0).calculateTableFrequency();
             }
 
             mgr.clearDevice();
@@ -152,8 +150,6 @@ int main() {
                 // mgr.showMPR(0);
 
                 makingTableUntilcomplete(result_proposal_1, pb_proposal_1);
-
-                // pb_make_table.erase();
             }
 
             mgr.resetNetwork();
@@ -165,7 +161,7 @@ int main() {
                 if (num_member != num_node) {
                     // 孤立するノードがあれば上の2つの結果を消してループに戻る
                     result_exiting.pop_back();
-                    result_proposal_2.pop_back();
+                    result_proposal_1.pop_back();
                     continue;
                 }
 
@@ -174,7 +170,6 @@ int main() {
                 // mgr.showMPR(0);
 
                 makingTableUntilcomplete(result_proposal_2, pb_proposal_2);
-                // pb_make_table.erase();
             }
 
             ++count_repeat;

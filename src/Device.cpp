@@ -127,9 +127,9 @@ set<int> Device::getMPR() const { return MPR_; }
  * @param data_id データ識別子
  * @return pair<size_t, variant> 該当データ
  */
-pair<size_t, Var> Device::readData(const size_t data_id) const {
-    return memory_.at(data_id).getDataWithId();
-}
+// pair<size_t, Var> Device::readData(const size_t data_id) const {
+//     return memory_.at(data_id).getDataWithId();
+// }
 
 /*!
  * @brief デバイスがペアリング登録済みか取得
@@ -158,7 +158,15 @@ bool Device::isConnected(const int id_another_device) const {
  * @retval false 未保持
  */
 bool Device::hasData(const size_t data_id) const {
-    return memory_.count(data_id);
+    auto itr = find_if(memory_.rbegin(), memory_.rend(),
+                       [=](const Device::Sell &data_in_sell) {
+                           return data_in_sell.getDataId() == data_id;
+                       });
+    if (itr == memory_.rend()) {
+        return false;
+    }
+
+    return true;
 }
 
 /*!
@@ -229,8 +237,8 @@ void Device::saveData(pair<size_t, Var> data_with_id, const DataAttr data_attr,
         return;
     }
 
-    memory_.emplace(data_id,
-                    Sell(getId(), -1, data_with_id, data_attr, flood_step));
+    memory_.emplace_back(
+        Sell(getId(), -1, data_with_id, data_attr, flood_step));
 }
 
 /*!
@@ -244,10 +252,9 @@ void Device::saveData(const Packet &packet) {
         return;
     }
 
-    memory_.emplace(
-        data_id,
-        Sell(packet.getIdSender(), packet.getIdDestinaiton(), data_with_id,
-             packet.getDataAttribute(), packet.getFloodStep()));
+    memory_.emplace_back(Sell(packet.getIdSender(), packet.getIdDestinaiton(),
+                              data_with_id, packet.getDataAttribute(),
+                              packet.getFloodStep()));
 }
 
 /*!
@@ -375,17 +382,15 @@ void Device::flooding(const int flag) {
         return;
     }
 
-    auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                       [](pair<size_t, Device::Sell> &&sell) {
-                           auto &[_, data_in_sell] = sell;
-                           return data_in_sell.getDataAttribute() ==
-                                  DataAttr::FLOODING;
-                       });
+    auto itr = find_if(
+        memory_.rbegin(), memory_.rend(), [](Device::Sell &data_in_sell) {
+            return data_in_sell.getDataAttribute() == DataAttr::FLOODING;
+        });
     if (itr == memory_.rend()) {
         return;
     }
 
-    auto &[_, data_in_sell] = *itr;
+    auto &data_in_sell = *itr;
     if (data_in_sell.getFloodStep() > _step_new) {
         return;
     }
@@ -426,18 +431,16 @@ pair<int, int> Device::startUnicast(const int id_dest) {
  */
 pair<int, int> Device::hopping() {
     // メモリからホップするメッセージを走査する
-    auto itr =
-        find_if(memory_.rbegin(), memory_.rend(),
-                [](pair<size_t, Device::Sell> &&sell) {
-                    auto &[_, data_in_sell] = sell;
-                    return data_in_sell.getDataAttribute() == DataAttr::HOPPING;
-                });
+    auto itr = find_if(
+        memory_.rbegin(), memory_.rend(), [](Device::Sell &data_in_sell) {
+            return data_in_sell.getDataAttribute() == DataAttr::HOPPING;
+        });
     if (itr == memory_.rend()) {
         // ホップするメッセージがなければ終了
         return {0, -1};
     }
 
-    auto &[_, data_in_sell] = *itr;
+    auto &data_in_sell = *itr;
     int id_dest = data_in_sell.getIdDestinaiton();
     if (id_dest == getId()) {
         return {0, 0};
@@ -538,17 +541,15 @@ bool Device::makeTable() {
     int result = 0;
 
     while (true) {
-        auto itr = find_if(memory_.rbegin(), memory_.rend(),
-                           [](pair<size_t, Device::Sell> &&sell) {
-                               auto &[_, data_in_sell] = sell;
-                               return data_in_sell.getDataAttribute() ==
-                                      DataAttr::TABLE;
-                           });
+        auto itr = find_if(
+            memory_.rbegin(), memory_.rend(), [](Device::Sell &data_in_sell) {
+                return data_in_sell.getDataAttribute() == DataAttr::TABLE;
+            });
         if (itr == memory_.rend()) {
             break;
         }
 
-        auto &[__, data_in_sell] = *itr;
+        auto &data_in_sell = *itr;
         auto id_sender = data_in_sell.getIdSender();
         auto table_neighbor = get<Table>(data_in_sell.getData()).getTable();
 

@@ -59,7 +59,7 @@ class Device {
     /* メモリセルクラス */
     class Sell;
     /* メモリ */
-    map<size_t, Sell> memory_;
+    vector<Sell> memory_;
 
     /* パケットクラス */
     class Packet;
