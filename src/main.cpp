@@ -24,7 +24,7 @@ int main() {
     /* 座標を記録するファイル */
     auto fs = vector<ofstream>{};
     /* 試行回数 */
-    const int num_repeat = 20;
+    const int num_repeat = 200;
     /* 結果 */
     vector<tuple<int, double, int64_t>> result_exiting, result_proposal_1,
         result_proposal_2;
@@ -137,7 +137,6 @@ int main() {
             // mgr->showMPR(0);
 
             makingTableUntilcomplete(result_exiting, pb_exiting);
-            // mgr->getDeviceById(0).calculateTableFrequency();
         }
 
         mgr->clearDevice();
@@ -161,7 +160,7 @@ int main() {
             if (num_member != num_node) {
                 // 孤立するノードがあれば上の2つの結果を消してループに戻る
                 result_exiting.pop_back();
-                result_proposal_2.pop_back();
+                result_proposal_1.pop_back();
                 continue;
             }
 
