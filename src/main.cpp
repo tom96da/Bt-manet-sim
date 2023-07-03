@@ -44,6 +44,45 @@ int main() {
             fs[id] << x << ", " << y << endl;
         }
     };
+    /* 度数分布を合算する */
+    // auto addFrequency = [](map<int, double> frequency_original,
+    //                        const map<int, double> frequency_other) {
+    //     for (const auto &[num_hop, num_device] : frequency_other) {
+    //         frequency_original[num_hop] += num_device;
+    //     }
+    //     return frequency_original;
+    // };
+    /* 度数分布を割る */
+    // auto divideFrequency = [](map<int, double> frequency_original,
+    //                           const int num_divide) {
+    //     map<int, double> frequency_average;
+    //     for (auto [num_hop, num_device] : frequency_original) {
+    //         frequency_average[num_hop] = num_device / num_divide;
+    //     }
+    //     return frequency_average;
+    // };
+    // auto average =
+    //     [](vector<tuple<int, double, int64_t, map<int, double>>> &result)
+    //     -> tuple<int, double, int64_t, map<int, double>> {
+    //     auto sum = reduce(
+    //         result.begin(), result.end(),
+    //         tuple<int, double, int64_t, map<int, double>>{0, 0.0, 0, {}},
+    //         [](const auto &acc, const auto &elem)
+    //             -> tuple<int, double, int64_t, map<int, double>> {
+    //             return {get<0>(acc) + get<0>(elem), get<1>(acc) +
+    //             get<1>(elem),
+    //                     get<2>(acc) + get<2>(elem), get<3>(acc)};
+    //         });
+    //     return {get<0>(sum) / num_repeat, get<1>(sum) / num_repeat,
+    //             get<2>(sum) / num_repeat, get<3>(sum)};
+    // };
+    // auto showAverage =
+    //     [](string s, tuple<int, double, int64_t, map<int, double>> average) {
+    //         std::cout << s << " average packets: " << get<0>(average)
+    //                   << ", update: " << get<1>(average)
+    //                   << ", time: " << get<2>(average) << " msec" <<
+    //                   std::endl;
+    //     };
     /* 結果から平均を得る */
     auto average = [&](vector<tuple<int, double, int64_t>> result)
         -> tuple<int, double, int64_t> {

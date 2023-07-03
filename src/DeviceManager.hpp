@@ -93,7 +93,7 @@ class DeviceManager {
     void showMPR(const int id);
 
     int makeTable();
-    vector<map<int, int>> calculateTableFrequency() const;
+    vector<map<int, double>> calculateTableFrequency();
 
     pair<size_t, int> flooding(const int id);
     int aggregateDevices(size_t data_id);

@@ -8,8 +8,10 @@
 #include "DeviceManager.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <numbers>
 #include <utility>
 
 /* デバイスマネージャー クラス */
@@ -89,6 +91,27 @@ DeviceManager::Node &DeviceManager::getDeviceById(const int id) {
  */
 pair<double, double> &DeviceManager::getPosition(const int id) {
     return nodes_.at(id).getPosition();
+}
+
+/*!
+ * @brief デバイス間距離の取得
+ * @param id_1 デバイスID1
+ * @param id_2 デバイスID2
+ * @retval 0< デバイス間距離
+ * @retval <0 デバイスIDが不正
+ */
+double DeviceManager::getDistance(const int id_1, const int id_2) {
+    if (!nodes_.count(id_1)) {
+        return -1.0;
+    }
+    if (!nodes_.count(id_2)) {
+        return -1.0;
+    }
+
+    auto &&[pos_1_x, pos_1_y] = getPosition(id_1);
+    auto &&[pos_2_x, pos_2_y] = getPosition(id_2);
+
+    return hypot(pos_1_x - pos_2_x, pos_1_y - pos_2_y);
 }
 
 /*!
@@ -460,8 +483,41 @@ int DeviceManager::makeTable() {
     return result;
 }
 
-vector<map<int, int>> DeviceManager::calculateTableFrequency() const {
-    return vector<map<int, int>>{};
+vector<map<int, double>> DeviceManager::calculateTableFrequency() {
+    map<int, double> frequency_central, frequency_middle, frequency_edge;
+    int num_central = 0, num_middle = 0, num_edge = 0;
+
+    double center = field_size_ / 2;
+    double area_zone = pow(field_size_, 2 / 3);
+    double radius_central = sqrt(area_zone / numbers::pi);
+    double radius_middle = sqrt(2 * area_zone / numbers::pi);
+
+    auto mergeFrequency = [](map<int, double> &frequency_original,
+                             map<int, int> frequency_device) {
+        for (const auto &[num_hop, num_device] : frequency_device) {
+            frequency_original[num_hop] += num_device;
+        }
+    };
+
+    for (auto id : getDevicesList()) {
+        auto frequency_device = getDeviceById(id).calculateTableFrequency();
+
+        const auto [pos_x, pos_y] = getPosition(id);
+        double location = hypot(pos_x - center, pos_y - center);
+
+        if (location < radius_central) {
+            num_central++;
+            mergeFrequency(frequency_central, frequency_device);
+        } else if (location < radius_middle) {
+            num_middle++;
+            mergeFrequency(frequency_middle, frequency_device);
+        } else {
+            num_edge++;
+            mergeFrequency(frequency_edge, frequency_device);
+        }
+    }
+
+    return {frequency_central, frequency_middle, frequency_edge};
 }
 
 /*!
@@ -623,27 +679,6 @@ vector<int> DeviceManager::getDevicesList() const {
  */
 pair<double, double> &DeviceManager::getBias(const int id) {
     return nodes_.at(id).getBias();
-}
-
-/*!
- * @brief デバイス間距離の取得
- * @param id_1 デバイスID1
- * @param id_2 デバイスID2
- * @retval 0< デバイス間距離
- * @retval <0 デバイスIDが不正
- */
-double DeviceManager::getDistance(const int id_1, const int id_2) {
-    if (!nodes_.count(id_1)) {
-        return -1.0;
-    }
-    if (!nodes_.count(id_2)) {
-        return -1.0;
-    }
-
-    auto &&[pos_1_x, pos_1_y] = getPosition(id_1);
-    auto &&[pos_2_x, pos_2_y] = getPosition(id_2);
-
-    return hypot(pos_1_x - pos_2_x, pos_1_y - pos_2_y);
 }
 
 /*!
