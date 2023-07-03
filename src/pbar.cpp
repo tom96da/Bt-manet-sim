@@ -120,8 +120,8 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
             std::cout << std::fixed << setprecision(2)
                       << static_cast<double>(msec) / 1000 << "s";
         } else {
-            auto sec = chrono::duration_cast<chrono::seconds>(dur).count();
-            std::cout << sec << "s";
+            std::cout << std::fixed << setprecision(1)
+                      << static_cast<double>(msec) / 1000 << "s";
         }
 
         for (int i = 0; i < layer_; i++) {
