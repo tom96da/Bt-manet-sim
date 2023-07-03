@@ -29,9 +29,6 @@ int main() {
     vector<tuple<int, double, int64_t>> result_exiting, result_proposal_1,
         result_proposal_2;
 
-    /*　マネージャー */
-    auto mgr = MGR{field_size};
-
     /* ファイル作成 */
     auto newCsv = [&]() {
         for (int id = 0; id < num_node; id++) {
@@ -41,9 +38,9 @@ int main() {
         }
     };
     /* ファイルに座標書き込み */
-    auto writeCsv = [&]() {
+    auto writeCsv = [&](MGR *mgr) {
         for (int id = 0; id < num_node; id++) {
-            auto [x, y] = mgr.getPosition(id);
+            auto [x, y] = mgr->getPosition(id);
             fs[id] << x << ", " << y << endl;
         }
     };
@@ -67,122 +64,121 @@ int main() {
                   << ", time: " << get<2>(average) << " msec" << std::endl;
     };
 
-    auto doSim = [&](const int num_repeat) {
-        auto pbar = PBar();
-        auto &pb_repeat = pbar.add();
-        auto &pb_proposal_2 = pbar.add();
-        auto &pb_proposal_1 = pbar.add();
-        auto &pb_exiting = pbar.add();
-        pb_repeat.set_title("Simulation progress");
-        pb_exiting.set_title("EXITING");
-        pb_proposal_1.set_title("LONG_MPR");
-        pb_proposal_2.set_title("LONG_CONNECTION");
+    /* シミュレーション開始 */
+    auto pbar = PBar();
+    auto &pb_repeat = pbar.add();
+    auto &pb_proposal_2 = pbar.add();
+    auto &pb_proposal_1 = pbar.add();
+    auto &pb_exiting = pbar.add();
+    pb_repeat.set_title("Simulation progress");
+    pb_exiting.set_title("EXITING");
+    pb_proposal_1.set_title("LONG_MPR");
+    pb_proposal_2.set_title("LONG_CONNECTION");
 
-        int count_repeat = 0;
-        pb_repeat.start(num_repeat, count_repeat);
-        newCsv();
+    int count_repeat = 0;
+    pb_repeat.clear();
+    pb_repeat.start(num_repeat, count_repeat);
+    newCsv();
 
-        for (; count_repeat < num_repeat;) {
-            pb_exiting.clear();
-            pb_proposal_1.clear();
-            pb_proposal_2.clear();
+    for (; count_repeat < num_repeat;) {
+        pb_exiting.clear();
+        pb_proposal_1.clear();
+        pb_proposal_2.clear();
 
-            mgr.setSimMode(SIMMODE::EXITING);
+        /*　マネージャー */
+        auto mgr = new MGR{field_size};
+        mgr->setSimMode(SIMMODE::EXITING);
 
-            // 孤立しないネットワークを構築する
-            while (true) {
-                // 孤立するノードがないネットワークができるまで繰り返す
-                mgr.deleteDeviceAll();
-                mgr.addDevices(num_node);
-                mgr.buildNetwork();
-                const auto [_, num_member] = mgr.flooding(45);
-                if (num_member == num_node) {
-                    // 孤立するノードがなければ抜ける
-                    break;
-                }
+        // 孤立しないネットワークを構築する
+        while (true) {
+            // 孤立するノードがないネットワークができるまで繰り返す
+            mgr->deleteDeviceAll();
+            mgr->addDevices(num_node);
+            mgr->buildNetwork();
+            const auto [_, num_member] = mgr->flooding(45);
+            if (num_member == num_node) {
+                // 孤立するノードがなければ抜ける
+                break;
             }
-
-            writeCsv();
-
-            /* 完成するまでテーブルを更新する */
-            auto makingTableUntilcomplete =
-                [&mgr, num_node](
-                    std::vector<std::tuple<int, double, int64_t>> &result,
-                    ProgressBar::BarBody &pb) {
-                    int num_packet_start = Device::getTotalPacket();
-                    int num_packet_end = 0;
-                    int num_done = 0;
-                    int num_update = 0;
-                    pb.start(num_node, num_done);
-
-                    while (true) {
-                        mgr.sendTable();
-                        num_done = num_node - mgr.makeTable();
-                        if (num_done < num_node) {
-                            num_packet_end = Device::getTotalPacket();
-                            ++num_update;
-                        } else {
-                            break;
-                        }
-                    }
-
-                    pb.close();
-                    result.emplace_back(num_packet_end - num_packet_start,
-                                        num_update, pb.time());
-                };
-
-            {  // 既存手法
-                mgr.sendHello();
-                mgr.makeMPR();
-                // mgr.showMPR(0);
-
-                makingTableUntilcomplete(result_exiting, pb_exiting);
-                // pb_make_table.erase();
-
-                // mgr.getDeviceById(0).calculateTableFrequency();
-            }
-
-            mgr.clearDevice();
-
-            {  // 提案手法 遠距離選択MPR
-                mgr.setSimMode(SIMMODE::PROPOSAL_LONG_MPR);
-
-                mgr.sendHello();
-                mgr.makeMPR();
-                // mgr.showMPR(0);
-
-                makingTableUntilcomplete(result_proposal_1, pb_proposal_1);
-
-                // pb_make_table.erase();
-            }
-
-            mgr.resetNetwork();
-
-            {  // 提案手法 遠距離選択接続
-                mgr.setSimMode(SIMMODE::PROPOSAL_LONG_CONNECTION);
-                mgr.buildNetwork();
-                const auto [_, num_member] = mgr.flooding(45);
-                if (num_member != num_node) {
-                    // 孤立するノードがあれば上の2つの結果を消してループに戻る
-                    result_exiting.pop_back();
-                    result_proposal_2.pop_back();
-                    continue;
-                }
-
-                mgr.sendHello();
-                mgr.makeMPR();
-                // mgr.showMPR(0);
-
-                makingTableUntilcomplete(result_proposal_2, pb_proposal_2);
-                // pb_make_table.erase();
-            }
-
-            ++count_repeat;
         }
-        pb_repeat.close();
-    };
 
-    doSim(num_repeat);
+        writeCsv(mgr);
+
+        /* 完成するまでテーブルを更新する */
+        auto makingTableUntilcomplete =
+            [&mgr, num_node](
+                std::vector<std::tuple<int, double, int64_t>> &result,
+                ProgressBar::BarBody &pb) {
+                int num_packet_start = Device::getTotalPacket();
+                int num_packet_end = 0;
+                int num_done = 0;
+                int num_update = 0;
+                pb.start(num_node, num_done);
+
+                while (true) {
+                    mgr->sendTable();
+                    num_done = num_node - mgr->makeTable();
+                    if (num_done < num_node) {
+                        num_packet_end = Device::getTotalPacket();
+                        ++num_update;
+                    } else {
+                        break;
+                    }
+                }
+
+                pb.close();
+                result.emplace_back(num_packet_end - num_packet_start,
+                                    num_update, pb.time());
+            };
+
+        {  // 既存手法
+            mgr->sendHello();
+            mgr->makeMPR();
+            // mgr->showMPR(0);
+
+            makingTableUntilcomplete(result_exiting, pb_exiting);
+        }
+
+        mgr->clearDevice();
+
+        {  // 提案手法 遠距離選択MPR
+            mgr->setSimMode(SIMMODE::PROPOSAL_LONG_MPR);
+
+            mgr->sendHello();
+            mgr->makeMPR();
+            // mgr->showMPR(0);
+
+            makingTableUntilcomplete(result_proposal_1, pb_proposal_1);
+        }
+
+        mgr->resetNetwork();
+
+        {  // 提案手法 遠距離選択接続
+            mgr->setSimMode(SIMMODE::PROPOSAL_LONG_CONNECTION);
+            mgr->buildNetwork();
+            const auto [_, num_member] = mgr->flooding(45);
+            if (num_member != num_node) {
+                // 孤立するノードがあれば上の2つの結果を消してループに戻る
+                result_exiting.pop_back();
+                result_proposal_1.pop_back();
+                continue;
+            }
+
+            mgr->sendHello();
+            mgr->makeMPR();
+            // mgr->showMPR(0);
+
+            makingTableUntilcomplete(result_proposal_2, pb_proposal_2);
+        }
+
+        ++count_repeat;
+
+        delete mgr;
+    }
+    pb_repeat.close();
+
+    /* シミュレーションここまで */
+    /* 以下結果を表示 */
 
     auto average_exiting = average(result_exiting);
     showAverage("EXITING", average_exiting);
