@@ -488,7 +488,7 @@ vector<map<int, double>> DeviceManager::calculateTableFrequency() {
     int num_central = 0, num_middle = 0, num_edge = 0;
 
     double center = field_size_ / 2;
-    double area_zone = pow(field_size_, 2 / 3);
+    double area_zone = pow(field_size_, 2) / 3;
     double radius_central = sqrt(area_zone / numbers::pi);
     double radius_middle = sqrt(2 * area_zone / numbers::pi);
 
@@ -516,6 +516,17 @@ vector<map<int, double>> DeviceManager::calculateTableFrequency() {
             mergeFrequency(frequency_edge, frequency_device);
         }
     }
+
+    auto divideFrequency = [](map<int, double> &frequency_original,
+                              const int divisor) {
+        for (auto [num_hop, num_device] : frequency_original) {
+            frequency_original[num_hop] /= divisor;
+        }
+    };
+
+    divideFrequency(frequency_central, num_central);
+    divideFrequency(frequency_middle, num_middle);
+    divideFrequency(frequency_edge, num_edge);
 
     return {frequency_central, frequency_middle, frequency_edge};
 }

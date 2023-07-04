@@ -24,10 +24,12 @@ int main() {
     /* 座標を記録するファイル */
     auto fs = vector<ofstream>{};
     /* 試行回数 */
-    const int num_repeat = 200;
+    const int num_repeat = 10;
     /* 結果 */
-    vector<tuple<int, double, int64_t>> result_exiting, result_proposal_1,
-        result_proposal_2;
+    vector<tuple<int, double, int64_t, vector<map<int, double>>>>
+        result_exiting, result_proposal_1, result_proposal_2;
+
+    vector<map<int, double>> frequency;
 
     /* ファイル作成 */
     auto newCsv = [&]() {
@@ -45,13 +47,20 @@ int main() {
         }
     };
     /* 度数分布を合算する */
-    // auto addFrequency = [](map<int, double> frequency_original,
-    //                        const map<int, double> frequency_other) {
-    //     for (const auto &[num_hop, num_device] : frequency_other) {
-    //         frequency_original[num_hop] += num_device;
-    //     }
-    //     return frequency_original;
-    // };
+    auto addFrequency = [](vector<map<int, double>> frequency_acc,
+                           const vector<map<int, double>> frequency_elem) {
+        if (frequency_acc.empty()) {
+            return frequency_elem;
+        }
+
+        for (int i = 0; auto &frequency_each_zone : frequency_acc) {
+            for (auto [num_hop, num_device] : frequency_elem[i]) {
+                frequency_each_zone[num_hop] += num_device;
+            }
+            ++i;
+        }
+        return frequency_acc;
+    };
     /* 度数分布を割る */
     // auto divideFrequency = [](map<int, double> frequency_original,
     //                           const int num_divide) {
@@ -61,47 +70,33 @@ int main() {
     //     }
     //     return frequency_average;
     // };
-    // auto average =
-    //     [](vector<tuple<int, double, int64_t, map<int, double>>> &result)
-    //     -> tuple<int, double, int64_t, map<int, double>> {
-    //     auto sum = reduce(
-    //         result.begin(), result.end(),
-    //         tuple<int, double, int64_t, map<int, double>>{0, 0.0, 0, {}},
-    //         [](const auto &acc, const auto &elem)
-    //             -> tuple<int, double, int64_t, map<int, double>> {
-    //             return {get<0>(acc) + get<0>(elem), get<1>(acc) +
-    //             get<1>(elem),
-    //                     get<2>(acc) + get<2>(elem), get<3>(acc)};
-    //         });
-    //     return {get<0>(sum) / num_repeat, get<1>(sum) / num_repeat,
-    //             get<2>(sum) / num_repeat, get<3>(sum)};
-    // };
-    // auto showAverage =
-    //     [](string s, tuple<int, double, int64_t, map<int, double>> average) {
-    //         std::cout << s << " average packets: " << get<0>(average)
-    //                   << ", update: " << get<1>(average)
-    //                   << ", time: " << get<2>(average) << " msec" <<
-    //                   std::endl;
-    //     };
     /* 結果から平均を得る */
-    auto average = [&](vector<tuple<int, double, int64_t>> result)
-        -> tuple<int, double, int64_t> {
+    auto average =
+        [addFrequency](
+            vector<tuple<int, double, int64_t, vector<map<int, double>>>>
+                &result)
+        -> tuple<int, double, int64_t, vector<map<int, double>>> {
         auto sum = reduce(
-            result.begin(), result.end(), tuple<int, double, int64_t>{0, 0, 0},
-            [&](const auto &acc,
-                const auto &elem) -> tuple<int, double, int64_t> {
+            result.begin(), result.end(),
+            tuple<int, double, int64_t, vector<map<int, double>>>{
+                0, 0.0, 0, {}},
+            [&](const auto &acc, const auto &elem)
+                -> tuple<int, double, int64_t, vector<map<int, double>>> {
                 return {get<0>(acc) + get<0>(elem), get<1>(acc) + get<1>(elem),
-                        get<2>(acc) + get<2>(elem)};
+                        get<2>(acc) + get<2>(elem),
+                        addFrequency(get<3>(acc), get<3>(elem))};
             });
         return {get<0>(sum) / num_repeat, get<1>(sum) / num_repeat,
-                get<2>(sum) / num_repeat};
+                get<2>(sum) / num_repeat, get<3>(sum)};
     };
     /* 平均を表示 */
-    auto showAverage = [](string s, tuple<int, double, int64_t> average) {
-        std::cout << s << " average packets: " << get<0>(average)
-                  << ", update: " << get<1>(average)
-                  << ", time: " << get<2>(average) << " msec" << std::endl;
-    };
+    auto showAverage =
+        [](string s,
+           tuple<int, double, int64_t, vector<map<int, double>>> &average) {
+            std::cout << s << " average packets: " << get<0>(average)
+                      << ", update: " << get<1>(average)
+                      << ", time: " << get<2>(average) << " msec" << std::endl;
+        };
 
     /* シミュレーション開始 */
     auto pbar = PBar();
@@ -146,7 +141,8 @@ int main() {
         /* 完成するまでテーブルを更新する */
         auto makingTableUntilcomplete =
             [&mgr, num_node](
-                std::vector<std::tuple<int, double, int64_t>> &result,
+                std::vector<std::tuple<int, double, int64_t,
+                                       vector<map<int, double>>>> &result,
                 ProgressBar::BarBody &pb) {
                 int num_packet_start = Device::getTotalPacket();
                 int num_packet_end = 0;
@@ -167,7 +163,8 @@ int main() {
 
                 pb.close();
                 result.emplace_back(num_packet_end - num_packet_start,
-                                    num_update, pb.time());
+                                    num_update, pb.time(),
+                                    mgr->calculateTableFrequency());
             };
 
         {  // 既存手法
@@ -176,6 +173,7 @@ int main() {
             // mgr->showMPR(0);
 
             makingTableUntilcomplete(result_exiting, pb_exiting);
+            frequency = mgr->calculateTableFrequency();
         }
 
         mgr->clearDevice();
@@ -225,6 +223,13 @@ int main() {
     showAverage("PROPOSAL", average_proposal_1);
     auto average_proposal_2 = average(result_proposal_2);
     showAverage("PROPOSAL", average_proposal_2);
+
+    for (auto &&f : get<3>(average_exiting)) {
+        for (auto &&[v, n] : f) {
+            std::cout << v << ", " << n << std::endl;
+        }
+        std::cout << std::endl;
+    }
 
     return 0;
 }

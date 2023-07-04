@@ -585,9 +585,9 @@ map<int, int> Device::calculateTableFrequency() const {
         tableFrequency[table.getNumHop(id_dest)]++;
     }
 
-    for (const auto &[num_hop, num_dev] : tableFrequency) {
-        std::cout << num_hop << ": " << num_dev << std::endl;
-    }
+    // for (const auto &[num_hop, num_dev] : tableFrequency) {
+    //     std::cout << num_hop << ": " << num_dev << std::endl;
+    // }
 
     return tableFrequency;
 }
