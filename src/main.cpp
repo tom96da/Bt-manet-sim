@@ -21,15 +21,13 @@ int main() {
     const double field_size = 60.0;
     /* ノード数 */
     const int num_node = 100;
-    /* 座標を記録するファイル */
+    /* 記録ファイル */
     auto fs = vector<ofstream>{};
     /* 試行回数 */
     const int num_repeat = 10;
     /* 結果 */
     vector<tuple<int, double, int64_t, vector<map<int, double>>>>
         result_exiting, result_proposal_1, result_proposal_2;
-
-    vector<map<int, double>> frequency;
 
     /* ファイル作成 */
     auto newCsv = [&]() {
@@ -47,33 +45,34 @@ int main() {
         }
     };
     /* 度数分布を合算する */
-    auto addFrequency = [](vector<map<int, double>> frequency_acc,
-                           const vector<map<int, double>> frequency_elem) {
-        if (frequency_acc.empty()) {
-            return frequency_elem;
+    auto addFrequency = [](vector<map<int, double>> frequencys_acc,
+                           const vector<map<int, double>> frequencys_elem) {
+        if (frequencys_acc.empty()) {
+            return frequencys_elem;
         }
 
-        for (int i = 0; auto &frequency_each_zone : frequency_acc) {
-            for (auto [num_hop, num_device] : frequency_elem[i]) {
+        for (int i = 0; auto &frequency_each_zone : frequencys_acc) {
+            for (auto [num_hop, num_device] : frequencys_elem[i]) {
                 frequency_each_zone[num_hop] += num_device;
             }
             ++i;
         }
-        return frequency_acc;
+        return frequencys_acc;
     };
     /* 度数分布を割る */
-    // auto divideFrequency = [](map<int, double> frequency_original,
-    //                           const int num_divide) {
-    //     map<int, double> frequency_average;
-    //     for (auto [num_hop, num_device] : frequency_original) {
-    //         frequency_average[num_hop] = num_device / num_divide;
-    //     }
-    //     return frequency_average;
-    // };
+    auto divideFrequency = [](vector<map<int, double>> frequencys,
+                              const int divisor) {
+        for (auto &frequency_each_zone : frequencys) {
+            for (auto [num_hop, _] : frequency_each_zone) {
+                frequency_each_zone[num_hop] /= divisor;
+            }
+        }
+
+        return frequencys;
+    };
     /* 結果から平均を得る */
     auto average =
-        [addFrequency](
-            vector<tuple<int, double, int64_t, vector<map<int, double>>>>
+        [&](vector<tuple<int, double, int64_t, vector<map<int, double>>>>
                 &result)
         -> tuple<int, double, int64_t, vector<map<int, double>>> {
         auto sum = reduce(
@@ -87,7 +86,8 @@ int main() {
                         addFrequency(get<3>(acc), get<3>(elem))};
             });
         return {get<0>(sum) / num_repeat, get<1>(sum) / num_repeat,
-                get<2>(sum) / num_repeat, get<3>(sum)};
+                get<2>(sum) / num_repeat,
+                divideFrequency(get<3>(sum), num_repeat)};
     };
     /* 平均を表示 */
     auto showAverage =
@@ -173,7 +173,6 @@ int main() {
             // mgr->showMPR(0);
 
             makingTableUntilcomplete(result_exiting, pb_exiting);
-            frequency = mgr->calculateTableFrequency();
         }
 
         mgr->clearDevice();

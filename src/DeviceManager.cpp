@@ -519,7 +519,7 @@ vector<map<int, double>> DeviceManager::calculateTableFrequency() {
 
     auto divideFrequency = [](map<int, double> &frequency_original,
                               const int divisor) {
-        for (auto [num_hop, num_device] : frequency_original) {
+        for (auto [num_hop, _] : frequency_original) {
             frequency_original[num_hop] /= divisor;
         }
     };
