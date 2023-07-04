@@ -22,26 +22,30 @@ int main() {
     /* ノード数 */
     const int num_node = 100;
     /* 記録ファイル */
-    auto fs = vector<ofstream>{};
+    auto files = vector<ofstream>{};
     /* 試行回数 */
-    const int num_repeat = 10;
+    const int num_repeat = 200;
     /* 結果 */
     vector<tuple<int, double, int64_t, vector<map<int, double>>>>
         result_exiting, result_proposal_1, result_proposal_2;
 
     /* ファイル作成 */
-    auto newCsv = [&]() {
-        for (int id = 0; id < num_node; id++) {
-            string fname = "../tmp/dev_pos" + to_string(id) + ".csv";
-            fs.emplace_back(fname);
-            fs[id] << "x,y" << endl;
+    auto newCsv = [&](MGR *mgr) {
+        for (auto id : mgr->getDevicesList()) {
+            string fname = "../tmp/position/device" + to_string(id) + ".csv";
+            auto &file = files.emplace_back(fname);
+            file << "x,y" << endl;
         }
     };
     /* ファイルに座標書き込み */
     auto writeCsv = [&](MGR *mgr) {
-        for (int id = 0; id < num_node; id++) {
+        if (files.empty()) {
+            newCsv(mgr);
+        }
+
+        for (auto id : mgr->getDevicesList()) {
             auto [x, y] = mgr->getPosition(id);
-            fs[id] << x << ", " << y << endl;
+            files[id] << x << ", " << y << endl;
         }
     };
     /* 度数分布を合算する */
@@ -112,7 +116,7 @@ int main() {
     int count_repeat = 0;
     pb_repeat.clear();
     pb_repeat.start(num_repeat, count_repeat);
-    newCsv();
+    // newCsv();
 
     for (; count_repeat < num_repeat;) {
         pb_exiting.clear();
@@ -223,11 +227,51 @@ int main() {
     auto average_proposal_2 = average(result_proposal_2);
     showAverage("PROPOSAL", average_proposal_2);
 
-    for (auto &&f : get<3>(average_exiting)) {
-        for (auto &&[v, n] : f) {
-            std::cout << v << ", " << n << std::endl;
+    string fname = "../tmp/frequency.csv";
+    auto &file_frequency = files.emplace_back(fname);
+    auto &frequency_exiting = get<3>(average_exiting);
+    auto &frequency_proposal_1 = get<3>(average_proposal_1);
+    auto &frequency_proposal_2 = get<3>(average_proposal_2);
+
+    file_frequency << ", central, , , , middle, , , , edge" << std::endl;
+    file_frequency
+        << "hops, exiting, proposal 1, proposal 2, , exiting, "
+           "proposal 1, proposal 2, ,exiting, proposal 1, proposal 2,"
+        << std::endl;
+
+    for (size_t num_hop = 1; true; num_hop++) {
+        int count = 0;
+        file_frequency << num_hop << ", ";
+
+        for (size_t i = 0; i < 3; i++) {
+            if (frequency_exiting[i].count(num_hop)) {
+                file_frequency << frequency_exiting[i][num_hop] << ",";
+                ++count;
+            } else {
+                file_frequency << 0 << ",";
+            }
+
+            if (frequency_proposal_1[i].count(num_hop)) {
+                file_frequency << frequency_proposal_1[i][num_hop] << ",";
+                ++count;
+            } else {
+                file_frequency << 0 << ",";
+            }
+
+            if (frequency_proposal_2[i].count(num_hop)) {
+                file_frequency << frequency_proposal_2[i][num_hop] << ",";
+                ++count;
+            } else {
+                file_frequency << 0 << ",";
+            }
+
+            file_frequency << ",";
         }
-        std::cout << std::endl;
+        file_frequency << std::endl;
+
+        if (count == 0) {
+            break;
+        }
     }
 
     return 0;

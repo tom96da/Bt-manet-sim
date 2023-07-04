@@ -4,6 +4,7 @@
 
 # temporary data
 tmp/*.csv
+tmp/*/*.csv
 tmp/*.ngp
 tmp/fig/*.gif
 test/tmp/*.csv

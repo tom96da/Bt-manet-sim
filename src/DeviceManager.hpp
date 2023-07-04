@@ -61,6 +61,7 @@ class DeviceManager {
     void setSimMode(const SimulationMode sim_mode);
 
     int getNumDevices() const;
+    vector<int> getDevicesList() const;
     Node &getDeviceById(const int id);
     pair<double, double> &getPosition(const int id);
     double getDistance(const int id_1, const int id_2);
@@ -103,7 +104,6 @@ class DeviceManager {
     void unicast(const int id_source, const int id_dest);
 
    private:
-    vector<int> getDevicesList() const;
     pair<double, double> &getBias(const int id);
 
     bool isSameDevice(const int id_1, const int id_2) const;

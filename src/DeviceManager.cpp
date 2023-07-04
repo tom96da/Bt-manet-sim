@@ -85,6 +85,18 @@ DeviceManager::Node &DeviceManager::getDeviceById(const int id) {
 }
 
 /*!
+ * @return デバイスIDのリスト
+ */
+vector<int> DeviceManager::getDevicesList() const {
+    vector<int> list;
+    for (auto &[id, _] : nodes_) {
+        list.emplace_back(id);
+    }
+
+    return list;
+}
+
+/*!
  * @brief IDに合致する座標を参照 (不正なIDではないか事前確認)
  * @param id デバイスID
  * @return pair<double, double> デバイスの座標の参照
@@ -669,18 +681,6 @@ void DeviceManager::unicast(const int id_source, const int id_dest) {
     if (write_mode != WriteMode::HIDE) {
         std::cout << "\n" << num_hop << " times hop." << std::endl;
     }
-}
-
-/*!
- * @return デバイスIDのリスト
- */
-vector<int> DeviceManager::getDevicesList() const {
-    vector<int> list;
-    for (auto &[id, _] : nodes_) {
-        list.emplace_back(id);
-    }
-
-    return list;
 }
 
 /*!
