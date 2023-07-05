@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <execution>
+#include <future>
 #include <iomanip>
 #include <iostream>
 #include <numbers>
@@ -487,6 +489,24 @@ void DeviceManager::showMPR(const int id) {
  */
 int DeviceManager::makeTable() {
     int result = 0;
+    // vector<future<bool>> futures;
+
+    // auto &&list = getDevicesList();
+
+    // for_each(std::execution::par_unseq, list.begin(), list.end(), [&](int id)
+    // {
+    //     result += static_cast<int>(getDeviceById(id).makeTable());
+    // });
+
+    // for (auto id : getDevicesList()) {
+    //     futures.emplace_back(async(launch::async, [&, id]() -> bool {
+    //         return getDeviceById(id).makeTable();
+    //     }));
+    // }
+
+    // for (auto &f : futures) {
+    //     result += static_cast<int>(f.get());
+    // }
 
     for (auto id : getDevicesList()) {
         result += static_cast<int>(getDeviceById(id).makeTable());
@@ -495,6 +515,10 @@ int DeviceManager::makeTable() {
     return result;
 }
 
+/*!
+ * @brief すべてのノードの度数分布を集計する
+ * @return vector<map<int, double>> ゾーン別平均度数分布
+ */
 vector<map<int, double>> DeviceManager::calculateTableFrequency() {
     map<int, double> frequency_central, frequency_middle, frequency_edge;
     int num_central = 0, num_middle = 0, num_edge = 0;
