@@ -489,21 +489,19 @@ void DeviceManager::showMPR(const int id) {
  */
 int DeviceManager::makeTable() {
     int result = 0;
-    // vector<future<bool>> futures;
 
     // auto &&list = getDevicesList();
-
     // for_each(std::execution::par_unseq, list.begin(), list.end(), [&](int id)
     // {
     //     result += static_cast<int>(getDeviceById(id).makeTable());
     // });
 
+    // vector<future<bool>> futures;
     // for (auto id : getDevicesList()) {
     //     futures.emplace_back(async(launch::async, [&, id]() -> bool {
     //         return getDeviceById(id).makeTable();
     //     }));
     // }
-
     // for (auto &f : futures) {
     //     result += static_cast<int>(f.get());
     // }

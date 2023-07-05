@@ -97,9 +97,8 @@ int main() {
     auto showAverage =
         [](string s,
            tuple<int, double, int64_t, vector<map<int, double>>> &average) {
-            std::cout << s << " average packets: " << get<0>(average)
-                      << ", update: " << get<1>(average)
-                      << ", time: " << get<2>(average) << " msec" << std::endl;
+            std::cout << s << "; " << get<0>(average) << ", " << get<1>(average)
+                      << ", " << get<2>(average) << std::endl;
         };
 
     /* シミュレーション開始 */
@@ -116,7 +115,6 @@ int main() {
     int count_repeat = 0;
     pb_repeat.clear();
     pb_repeat.start(num_repeat, count_repeat);
-    // newCsv();
 
     for (; count_repeat < num_repeat;) {
         pb_exiting.clear();
@@ -221,10 +219,12 @@ int main() {
     /* 以下結果を表示 */
 
     auto average_exiting = average(result_exiting);
-    showAverage("EXITING", average_exiting);
     auto average_proposal_1 = average(result_proposal_1);
-    showAverage("PROPOSAL", average_proposal_1);
     auto average_proposal_2 = average(result_proposal_2);
+
+    std::cout << "METHOD; packets, update, time[ms]" << std::endl;
+    showAverage("EXITING", average_exiting);
+    showAverage("PROPOSAL", average_proposal_1);
     showAverage("PROPOSAL", average_proposal_2);
 
     string fname = "../tmp/frequency.csv";
