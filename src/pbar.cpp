@@ -62,45 +62,45 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                 num_done = num_task;
             }
 
-            if (num_done != previous_done) {  // 進捗があれば表示を更新する
-
-                percent = static_cast<int>(num_done * 100.0 / num_task);
-                if (percent > 100) {
-                    percent = 100;
-                }
-
-                while (percent > step_ * (size(progress) + 1) - 1) {
-                    progress += "#";
-                }
-
-                mutex_.lock();
-
-                std::cout << "\r";
-                for (int i = 0; i < layer_; i++) {
-                    std::cout << "\e[1A";
-                }
-
-                if (!title_.empty()) {
-                    std::cout << setfill(' ') << setw(25) << left
-                              << title_ + ": ";
-                }
-
-                std::cout << "[" << setfill('_') << setw(length_) << left
-                          << progress << "]"
-                          << " [" << setfill(' ') << setw(digit) << right
-                          << num_done << "/" << num_task << "]" << setw(5)
-                          << right << percent << "%  ";
-
-                for (int i = 0; i < layer_; i++) {
-                    std::cout << "\e[1B";
-                }
-
-                std::cout << std::flush;
-
-                mutex_.unlock();
-
-                previous_done = num_done;
+            if (num_done == previous_done) {  // 進捗がなければ表示を更新しない
+                continue;
             }
+
+            previous_done = num_done;
+
+            percent = static_cast<int>(num_done * 100.0 / num_task);
+            if (percent > 100) {
+                percent = 100;
+            }
+
+            while (percent > step_ * (size(progress) + 1) - 1) {
+                progress += "#";
+            }
+
+            mutex_.lock();
+
+            std::cout << "\r";
+            for (int i = 0; i < layer_; i++) {
+                std::cout << "\e[1A";
+            }
+
+            if (!title_.empty()) {
+                std::cout << setfill(' ') << setw(25) << left << title_ + ": ";
+            }
+
+            std::cout << "[" << setfill('_') << setw(length_) << left
+                      << progress << "]"
+                      << " [" << setfill(' ') << setw(digit) << right
+                      << num_done << "/" << num_task << "]" << setw(5) << right
+                      << percent << "%  ";
+
+            for (int i = 0; i < layer_; i++) {
+                std::cout << "\e[1B";
+            }
+
+            std::cout << std::flush;
+
+            mutex_.unlock();
 
         } while (percent != 100);
 
