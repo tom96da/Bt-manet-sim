@@ -31,8 +31,6 @@
 #ifndef PBAR_HPP
 #define PBAR_HPP
 
-#include <iomanip>
-#include <iostream>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -59,6 +57,8 @@ class ProgressBar {
     ~ProgressBar();
 
     BarBody &add();
+
+    void erase() const;
 };
 
 /* バー本体 */
@@ -75,8 +75,13 @@ class ProgressBar::BarBody {
     string title_;
     /* タスク数の履歴 */
     int previous_num_task_;
-    /* かかった時間 */
-    int64_t time_;
+    /* かかった時間[ms] */
+    int64_t time_millsec_;
+    /* かかった時間[s] */
+    int64_t time_sec_;
+
+    /* 経過時間の表示 */
+    bool monitor_time_;
 
     /* 並列スレッド */
     thread thread_;
@@ -86,10 +91,12 @@ class ProgressBar::BarBody {
     void start(const int num_task, int &num_done);
     void close();
     void set_title(const string title);
+    void monitor_time();
     void clear() const;
     void erase() const;
 
-    int64_t time();
+    int64_t time_millsec();
+    int64_t time_sec();
 };
 
 /* プログレスバークラス */

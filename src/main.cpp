@@ -20,11 +20,11 @@ int main() {
     /* フィールドサイズ */
     const double field_size = 60.0;
     /* ノード数 */
-    const int num_node = 100;
+    const int num_node = 150;
     /* 記録ファイル */
     auto files = vector<ofstream>{};
     /* 試行回数 */
-    const int num_repeat = 200;
+    const int num_repeat = 1000;
     /* 結果 */
     vector<tuple<int, double, int64_t, vector<map<int, double>>>>
         result_exiting, result_proposal_1, result_proposal_2;
@@ -93,21 +93,19 @@ int main() {
                 get<2>(sum) / num_repeat,
                 divideFrequency(get<3>(sum), num_repeat)};
     };
-    /* 平均を表示 */
-    auto showAverage =
-        [](string s,
-           tuple<int, double, int64_t, vector<map<int, double>>> &average) {
-            std::cout << s << "; " << get<0>(average) << ", " << get<1>(average)
-                      << ", " << get<2>(average) << std::endl;
-        };
 
     /* シミュレーション開始 */
+    std::cout << "field size: " << field_size << "x" << field_size << ", "
+              << "number of node: " << num_node << ", "
+              << "repeat: " << num_repeat << std::endl;
+
     auto pbar = PBar();
     auto &pb_repeat = pbar.add();
     auto &pb_proposal_2 = pbar.add();
     auto &pb_proposal_1 = pbar.add();
     auto &pb_exiting = pbar.add();
     pb_repeat.set_title("Simulation progress");
+    pb_repeat.monitor_time();
     pb_exiting.set_title("EXITING");
     pb_proposal_1.set_title("LONG_MPR");
     pb_proposal_2.set_title("LONG_CONNECTION");
@@ -165,7 +163,7 @@ int main() {
 
                 pb.close();
                 result.emplace_back(num_packet_end - num_packet_start,
-                                    num_update, pb.time(),
+                                    num_update, pb.time_millsec(),
                                     mgr->calculateTableFrequency());
             };
 
@@ -214,58 +212,79 @@ int main() {
         delete mgr;
     }
     pb_repeat.close();
+    pbar.erase();
+    auto time = pb_repeat.time_sec();
 
     /* シミュレーションここまで */
-    /* 以下結果を表示 */
+    std::cout << "comlete! ";
+    if (time < 3600) {
+        std::cout << time / 60 << ":" << setfill('0') << setw(2) << right
+                  << time % 60;
+    } else {
+        std::cout << time / 3600 << ":" << setfill('0') << setw(2) << right
+                  << time % 3600 / 60 << ":" << setfill('0') << setw(2) << right
+                  << time % 60;
+    }
+    std::cout << std::endl;
+
+    /* 以下結果を集計・記録 */
 
     auto average_exiting = average(result_exiting);
     auto average_proposal_1 = average(result_proposal_1);
     auto average_proposal_2 = average(result_proposal_2);
 
-    std::cout << "METHOD; packets, update, time[ms]" << std::endl;
-    showAverage("EXITING", average_exiting);
-    showAverage("PROPOSAL", average_proposal_1);
-    showAverage("PROPOSAL", average_proposal_2);
+    auto &file_result = files.emplace_back("../tmp/result.csv");
+    file_result << "field size;" << field_size << "x" << field_size << ","
+                << "number of node;" << num_node << ","
+                << "repeat;" << num_repeat << std::endl;
+    file_result << "METHOD;packets,update,time[ms]" << std::endl;
 
-    string fname = "../tmp/frequency.csv";
-    auto &file_frequency = files.emplace_back(fname);
+    auto writeResult =
+        [&](string s,
+            tuple<int, double, int64_t, vector<map<int, double>>> &average) {
+            file_result << s << ";" << get<0>(average) << "," << get<1>(average)
+                        << "," << get<2>(average) << std::endl;
+        };
+
+    writeResult("EXITING", average_exiting);
+    writeResult("PROPOSAL", average_proposal_1);
+    writeResult("PROPOSAL", average_proposal_2);
+
     auto &frequency_exiting = get<3>(average_exiting);
     auto &frequency_proposal_1 = get<3>(average_proposal_1);
     auto &frequency_proposal_2 = get<3>(average_proposal_2);
 
-    file_frequency << ", central, , , , middle, , , , edge" << std::endl;
-    file_frequency
-        << "hops, exiting, proposal 1, proposal 2, , exiting, "
-           "proposal 1, proposal 2, ,exiting, proposal 1, proposal 2,"
-        << std::endl;
+    auto &file_frequency = files.emplace_back("../tmp/frequency.csv");
+    file_frequency << "field size;" << field_size << "x" << field_size << ","
+                   << "number of node;" << num_node << ","
+                   << "repeat;" << num_repeat << std::endl;
+    file_frequency << ",central,,, ,middle,,, ,edge," << std::endl;
+    file_frequency << "hops,exiting,proposal 1,proposal 2, ,exiting,"
+                      "proposal 1,proposal 2, ,exiting,proposal 1,proposal 2,"
+                   << std::endl;
 
     for (size_t num_hop = 1; true; num_hop++) {
         int count = 0;
         file_frequency << num_hop << ", ";
 
         for (size_t i = 0; i < 3; i++) {
-            if (frequency_exiting[i].count(num_hop)) {
-                file_frequency << frequency_exiting[i][num_hop] << ",";
-                ++count;
-            } else {
-                file_frequency << 0 << ",";
-            }
+            auto writeNumHop =
+                [&](std::vector<std::map<int, double>> &frequency) {
+                    if (frequency[i].count(num_hop)) {
+                        file_frequency << frequency[i][num_hop] << ",";
+                        ++count;
+                    } else {
+                        file_frequency << 0 << ",";
+                    }
+                };
 
-            if (frequency_proposal_1[i].count(num_hop)) {
-                file_frequency << frequency_proposal_1[i][num_hop] << ",";
-                ++count;
-            } else {
-                file_frequency << 0 << ",";
-            }
+            writeNumHop(frequency_exiting);
+            writeNumHop(frequency_proposal_1);
+            writeNumHop(frequency_proposal_2);
 
-            if (frequency_proposal_2[i].count(num_hop)) {
-                file_frequency << frequency_proposal_2[i][num_hop] << ",";
-                ++count;
-            } else {
-                file_frequency << 0 << ",";
+            if (i != 2) {
+                file_frequency << " ,";
             }
-
-            file_frequency << ",";
         }
         file_frequency << std::endl;
 
