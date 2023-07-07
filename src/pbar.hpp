@@ -81,7 +81,7 @@ class ProgressBar::BarBody {
     int64_t time_sec_;
 
     /* 経過時間の表示 */
-    bool monitor_time_;
+    bool monitars_time_;
 
     /* 並列スレッド */
     thread thread_;
@@ -91,12 +91,12 @@ class ProgressBar::BarBody {
     void start(const int num_task, int &num_done);
     void close();
     void set_title(const string title);
-    void monitor_time();
+    void monitarTime();
     void clear() const;
     void erase() const;
 
-    int64_t time_millsec();
-    int64_t time_sec();
+    int64_t getTime_millsec();
+    int64_t getTime_sec();
 };
 
 /* プログレスバークラス */

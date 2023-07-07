@@ -105,7 +105,7 @@ int main() {
     auto &pb_proposal_1 = pbar.add();
     auto &pb_exiting = pbar.add();
     pb_repeat.set_title("Simulation progress");
-    pb_repeat.monitor_time();
+    pb_repeat.monitarTime();
     pb_exiting.set_title("EXITING");
     pb_proposal_1.set_title("LONG_MPR");
     pb_proposal_2.set_title("LONG_CONNECTION");
@@ -163,7 +163,7 @@ int main() {
 
                 pb.close();
                 result.emplace_back(num_packet_end - num_packet_start,
-                                    num_update, pb.time_millsec(),
+                                    num_update, pb.getTime_millsec(),
                                     mgr->calculateTableFrequency());
             };
 
@@ -213,7 +213,7 @@ int main() {
     }
     pb_repeat.close();
     pbar.erase();
-    auto time = pb_repeat.time_sec();
+    auto time = pb_repeat.getTime_sec();
 
     /* シミュレーションここまで */
     std::cout << "comlete! ";

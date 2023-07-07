@@ -53,7 +53,7 @@ ProgressBar::BarBody::BarBody(const int layer)
       length_{PBAR_LENGTH},
       step_{100.0 / length_},
       previous_num_task_{0},
-      monitor_time_{false} {}
+      monitars_time_{false} {}
 
 /*!
  * @brief プログレスバーのセット
@@ -100,12 +100,13 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
             }
 
             std::cout << "[" << setfill('_') << setw(length_) << left
-                      << progress << "]"
-                      << " [" << setfill(' ') << setw(digit) << right
-                      << num_done << "/" << num_task << "]" << setw(5) << right
-                      << percent << "%  ";
+                      << progress << "] "
+                      << "[" << setfill(' ') << setw(digit) << right << num_done
+                      << "/" << num_task << "]" << setw(5) << right << percent
+                      << "%  ";
 
-            if (monitor_time_ == true) {
+            /* モニターが有効なら経過時間と推定残り時間を表示する */
+            if (monitars_time_ == true) {
                 auto now = chrono::system_clock::now();
                 auto pass = now - start;
                 auto sec = chrono::duration_cast<chrono::seconds>(pass).count();
@@ -120,6 +121,7 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
 
                 auto remain = static_cast<int64_t>(
                     sec * (static_cast<double>(num_task) / num_done - 1));
+                std::cout << "\e[0K";
                 if (remain > 0) {
                     std::cout << "  remaining: ";
                     if (remain < 3600) {
@@ -131,8 +133,6 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                                   << ":" << setfill('0') << setw(2) << right
                                   << remain % 60;
                     }
-                } else {
-                    std::cout << "\e[0K";
                 }
             }
 
@@ -155,7 +155,9 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
         time_sec_ = sec;
 
         mutex_.lock();
-        if (!monitor_time_) {
+
+        /* モニターが無効なら経過時間と推定残り時間を表示する */
+        if (!monitars_time_) {
             for (int i = 0; i < layer_; i++) {
                 std::cout << "\e[1A";
             }
@@ -200,7 +202,7 @@ void ProgressBar::BarBody::set_title(const string title) { title_ = title; }
 /*!
  * @brief 経過時間の表示を有効にする
  */
-void ProgressBar::BarBody::monitor_time() { monitor_time_ = true; }
+void ProgressBar::BarBody::monitarTime() { monitars_time_ = true; }
 
 /*!
  * @brief 進捗をクリアする
@@ -226,7 +228,7 @@ void ProgressBar::BarBody::clear() const {
               << previous_num_task_ << "]" << setw(5) << right << percent
               << "%  ";
 
-    if (monitor_time_ == true) {
+    if (monitars_time_ == true) {
         std::cout << "0:00";
     }
 
@@ -247,9 +249,9 @@ void ProgressBar::BarBody::erase() const {
 /*!
  * @return かかった時間[ms]
  */
-int64_t ProgressBar::BarBody::time_millsec() { return time_millsec_; }
+int64_t ProgressBar::BarBody::getTime_millsec() { return time_millsec_; }
 
 /*!
  * @return かかった時間[s]
  */
-int64_t ProgressBar::BarBody::time_sec() { return time_sec_; }
+int64_t ProgressBar::BarBody::getTime_sec() { return time_sec_; }
