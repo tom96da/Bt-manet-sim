@@ -56,11 +56,26 @@ ProgressBar::BarBody::BarBody(const int layer)
       monitars_time_{false} {}
 
 /*!
+ * @brief デストラクタ
+ */
+ProgressBar::BarBody::~BarBody() {
+#if __linux__
+    if (thread_.joinable()) {
+        thread_.join();
+    }
+
+#elif _WIN32
+
+#endif
+}
+
+/*!
  * @brief プログレスバーのセット
  * @param num_task タスク数
  * @param num_done 終了済みタスク数
  */
 void ProgressBar::BarBody::start(const int num_task, int &num_done) {
+#if __linux__
     thread_ = thread([&, num_task]() {  // 並列処理開始
         string progress;
         const int digit = to_string(num_task).size();
@@ -185,13 +200,24 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
 
     });
 
+#elif _WIN32
+
+#endif
+
     previous_num_task_ = num_task;
 }
 
 /*!
  * @brief プログレスバーを閉じる
  */
-void ProgressBar::BarBody::close() { thread_.join(); }
+void ProgressBar::BarBody::close() {
+#if __linux__
+    thread_.join();
+
+#elif _WIN32
+
+#endif
+}
 
 /*!
  * @brief プログレスバーにタイトルを付ける
@@ -212,7 +238,12 @@ void ProgressBar::BarBody::clear() const {
     const int digit = to_string(previous_num_task_).size();
     int num_done = 0, percent = 0;
 
+#if __linux__
     mutex_.lock();
+
+#elif _WIN32
+
+#endif
 
     std::cout << "\r";
     for (int i = 0; i < layer_; i++) {
@@ -238,7 +269,12 @@ void ProgressBar::BarBody::clear() const {
 
     std::cout << std::flush;
 
+#if __linux__
     mutex_.unlock();
+
+#elif _WIN32
+
+#endif
 }
 
 /* プログレスバーを削除する */

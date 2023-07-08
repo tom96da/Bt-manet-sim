@@ -11,17 +11,17 @@
  * int main()
  * {
  *     auto pbar = PBar();
- *     auto &pb1 = pbar.add();
- *     pb1.set_title("Sample");
+ *     auto &pb_sample = pbar.add();
+ *     pb_sample.set_title("Sample");
  *
  *     int task, done;
- *     pb1.start(task, done);
+ *     pb_sample.start(task, done);
  *
  *     // 進捗の処理
  *
- *     pb1.close();
- *     pb1.erase();
- *     auto time1 = pb1.time();
+ *     pb_sample.close();
+ *     pb_sample.erase();
+ *     auto time = pb_sample.getTime();
  *
  *     return 0;
  * }
@@ -31,16 +31,27 @@
 #ifndef PBAR_HPP
 #define PBAR_HPP
 
-#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
+
+#if __linux__
+#include <mutex>
+
+#elif _WIN32
+
+#endif
 
 using namespace std;
 
 const int PBAR_LENGTH = 20;
 
+#if __linux__
 std::mutex mutex_;
+
+#elif _WIN32
+
+#endif
 
 /* プログレスバークラス */
 class ProgressBar {
@@ -83,11 +94,18 @@ class ProgressBar::BarBody {
     /* 経過時間の表示 */
     bool monitars_time_;
 
+#if __linux__
     /* 並列スレッド */
     thread thread_;
 
+#elif _WIN32
+
+#endif
+
    public:
     BarBody(const int index);
+    ~BarBody();
+
     void start(const int num_task, int &num_done);
     void close();
     void set_title(const string title);
