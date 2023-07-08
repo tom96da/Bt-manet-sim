@@ -1,5 +1,5 @@
 /*!
- * @file ｆrequency.cpp
+ * @file frequency.cpp
  * @author tom96da
  * @brief 度数分布の作成と集計
  * @date 2023-07-03
