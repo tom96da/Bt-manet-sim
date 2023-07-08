@@ -46,7 +46,9 @@ MyClass::MyClass() {}
 
 MyClass::~MyClass() {
 #ifdef __linux__
-    // スレッドの回収処理
+    if (thread_.joinable()) {
+        thread_.join();
+    }
 #elif defined _WIN32
     if (threadHandle_ != NULL) {
         CloseHandle(threadHandle_);
