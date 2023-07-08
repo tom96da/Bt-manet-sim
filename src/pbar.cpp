@@ -53,6 +53,8 @@ ProgressBar::BarBody::BarBody(const int layer)
       length_{PBAR_LENGTH},
       step_{100.0 / length_},
       previous_num_task_{0},
+      time_millsec_{0},
+      time_sec_{0},
       monitars_time_{false} {}
 
 /*!
@@ -65,6 +67,9 @@ ProgressBar::BarBody::~BarBody() {
     }
 
 #elif _WIN32
+    if (threadHandle_ != NULL) {
+        CloseHandle(threadHandle_);
+    }
 
 #endif
 }
@@ -201,6 +206,145 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
     });
 
 #elif _WIN32
+    threadHandle_ = CreateThread(
+        NULL, 0,
+        [](LPVOID lpParam) -> DWORD {
+            auto *param = reinterpret_cast<Param *>(lpParam);
+            int num_task = param->num_task_;
+            int &num_done = param->num_done_;
+            auto &self = param->body_;
+
+            string progress;
+            const int digit = to_string(num_task).size();
+            int percent = 0, previous_done = 0;
+
+            auto start = chrono::system_clock::now();
+
+            do {
+                if (num_done > num_task) {
+                    num_done = num_task;
+                }
+
+                if (num_done ==
+                    previous_done) {  // 進捗がなければ表示を更新しない
+                    continue;
+                }
+
+                previous_done = num_done;
+
+                percent = static_cast<int>(num_done * 100.0 / num_task);
+                if (percent > 100) {
+                    percent = 100;
+                }
+
+                while (percent > self.step_ * (size(progress) + 1) - 1) {
+                    progress += "#";
+                }
+
+                WaitForSingleObject(mutex_, INFINITE);
+
+                std::cout << "\r";
+                for (int i = 0; i < self.layer_; i++) {
+                    std::cout << "\e[1A";
+                }
+
+                if (!self.title_.empty()) {
+                    std::cout << setfill(' ') << setw(25) << left
+                              << self.title_ + ": ";
+                }
+
+                std::cout << "[" << setfill('_') << setw(self.length_) << left
+                          << progress << "] "
+                          << "[" << setfill(' ') << setw(digit) << right
+                          << num_done << "/" << num_task << "]" << setw(5)
+                          << right << percent << "%  ";
+
+                /* モニターが有効なら経過時間と推定残り時間を表示する */
+                if (self.monitars_time_ == true) {
+                    auto now = chrono::system_clock::now();
+                    auto pass = now - start;
+                    auto sec =
+                        chrono::duration_cast<chrono::seconds>(pass).count();
+                    if (sec < 3600) {
+                        std::cout << sec / 60 << ":" << setfill('0') << setw(2)
+                                  << right << sec % 60;
+                    } else {
+                        std::cout << sec / 3600 << ":" << setfill('0')
+                                  << setw(2) << right << sec % 3600 / 60 << ":"
+                                  << setfill('0') << setw(2) << right
+                                  << sec % 60;
+                    }
+
+                    auto remain = static_cast<int64_t>(
+                        sec * (static_cast<double>(num_task) / num_done - 1));
+                    std::cout << "\e[0K";
+                    if (remain > 0) {
+                        std::cout << "  remaining: ";
+                        if (remain < 3600) {
+                            std::cout << remain / 60 << ":" << setfill('0')
+                                      << setw(2) << right << remain % 60;
+                        } else {
+                            std::cout << remain / 3600 << ":" << setfill('0')
+                                      << setw(2) << right << remain % 3600 / 60
+                                      << ":" << setfill('0') << setw(2) << right
+                                      << remain % 60;
+                        }
+                    }
+                }
+
+                for (int i = 0; i < self.layer_; i++) {
+                    std::cout << "\e[1B";
+                }
+
+                std::cout << std::flush;
+
+                ReleaseMutex(mutex_);
+
+            } while (percent != 100);
+
+            auto end = chrono::system_clock::now();
+            auto dur = end - start;
+            auto msec =
+                chrono::duration_cast<chrono::milliseconds>(dur).count();
+            auto sec = chrono::duration_cast<chrono::seconds>(dur).count();
+
+            self.time_millsec_ = msec;
+            self.time_sec_ = sec;
+
+            WaitForSingleObject(mutex_, INFINITE);
+
+            /* モニターが無効なら経過時間と推定残り時間を表示する */
+            if (!self.monitars_time_) {
+                for (int i = 0; i < self.layer_; i++) {
+                    std::cout << "\e[1A";
+                }
+
+                if (msec < 1000) {
+                    std::cout << setprecision(3) << msec << "ms";
+                } else if (msec < 10000) {
+                    std::cout << std::fixed << setprecision(2)
+                              << static_cast<double>(msec) / 1000 << "s";
+                } else if (msec < 60000) {
+                    std::cout << std::fixed << setprecision(1)
+                              << static_cast<double>(msec) / 1000 << "s";
+                } else {
+                    std::cout << sec / 60 << ":" << setfill('0') << setw(2)
+                              << right << sec % 60;
+                }
+
+                for (int i = 0; i < self.layer_; i++) {
+                    std::cout << "\e[1B";
+                }
+            }
+
+            std::cout << "\r" << std::flush;
+            ReleaseMutex(mutex_);
+
+            delete param;
+
+            return 0;
+        },
+        new Param{num_task, num_done, *(this)}, 0, NULL);
 
 #endif
 
@@ -215,6 +359,9 @@ void ProgressBar::BarBody::close() {
     thread_.join();
 
 #elif _WIN32
+    WaitForSingleObject(threadHandle_, INFINITE);
+    CloseHandle(threadHandle_);
+    threadHandle_ = NULL;
 
 #endif
 }
@@ -242,6 +389,7 @@ void ProgressBar::BarBody::clear() const {
     mutex_.lock();
 
 #elif _WIN32
+    WaitForSingleObject(mutex_, INFINITE);
 
 #endif
 
@@ -273,6 +421,7 @@ void ProgressBar::BarBody::clear() const {
     mutex_.unlock();
 
 #elif _WIN32
+    ReleaseMutex(mutex_);
 
 #endif
 }

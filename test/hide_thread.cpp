@@ -9,9 +9,9 @@
 #include <iostream>
 #include <thread>
 
-#ifdef __linux__
+#if __linux__
 // Linux で include する記述
-#elif defined _WIN32
+#elif _WIN32
 #include <windows.h>
 #endif
 
@@ -22,9 +22,9 @@ class MyClass {
    private:
     int n_;
 
-#ifdef __linux__
+#if __linux__
     thread thread_;
-#elif defined _WIN32
+#elif _WIN32
     struct ThreadData {
         int i;
         int& n;
@@ -45,11 +45,11 @@ class MyClass {
 MyClass::MyClass() {}
 
 MyClass::~MyClass() {
-#ifdef __linux__
+#if __linux__
     if (thread_.joinable()) {
         thread_.join();
     }
-#elif defined _WIN32
+#elif _WIN32
     if (threadHandle_ != NULL) {
         CloseHandle(threadHandle_);
     }
@@ -57,7 +57,7 @@ MyClass::~MyClass() {
 }
 
 void MyClass::print(int i, int& n) {
-#ifdef __linux__
+#if __linux__
     thread_ = thread([&, i]() {
         while (n < 4) {
             cout << "\r" << i << ":" << n << flush;
@@ -68,7 +68,7 @@ void MyClass::print(int i, int& n) {
 
         return 0;
     });
-#elif defined _WIN32
+#elif _WIN32
     threadHandle_ = CreateThread(
         NULL, 0,
         [](LPVOID lpparam) -> DWORD {
@@ -93,9 +93,9 @@ void MyClass::print(int i, int& n) {
 }
 
 void MyClass::close() {
-#ifdef __linux__
+#if __linux__
     thread_.join();
-#elif defined _WIN32
+#elif _WIN32
     WaitForSingleObject(threadHandle_, INFINITE);
     CloseHandle(threadHandle_);
     threadHandle_ = NULL;

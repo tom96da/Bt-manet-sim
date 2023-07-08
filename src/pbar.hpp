@@ -39,6 +39,7 @@
 #include <mutex>
 
 #elif _WIN32
+#include <windows.h>
 
 #endif
 
@@ -50,6 +51,7 @@ const int PBAR_LENGTH = 20;
 std::mutex mutex_;
 
 #elif _WIN32
+HANDLE mutex_;
 
 #endif
 
@@ -99,6 +101,14 @@ class ProgressBar::BarBody {
     thread thread_;
 
 #elif _WIN32
+    /* パラメータ */
+    struct Param {
+        int num_task_;
+        int &num_done_;
+        BarBody &body_;
+    };
+    /* スレッドハンドル */
+    HANDLE threadHandle_;
 
 #endif
 
