@@ -18,16 +18,16 @@ using namespace std;
 
 int main() {
     /* フィールドサイズ */
-    const double field_size = 60.0;
+    const double field_size = 60;
     /* ノード数 */
-    const int num_node = 150;
+    const int num_node = 100;
     /* 記録ファイル */
     auto files = vector<ofstream>{};
     /* 試行回数 */
     const int num_repeat = 1000;
     /* 結果 */
     vector<tuple<int, double, int64_t, vector<map<int, double>>>>
-        result_exiting, result_proposal_1, result_proposal_2;
+        result_exiting, result_proposal_2;
 
     /* ファイル作成 */
     auto newCsv = [&](MGR *mgr) {
@@ -102,12 +102,12 @@ int main() {
     auto pbar = PBar();
     auto &pb_repeat = pbar.add();
     auto &pb_proposal_2 = pbar.add();
-    auto &pb_proposal_1 = pbar.add();
+    // auto &pb_proposal_1 = pbar.add();
     auto &pb_exiting = pbar.add();
     pb_repeat.set_title("Simulation progress");
     pb_repeat.monitarTime();
     pb_exiting.set_title("EXITING");
-    pb_proposal_1.set_title("LONG_MPR");
+    // pb_proposal_1.set_title("LONG_MPR");
     pb_proposal_2.set_title("LONG_CONNECTION");
 
     int count_repeat = 0;
@@ -116,7 +116,7 @@ int main() {
 
     for (; count_repeat < num_repeat;) {
         pb_exiting.clear();
-        pb_proposal_1.clear();
+        // pb_proposal_1.clear();
         pb_proposal_2.clear();
 
         /*　マネージャー */
@@ -178,13 +178,13 @@ int main() {
         mgr->clearDevice();
 
         {  // 提案手法 遠距離選択MPR
-            mgr->setSimMode(SIMMODE::PROPOSAL_LONG_MPR);
+           // mgr->setSimMode(SIMMODE::PROPOSAL_LONG_MPR);
 
-            mgr->sendHello();
-            mgr->makeMPR();
+            // mgr->sendHello();
+            // mgr->makeMPR();
             // mgr->showMPR(0);
 
-            makingTableUntilcomplete(result_proposal_1, pb_proposal_1);
+            // makingTableUntilcomplete(result_proposal_1, pb_proposal_1);
         }
 
         mgr->resetNetwork();
@@ -196,7 +196,7 @@ int main() {
             if (num_member != num_node) {
                 // 孤立するノードがあれば上の2つの結果を消してループに戻る
                 result_exiting.pop_back();
-                result_proposal_1.pop_back();
+                // result_proposal_1.pop_back();
                 continue;
             }
 
@@ -230,7 +230,7 @@ int main() {
     /* 以下結果を集計・記録 */
 
     auto average_exiting = average(result_exiting);
-    auto average_proposal_1 = average(result_proposal_1);
+    // auto average_proposal_1 = average(result_proposal_1);
     auto average_proposal_2 = average(result_proposal_2);
 
     auto &file_result = files.emplace_back("../tmp/result.csv");
@@ -247,20 +247,20 @@ int main() {
         };
 
     writeResult("EXITING", average_exiting);
-    writeResult("PROPOSAL", average_proposal_1);
+    // writeResult("PROPOSAL", average_proposal_1);
     writeResult("PROPOSAL", average_proposal_2);
 
     auto &frequency_exiting = get<3>(average_exiting);
-    auto &frequency_proposal_1 = get<3>(average_proposal_1);
+    // auto &frequency_proposal_1 = get<3>(average_proposal_1);
     auto &frequency_proposal_2 = get<3>(average_proposal_2);
 
     auto &file_frequency = files.emplace_back("../tmp/frequency.csv");
     file_frequency << "field size;" << field_size << "x" << field_size << ","
                    << "number of node;" << num_node << ","
                    << "repeat;" << num_repeat << std::endl;
-    file_frequency << ",central,,, ,middle,,, ,edge," << std::endl;
-    file_frequency << "hops,exiting,proposal 1,proposal 2, ,exiting,"
-                      "proposal 1,proposal 2, ,exiting,proposal 1,proposal 2,"
+    file_frequency << ",central,, ,middle,, ,edge," << std::endl;
+    file_frequency << "hops,exiting,proposal 2, ,exiting,"
+                      "proposal 2, ,exiting,proposal 2,"
                    << std::endl;
 
     for (size_t num_hop = 1; true; num_hop++) {
@@ -279,7 +279,7 @@ int main() {
                 };
 
             writeNumHop(frequency_exiting);
-            writeNumHop(frequency_proposal_1);
+            // writeNumHop(frequency_proposal_1);
             writeNumHop(frequency_proposal_2);
 
             if (i != 2) {

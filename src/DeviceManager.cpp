@@ -425,33 +425,60 @@ void DeviceManager::makeMPR() {
  * @param id デバイスID
  */
 void DeviceManager::showMPR(const int id) {
-    WriteMode write_mode = WriteMode::SIMPLE;
+    WriteMode write_mode = WriteMode::ARRAY;
 
     auto device_target = getDeviceById(id);
     auto id_cncts = device_target.getIdConnectedDevices();
-    auto id_MPR = device_target.getMPR();
+    auto id_MPRs = device_target.getMPR();
 
-    std::cout << device_target.getName();
     switch (write_mode) {
         case WriteMode::VISIBLE:
+            std::cout << device_target.getName();
             std::cout << "  connected with ";
             break;
         case WriteMode::SIMPLE:
+            std::cout << device_target.getName();
             std::cout << " ──> ";
+            break;
+        case WriteMode::ARRAY:
+            std::cout << "target = " << id << std::endl;
         default:
             break;
     }
 
+    if (write_mode == WriteMode::ARRAY) {
+        std::cout << "neighbors = [";
+    }
+
     for (auto id_cnct : id_cncts) {
-        if (write_mode == WriteMode::SIMPLE && id_MPR.count(id_cnct)) {
+        if (write_mode == WriteMode::SIMPLE && id_MPRs.count(id_cnct)) {
+            continue;
+        }
+        if (write_mode == WriteMode::ARRAY && id_MPRs.count(id_cnct)) {
             continue;
         }
         std::cout << id_cnct << ", ";
     }
-    std::cout << "\e[2D " << std::endl;
+    std::cout << "\e[2D ";
+    if (write_mode == WriteMode::ARRAY) {
+        std::cout << "]";
+    }
+    std::cout << std::endl;
+
+    if (write_mode == WriteMode::ARRAY) {
+        std::cout << "MPRs = [";
+        for (auto id_MPR : id_MPRs) {
+            std::cout << id_MPR << ", ";
+        }
+        std::cout << "\e[2D]" << std::endl;
+        std::cout << "tow_hop = [";
+    }
 
     for (auto id_cnct : id_cncts) {
-        if (write_mode == WriteMode::SIMPLE && (id_MPR.count(id_cnct) == 0)) {
+        if (write_mode == WriteMode::SIMPLE && (id_MPRs.count(id_cnct) == 0)) {
+            continue;
+        }
+        if (write_mode == WriteMode::ARRAY && (id_MPRs.count(id_cnct) == 0)) {
             continue;
         }
 
@@ -459,7 +486,7 @@ void DeviceManager::showMPR(const int id) {
         switch (write_mode) {
             case WriteMode::VISIBLE:
                 std::cout << dev_cnct.getName() << [&] {
-                    if (id_MPR.count(id_cnct)) {
+                    if (id_MPRs.count(id_cnct)) {
                         return "*";
                     }
 
@@ -469,6 +496,10 @@ void DeviceManager::showMPR(const int id) {
             case WriteMode::SIMPLE:
                 std::cout << string(device_target.getName().size(), ' ')
                           << " └─> " << id_cnct << " ──> ";
+                break;
+            case WriteMode::ARRAY:
+                std::cout << "[";
+                break;
             default:
                 break;
         }
@@ -477,10 +508,36 @@ void DeviceManager::showMPR(const int id) {
                 device_target.getTable().getIdNextHop(cnct__) != id_cnct) {
                 continue;
             }
+            if (write_mode == WriteMode::ARRAY &&
+                device_target.getTable().getIdNextHop(cnct__) != id_cnct) {
+                continue;
+            }
             std::cout << cnct__ << ", ";
         }
-        std::cout << "\e[2D " << std::endl;
+        std::cout << "\e[2D ";
+        if (write_mode == WriteMode::ARRAY) {
+            std::cout << "],";
+        }
+        std::cout << std::endl;
     }
+    if (write_mode == WriteMode::ARRAY) {
+        std::cout << "\e[2D]" << std::endl;
+    }
+}
+
+int DeviceManager::getCentralDevice() {
+    auto list = getDevicesList();
+    double center = field_size_ / 2;
+
+    for (auto id : list) {
+        const auto [pos_x, pos_y] = getPosition(id);
+        double location = hypot(pos_x - center, pos_y - center);
+        if (location < 5) {
+            return id;
+        }
+    }
+
+    return 0;
 }
 
 /*!

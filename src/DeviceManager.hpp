@@ -92,6 +92,7 @@ class DeviceManager {
 
     void makeMPR();
     void showMPR(const int id);
+    int getCentralDevice();
 
     int makeTable();
     vector<map<int, double>> calculateTableFrequency();
