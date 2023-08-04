@@ -20,7 +20,7 @@ int main() {
     /* フィールドサイズ */
     const double field_size = 60;
     /* ノード数 */
-    const int num_node = 200;
+    const int num_node = 100;
     /* 記録ファイル */
     auto files = vector<ofstream>{};
 

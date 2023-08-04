@@ -5,8 +5,8 @@
    date: 2023-05-17
 '''
 
+import numpy as np
 import matplotlib.pyplot as plt
-import japanize_matplotlib
 from matplotlib.animation import FuncAnimation
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
@@ -14,9 +14,10 @@ import pandas as pd
 
 plt.rcParams['font.family'] = 'Noto Sans CJK JP'
 
-num_dev = 200
+num_dev = 100
 num_frame = 0
 field_size = 60
+u = 2
 
 fname = []
 dev_x = []
@@ -24,25 +25,25 @@ dev_y = []
 pos_x = []
 pos_y = []
 
-target = 102
-neighbors = []
-MPRs = [61, 76, 88, 112, 125, 135]
-tow_hop = [[57, 130, 155, 198],
-           [89, 93],
-           [108, 194],
-           [116],
-           [13, 22, 124, 143],
-           [65, 78, 159, 172],
+target = 7
+neighbors = [51]
+MPRs = [21, 33, 45, 75, 90]
+tow_hop = [[4, 41, 52, 69],
+           [74, 83],
+           [18, 19],
+           [28, 34, 53, 58],
+           [80],
            ]
 
-# target = 102
-# neighbors = [76]
-# MPRs = [26, 45, 61, 88, 89]
-# tow_hop = [[83, 108, 142, 143],
-#            [79, 103, 188, 199],
-#            [13, 28, 65, 113, 198],
-#            [78, 90, 166],
-#            [93, 132, 135, 172],
+# target = 7
+# neighbors = []
+# MPRs = [4, 18, 21, 33, 74, 80]
+# tow_hop = [[11, 42],
+#            [19, 34, 87],
+#            [41, 44, 52, 81],
+#            [45, 51],
+#            [9, 28, 63, 83, 90],
+#            [23, 47, 58],
 #            ]
 
 for i in range(num_dev):
@@ -74,10 +75,14 @@ def update(frame):
     ax.set_title("MPR", size=20, fontweight='bold')
     ax.set_xlabel("$x$", size=20)
     ax.set_ylabel("$y$", size=20)
-    ax.set_xlim(15, 55)
-    ax.set_ylim(10, 50)
-    ax.xaxis.set_major_locator(ticker.FixedLocator([15, 25, 35, 45, 55]))
-    ax.yaxis.set_major_locator(ticker.FixedLocator([10, 20, 30, 40, 50]))
+    # ax.set_xlim(0, 60)
+    # ax.set_ylim(0, 60)
+    ax.set_xlim(15 - u, 55 + u)
+    ax.set_ylim(15 - u, 55 + u)
+    # ax.xaxis.set_major_locator(ticker.FixedLocator(np.arange(0, 61, 10)))
+    ax.xaxis.set_major_locator(ticker.FixedLocator(np.arange(5, 56, 10)))
+    # ax.yaxis.set_major_locator(ticker.FixedLocator(np.arange(0, 61, 10)))
+    ax.yaxis.set_major_locator(ticker.FixedLocator(np.arange(5, 56, 10)))
     plt.rcParams['xtick.direction'] = 'in'
     plt.rcParams['ytick.direction'] = 'in'
 
@@ -88,7 +93,7 @@ def update(frame):
     for i in range(len(MPRs)):
         for id in tow_hop[i]:
             ax.plot([pos_x[frame][MPRs[i]], pos_x[frame][id]], [pos_y[frame][MPRs[i]],
-                    pos_y[frame][id]], c='darkgray', linestyle='dashed')
+                    pos_y[frame][id]], c='darkgray', linewidth=2, linestyle='dashed')
 
     for ids in tow_hop:
         for id in ids:
@@ -96,23 +101,24 @@ def update(frame):
 
     for id in neighbors:
         ax.plot([pos_x[frame][target], pos_x[frame][id]], [pos_y[frame][target],
-                pos_y[frame][id]], c='dimgray', linestyle='dashed')
+                pos_y[frame][id]], c='dimgray', linewidth=2, linestyle='dashed')
         ax.plot(pos_x[frame][id], pos_y[frame][id], "o", c='c', ms=6)
 
     for id in MPRs:
         ax.plot([pos_x[frame][target], pos_x[frame][id]], [pos_y[frame][target],
-                pos_y[frame][id]], c='dimgray', linestyle='dashed')
+                pos_y[frame][id]], c='dimgray', linewidth=2, linestyle='dashed')
         ax.plot(pos_x[frame][id], pos_y[frame][id], "o", c='y', ms=6)
 
     ax.plot(pos_x[frame][target], pos_y[frame][target], "o", c='r', ms=8)
     c = patches.Circle(
-        xy=(pos_x[frame][target], pos_y[frame][target]), radius=10, ec='k', fill=False, linestyle='dashed')
+        xy=(pos_x[frame][target], pos_y[frame][target]), radius=10, linewidth=1.5, ec='k', fill=False, linestyle='dashed')
     ax.add_patch(c)
 
     ax.plot(-1, -1, "o", c='y', ms=5, label='MPR')
     ax.plot(-1, -1, "o", c='c', ms=5, label='neighbors')
     ax.plot(-1, -1, "o", c='g', ms=4, label='2-hop neighbors')
-    plt.legend(prop={"weight": "bold", "size": "large"}, loc="upper right")
+    # plt.legend(prop={"weight": "bold", "size": "large"}, loc="upper right")
+    plt.legend(prop={"weight": "bold", "size": "large"}, loc="lower right")
 
 
 anim = FuncAnimation(fig, update, frames=range(num_frame), interval=200)
