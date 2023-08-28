@@ -18,7 +18,7 @@ using namespace std;
 
 int main() {
     /* フィールドサイズ */
-    const double field_size = 60;
+    const double field_size = 60.0;
     /* ノード数 */
     const int num_node = 100;
     /* 記録ファイル */
@@ -27,7 +27,7 @@ int main() {
     const int num_repeat = 1000;
     /* 結果 */
     vector<tuple<int, double, int64_t, vector<map<int, double>>>>
-        result_exiting, result_proposal_2;
+        result_exiting, result_proposal;
 
     /* ファイル作成 */
     auto newCsv = [&](MGR *mgr) {
@@ -101,14 +101,12 @@ int main() {
 
     auto pbar = PBar();
     auto &pb_repeat = pbar.add();
-    auto &pb_proposal_2 = pbar.add();
-    // auto &pb_proposal_1 = pbar.add();
+    auto &pb_proposal = pbar.add();
     auto &pb_exiting = pbar.add();
     pb_repeat.set_title("Simulation progress");
     pb_repeat.monitarTime();
     pb_exiting.set_title("EXITING");
-    // pb_proposal_1.set_title("LONG_MPR");
-    pb_proposal_2.set_title("LONG_CONNECTION");
+    pb_proposal.set_title("LONG_CONNECTION");
 
     int count_repeat = 0;
     pb_repeat.clear();
@@ -116,8 +114,7 @@ int main() {
 
     for (; count_repeat < num_repeat;) {
         pb_exiting.clear();
-        // pb_proposal_1.clear();
-        pb_proposal_2.clear();
+        pb_proposal.clear();
 
         /*　マネージャー */
         auto mgr = new MGR{field_size};
@@ -176,17 +173,6 @@ int main() {
         }
 
         mgr->clearDevice();
-
-        {  // 提案手法 遠距離選択MPR
-           // mgr->setSimMode(SIMMODE::PROPOSAL_LONG_MPR);
-
-            // mgr->sendHello();
-            // mgr->makeMPR();
-            // mgr->showMPR(0);
-
-            // makingTableUntilcomplete(result_proposal_1, pb_proposal_1);
-        }
-
         mgr->resetNetwork();
 
         {  // 提案手法 遠距離選択接続
@@ -194,9 +180,8 @@ int main() {
             mgr->buildNetwork();
             const auto [_, num_member] = mgr->flooding(45);
             if (num_member != num_node) {
-                // 孤立するノードがあれば上の2つの結果を消してループに戻る
+                // 孤立するノードがあれば従来手法の結果を消してループに戻る
                 result_exiting.pop_back();
-                // result_proposal_1.pop_back();
                 continue;
             }
 
@@ -204,7 +189,7 @@ int main() {
             mgr->makeMPR();
             // mgr->showMPR(0);
 
-            makingTableUntilcomplete(result_proposal_2, pb_proposal_2);
+            makingTableUntilcomplete(result_proposal, pb_proposal);
         }
 
         ++count_repeat;
@@ -230,8 +215,7 @@ int main() {
     /* 以下結果を集計・記録 */
 
     auto average_exiting = average(result_exiting);
-    // auto average_proposal_1 = average(result_proposal_1);
-    auto average_proposal_2 = average(result_proposal_2);
+    auto average_proposal = average(result_proposal);
 
     auto &file_result = files.emplace_back("../tmp/result.csv");
     file_result << "field size;" << field_size << "x" << field_size << ","
@@ -247,20 +231,18 @@ int main() {
         };
 
     writeResult("EXITING", average_exiting);
-    // writeResult("PROPOSAL", average_proposal_1);
-    writeResult("PROPOSAL", average_proposal_2);
+    writeResult("PROPOSAL", average_proposal);
 
     auto &frequency_exiting = get<3>(average_exiting);
-    // auto &frequency_proposal_1 = get<3>(average_proposal_1);
-    auto &frequency_proposal_2 = get<3>(average_proposal_2);
+    auto &frequency_proposal = get<3>(average_proposal);
 
     auto &file_frequency = files.emplace_back("../tmp/frequency.csv");
     file_frequency << "field size;" << field_size << "x" << field_size << ","
                    << "number of node;" << num_node << ","
                    << "repeat;" << num_repeat << std::endl;
     file_frequency << ",central,, ,middle,, ,edge," << std::endl;
-    file_frequency << "hops,exiting,proposal 2, ,exiting,"
-                      "proposal 2, ,exiting,proposal 2,"
+    file_frequency << "hops,exiting,proposal, ,exiting,"
+                      "proposal, ,exiting,proposal"
                    << std::endl;
 
     for (size_t num_hop = 1; true; num_hop++) {
@@ -279,8 +261,7 @@ int main() {
                 };
 
             writeNumHop(frequency_exiting);
-            // writeNumHop(frequency_proposal_1);
-            writeNumHop(frequency_proposal_2);
+            writeNumHop(frequency_proposal);
 
             if (i != 2) {
                 file_frequency << " ,";
