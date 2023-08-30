@@ -1,7 +1,7 @@
 /*!
  * @file Device.hpp
  * @author tom96da
- * @brief Device クラスの定義
+ * @brief Device クラスのヘッダファイル
  * @date 2023-05-11
  */
 
@@ -145,6 +145,7 @@ enum class Device::SimulationMode {
     PROPOSAL_LONG_MPR         /* 提案手法 遠距離MPR */
 };
 
+/* データ属性 */
 enum class Device::DataAttr {
     NONE,
     WILLINGNESS,

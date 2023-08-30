@@ -1,7 +1,7 @@
 /*!
  * @file Device.cpp
  * @author tom96da
- * @brief Device クラスのメンバ関数
+ * @brief Device クラスのソースファイル
  * @date 2023-05-15
  */
 
@@ -89,8 +89,10 @@ int Device::getNumConnected() const { return id_connected_devices_.size(); }
  * @return set<int> ペアリング済みデバイスのIDリスト
  */
 vector<int> Device::getIdPairedDevices() const {
+    /* IDリスト */
     vector<int> id_paired_devices;
     for (const auto &[id_paired_device, _] : paired_devices_) {
+        /* ペアリング済みデバイスのIDを順に挿入する */
         id_paired_devices.emplace_back(id_paired_device);
     }
 
@@ -167,6 +169,7 @@ bool Device::hasData(const size_t data_id) const {
  */
 void Device::pairing(Device &another_device) {
     if (this->isPaired(another_device.getId())) {
+        /* ペアリング済みなら終了 */
         return;
     }
 
@@ -178,12 +181,13 @@ void Device::pairing(Device &another_device) {
  * @param id_another_device 相手のデバイスID
  */
 void Device::unpairing(const int id_another_device) {
-    if (!isPaired(id_another_device)) {
+    if (!this->isPaired(id_another_device)) {
+        /* ペアリング未登録なら終了 */
         return;
     }
 
     disconnect(id_another_device);
-    paired_devices_.erase(id_another_device);
+    this->paired_devices_.erase(id_another_device);
 }
 
 /*!
@@ -194,9 +198,11 @@ void Device::unpairing(const int id_another_device) {
  */
 bool Device::connect(const int id_another_device) {
     if (isConnected(id_another_device)) {
+        /* 接続済みなら失敗 */
         return false;
     }
     if (getNumConnected() >= max_connections_) {
+        /* 接続最大数に達していれば失敗 */
         return false;
     }
 
@@ -224,8 +230,10 @@ void Device::disconnect(const int id_another_device) {
  */
 void Device::saveData(pair<size_t, Var> data_with_id, const DataAttr data_attr,
                       int flood_step) {
+    /* データID */
     auto &[data_id, _] = data_with_id;
     if (hasData(data_id)) {
+        /* すでにデータを持っていれば終了 */
         return;
     }
 
@@ -239,8 +247,10 @@ void Device::saveData(pair<size_t, Var> data_with_id, const DataAttr data_attr,
  */
 void Device::saveData(const Packet &packet) {
     pair<size_t, Var> data_with_id = packet.getDataWithId();
+    /* データID */
     auto &[data_id, _] = data_with_id;
     if (hasData(data_id)) {
+        /* すでにデータを持っていれば終了 */
         return;
     }
 
@@ -262,6 +272,7 @@ void Device::clearMemory() { memory_.clear(); }
  */
 void Device::sendMessage(const int id_receiver, string message) {
     if (!isConnected(id_receiver)) {
+        /* 接続中でなければ終了 */
         return;
     }
 
@@ -310,6 +321,7 @@ Device::Packet Device::makePacket(const int id_dest,
  */
 void Device::sendPacket(const int id_receiver, const Packet &packet) {
     if (isConnected(id_receiver)) {
+        /* 接続中であればパケットを送信する */
         getPairedDevice(id_receiver).receivePacket(packet);
     }
 }
@@ -325,6 +337,7 @@ void Device::receivePacket(const Packet &packet) { saveData(packet); }
  */
 void Device::sendHello() {
     for (auto id_cncts = getIdConnectedDevices(); auto &id_cnct : id_cncts) {
+        /* 接続中のデバイスに順番に送信する */
         sendPacket(id_cnct,
                    makePacket(id_cnct, assignIdToData(getWillingness()),
                               DataAttr::WILLINGNESS));
@@ -338,6 +351,7 @@ void Device::sendHello() {
  */
 void Device::sendTable() {
     for (auto &id_cnct : getIdConnectedDevices()) {
+        /* 接続中のデバイスに順番に送信する */
         sendPacket(id_cnct, makePacket(id_cnct, assignIdToData(getTable()),
                                        DataAttr::TABLE));
     }
@@ -375,6 +389,7 @@ void Device::flooding(const int flag) {
         return;
     }
 
+    /* メモリからフラッディングするデータを走査 */
     auto itr = find_if(memory_.rbegin(), memory_.rend(),
                        [](pair<size_t, Device::Sell> &&sell) {
                            auto &[_, data_in_sell] = sell;
@@ -382,14 +397,17 @@ void Device::flooding(const int flag) {
                                   DataAttr::FLOODING;
                        });
     if (itr == memory_.rend()) {
+        /* 見つからなければ終了 */
         return;
     }
 
     auto &[_, data_in_sell] = *itr;
     if (data_in_sell.getFloodStep() > _step_new) {
+        /* データが受信したばかりのものなら終了 */
         return;
     }
 
+    /* 接続中のデバイスに順に送信する */
     for (auto id_cnct : getIdConnectedDevices()) {
         if (id_cnct != data_in_sell.getIdSender()) {
             sendPacket(id_cnct, makePacket(-1, data_in_sell.getDataWithId(),
@@ -406,11 +424,14 @@ void Device::flooding(const int flag) {
  * @return pair<int, int> 次ホップデバイスのID, 宛先までの距離
  */
 pair<int, int> Device::startUnicast(const int id_dest) {
+    /* ルーティングテーブル */
     auto &&table = getTable();
     if (!table.hasEntry(id_dest)) {
+        /* 宛先へのエントリーがなければ終了 */
         return {-1, 0};
     }
 
+    /* 次のホップ先のデバイスID */
     int id_nextHop = table.getIdNextHop(id_dest);
     sendPacket(
         id_nextHop,
@@ -425,7 +446,7 @@ pair<int, int> Device::startUnicast(const int id_dest) {
  * @return pair<int, int> 次ホップデバイスのID, 継続フラク
  */
 pair<int, int> Device::hopping() {
-    // メモリからホップするメッセージを走査する
+    /* メモリからホップするメッセージを走査する */
     auto itr =
         find_if(memory_.rbegin(), memory_.rend(),
                 [](pair<size_t, Device::Sell> &&sell) {
@@ -433,95 +454,33 @@ pair<int, int> Device::hopping() {
                     return data_in_sell.getDataAttribute() == DataAttr::HOPPING;
                 });
     if (itr == memory_.rend()) {
-        // ホップするメッセージがなければ終了
+        /* 見つからなければ終了 */
         return {0, -1};
     }
-
+    /* 見つかったメッセージの保存場所 */
     auto &[_, data_in_sell] = *itr;
+    /* メッセージの宛先 */
     int id_dest = data_in_sell.getIdDestinaiton();
     if (id_dest == getId()) {
+        /* 宛先が自信なら終了 */
         return {0, 0};
     }
 
+    /* ルーティングテーブル */
     auto &&table = getTable();
     if (!table.hasEntry(id_dest)) {
+        /* 宛先へのエントリーなければ終了 */
         return {0, -1};
     }
 
+    /* 次のポップ先のデバイスID */
     int id_nextHop = table.getIdNextHop(id_dest);
+    /* ホップするID付きメッセージ */
     auto data_with_id = data_in_sell.getDataWithId();
     sendPacket(id_nextHop,
                makePacket(id_dest, data_with_id, DataAttr::HOPPING));
 
     return {id_nextHop, 1};
-}
-
-/*!
- * @brief MPR集合を作成する
- */
-void Device::makeMPR() {
-    // MPR_.clear();
-    // /* 隣接 <willingness, id> (降順) */
-    // multimap<int, int, greater<int>> neighbors;
-    // /* 2ホップ隣接 <tow hop neighbor, MPR> */
-    // map<int, int> tow_hop_neighbors;
-
-    // while (true) {
-    //     auto itr = find_if(memory_.rbegin(), memory_.rend(),
-    //                        [](pair<size_t, Device::Sell> &&sell) {
-    //                            auto &[_, data_in_sell] = sell;
-    //                            return data_in_sell.getDataAttribute() ==
-    //                                   DataAttr::WILLINGNESS;
-    //                        });
-    //     if (itr == memory_.rend()) {
-    //         break;
-    //     }
-
-    //     auto &[_, data_in_sell] = *itr;
-    //     auto id_cnct = data_in_sell.getIdSender();
-    //     auto willingness = get<int>(data_in_sell.getData());
-
-    //     neighbors.emplace(willingness, id_cnct);
-    //     table_.setEntry(id_cnct, id_cnct, 1);
-
-    //     data_in_sell.setDaTaAttribute(DataAttr::NONE);
-    // }
-
-    // for (auto &[_, id_neighbor] : neighbors) {
-    //     auto itr = find_if(memory_.rbegin(), memory_.rend(),
-    //                        [&](pair<size_t, Device::Sell> &&sell) {
-    //                            auto &[_, data_in_sell] = sell;
-    //                            return data_in_sell.getDataAttribute() ==
-    //                                       DataAttr::TOPOLOGY &&
-    //                                   data_in_sell.getIdSender() ==
-    //                                   id_neighbor;
-    //                        });
-    //     if (itr == memory_.rend()) {
-    //         break;
-    //     }
-
-    //     auto &[__, data_in_sell] = *itr;
-
-    //     for (auto id_neighbor_cncts = get<set<int>>(data_in_sell.getData());
-    //          auto id_tow_hop_neighbor : id_neighbor_cncts) {
-    //         if (isSelf(id_tow_hop_neighbor)) {
-    //             continue;
-    //         }
-    //         if (isConnected(id_tow_hop_neighbor)) {
-    //             continue;
-    //         }
-    //         if (tow_hop_neighbors.count(id_tow_hop_neighbor)) {
-    //             continue;
-    //         }
-
-    //         tow_hop_neighbors.emplace(id_tow_hop_neighbor, id_neighbor);
-    //         table_.setEntry(id_tow_hop_neighbor, id_neighbor, 2);
-    //     }
-    // }
-
-    // for (auto &[_, MPR] : tow_hop_neighbors) {
-    //     MPR_.emplace(MPR);
-    // }
 }
 
 /*!
@@ -532,12 +491,14 @@ void Device::clearMPR() { MPR_.clear(); }
 /*!
  * @brief ルーティングテーブルを作成する
  * @retval true 更新あり
- * @retval false 更新無し *
+ * @retval false 更新無し
  */
 bool Device::makeTable() {
+    /* 更新件数 */
     int result = 0;
 
     while (true) {
+        /* メモリから受信したルーティングテーブルを走査する */
         auto itr = find_if(memory_.rbegin(), memory_.rend(),
                            [](pair<size_t, Device::Sell> &&sell) {
                                auto &[_, data_in_sell] = sell;
@@ -545,21 +506,29 @@ bool Device::makeTable() {
                                       DataAttr::TABLE;
                            });
         if (itr == memory_.rend()) {
+            /* 見つからなければループを終了 */
             break;
         }
 
+        /* 見つかったテーブルの保存場所 */
         auto &[__, data_in_sell] = *itr;
+        /* 送信元のデバイスID */
         auto id_sender = data_in_sell.getIdSender();
+        /* 見つかったテーブル */
         auto table_neighbor = get<Table>(data_in_sell.getData()).getTable();
 
+        /* 見つかったテーブルのエントリーを順に取り込む */
         for (auto &[id_dest, entry] : table_neighbor) {
             auto id_nexthop = id_sender;
             auto distance = entry.getNumHop() + 1;
 
-            if (id_dest != getId()) {
-                result += static_cast<int>(
-                    table_.setEntry(id_dest, id_nexthop, distance));
+            if (id_dest == getId()) {
+                /* 宛先が自身であればスルー */
+                continue;
+                ;
             }
+            result += static_cast<int>(
+                table_.setEntry(id_dest, id_nexthop, distance));
         }
 
         data_in_sell.setDaTaAttribute(DataAttr::NONE);
@@ -578,16 +547,15 @@ void Device::clearTable() { table_.clearEntryAll(); }
  * @return
  */
 map<int, int> Device::calculateTableFrequency() const {
+    /* 度数分布 */
     map<int, int> tableFrequency;
+    /* ルーティングテーブル */
     auto &&table = getTable();
 
+    /* ホップ数ごとにカウントする */
     for (auto id_dest : table.getDestinations()) {
         tableFrequency[table.getNumHop(id_dest)]++;
     }
-
-    // for (const auto &[num_hop, num_dev] : tableFrequency) {
-    //     std::cout << num_hop << ": " << num_dev << std::endl;
-    // }
 
     return tableFrequency;
 }
@@ -621,9 +589,11 @@ pair<size_t, Var> Device::assignIdToData(const Var data, const bool is_flooding,
     if (data_id == 0) {
         string s_id = to_string(getId()), s_packet = to_string(getNumPacket());
         if (!is_flooding) {
+            /* 一般データは上1桁が2 */
             data_id = stoul("2" + string(3 - s_id.length(), '0') + s_id +
                             string(6 - s_packet.length(), '0') + s_packet);
         } else {
+            /* フラッディングデータは上1桁が3 */
             data_id = stoul("3" + string(3 - s_id.length(), '0') + s_id +
                             string(6 - s_packet.length(), '0') + s_packet);
         }

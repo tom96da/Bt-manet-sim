@@ -2,6 +2,9 @@
  * @file main.cpp
  * @author tom96da
  * @brief Bluetooth MANET のシミュレーション
+ * @details Bluetooth MANET におけるルーティングについて、
+ *          接続距離を最大化する提案手法の効果を確認するシミュレーションプログラム
+ *          実行時は、オプションに "-std=c++20" を指定する。
  * @date 2023-05-11
  */
 
@@ -29,7 +32,7 @@ int main() {
     vector<tuple<int, double, int64_t, vector<map<int, double>>>>
         result_exiting, result_proposal;
 
-    /* ファイル作成 */
+    /* 座標記録ファイル作成 */
     auto newCsv = [&](MGR *mgr) {
         for (auto id : mgr->getDevicesList()) {
             string fname = "../tmp/position/device" + to_string(id) + ".csv";
@@ -37,6 +40,7 @@ int main() {
             file << "x,y" << endl;
         }
     };
+
     /* ファイルに座標書き込み */
     auto writeCsv = [&](MGR *mgr) {
         if (files.empty()) {
@@ -48,7 +52,8 @@ int main() {
             files[id] << x << ", " << y << endl;
         }
     };
-    /* 度数分布を合算する */
+
+    /* 度数分布を加算する */
     auto addFrequency = [](vector<map<int, double>> frequencys_acc,
                            const vector<map<int, double>> frequencys_elem) {
         if (frequencys_acc.empty()) {
@@ -63,6 +68,7 @@ int main() {
         }
         return frequencys_acc;
     };
+
     /* 度数分布を割る */
     auto divideFrequency = [](vector<map<int, double>> frequencys,
                               const int divisor) {
@@ -74,11 +80,13 @@ int main() {
 
         return frequencys;
     };
+
     /* 結果から平均を得る */
     auto average =
         [&](vector<tuple<int, double, int64_t, vector<map<int, double>>>>
                 &result)
         -> tuple<int, double, int64_t, vector<map<int, double>>> {
+        /* 結果の総和をとる */
         auto sum = reduce(
             result.begin(), result.end(),
             tuple<int, double, int64_t, vector<map<int, double>>>{
@@ -89,12 +97,16 @@ int main() {
                         get<2>(acc) + get<2>(elem),
                         addFrequency(get<3>(acc), get<3>(elem))};
             });
+
+        /* 試行回数で割って返す */
         return {get<0>(sum) / num_repeat, get<1>(sum) / num_repeat,
                 get<2>(sum) / num_repeat,
                 divideFrequency(get<3>(sum), num_repeat)};
     };
 
     /* シミュレーション開始 */
+
+    /* パラメータ表示 */
     std::cout << "field size: " << field_size << "x" << field_size << ", "
               << "number of node: " << num_node << ", "
               << "repeat: " << num_repeat << std::endl;
@@ -120,15 +132,15 @@ int main() {
         auto mgr = new MGR{field_size};
         mgr->setSimMode(SIMMODE::EXITING);
 
-        // 孤立しないネットワークを構築する
+        /* 孤立した端末がないネットワークを構築する */
         while (true) {
-            // 孤立するノードがないネットワークができるまで繰り返す
+            /* 孤立するノードがないネットワークができるまで繰り返す */
             mgr->deleteDeviceAll();
             mgr->addDevices(num_node);
             mgr->buildNetwork();
             const auto [_, num_member] = mgr->flooding(45);
             if (num_member == num_node) {
-                // 孤立するノードがなければ抜ける
+                /* 孤立するノードがなければ抜ける */
                 break;
             }
         }
@@ -164,7 +176,7 @@ int main() {
                                     mgr->calculateTableFrequency());
             };
 
-        {  // 既存手法
+        { /* 既存手法 */
             mgr->sendHello();
             mgr->makeMPR();
             // mgr->showMPR(0);
@@ -175,12 +187,12 @@ int main() {
         mgr->clearDevice();
         mgr->resetNetwork();
 
-        {  // 提案手法 遠距離選択接続
+        { /* 提案手法 遠距離選択接続 */
             mgr->setSimMode(SIMMODE::PROPOSAL_LONG_CONNECTION);
             mgr->buildNetwork();
             const auto [_, num_member] = mgr->flooding(45);
             if (num_member != num_node) {
-                // 孤立するノードがあれば従来手法の結果を消してループに戻る
+                /* 孤立するノードがあれば従来手法の結果を消してループに戻る */
                 result_exiting.pop_back();
                 continue;
             }
@@ -214,15 +226,19 @@ int main() {
 
     /* 以下結果を集計・記録 */
 
+    /* 従来手法平均 */
     auto average_exiting = average(result_exiting);
+    /* 提案手法平均 */
     auto average_proposal = average(result_proposal);
 
     auto &file_result = files.emplace_back("../tmp/result.csv");
+    /* パラメータ書き込み */
     file_result << "field size;" << field_size << "x" << field_size << ","
                 << "number of node;" << num_node << ","
                 << "repeat;" << num_repeat << std::endl;
     file_result << "METHOD;packets,update,time[ms]" << std::endl;
 
+    /* 平均書き込み */
     auto writeResult =
         [&](string s,
             tuple<int, double, int64_t, vector<map<int, double>>> &average) {
@@ -233,7 +249,9 @@ int main() {
     writeResult("EXITING", average_exiting);
     writeResult("PROPOSAL", average_proposal);
 
+    /* 従来手法度数分布 */
     auto &frequency_exiting = get<3>(average_exiting);
+    /* 提案手法度数分布 */
     auto &frequency_proposal = get<3>(average_proposal);
 
     auto &file_frequency = files.emplace_back("../tmp/frequency.csv");
@@ -245,6 +263,7 @@ int main() {
                       "proposal, ,exiting,proposal"
                    << std::endl;
 
+    /* 度数分布書き込み */
     for (size_t num_hop = 1; true; num_hop++) {
         int count = 0;
         file_frequency << num_hop << ", ";
