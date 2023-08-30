@@ -50,7 +50,7 @@ int main() {
 
     /*　マネージャー */
     auto mgr = new MGR{field_size};
-    mgr->setSimMode(SIMMODE::EXITING);
+    mgr->setSimMode(SIMMODE::CONVENTIONAL);
 
     // 孤立しないネットワークを構築する
     while (true) {

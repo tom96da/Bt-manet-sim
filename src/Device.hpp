@@ -140,9 +140,9 @@ class Device {
 /* シミュレーションモード */
 enum class Device::SimulationMode {
     NONE,
-    EXITING,                  /* 既存手法 */
+    CONVENTIONAL,             /* 既存手法 */
     PROPOSAL_LONG_CONNECTION, /* 提案手法 遠距離接続 */
-    PROPOSAL_LONG_MPR         /* 提案手法 遠距離MPR */
+    PROPOSAL_LONG_MPR         /* 提案手法 遠距離MPR 没案 */
 };
 
 /* データ属性 */

@@ -17,7 +17,10 @@
  *     int task, done;
  *     pb_sample.start(task, done);
  *
+ *     loop {
  *     // 進捗の処理
+ *     ++done
+ *     }
  *
  *     pb_sample.close();
  *     pb_sample.erase();

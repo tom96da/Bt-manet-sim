@@ -15,12 +15,18 @@
 /*!
  * @brief コンストラクタ
  */
-ProgressBar::ProgressBar() { std::cout << "\e[?25l" << std::flush; }
+ProgressBar::ProgressBar() {
+    /* カーソルを非表示にする */
+    std::cout << "\e[?25l" << std::flush;
+}
 
 /*!
  * @brief デストラクタ
  */
-ProgressBar::~ProgressBar() { std::cout << "\e[?25h" << std::flush; }
+ProgressBar::~ProgressBar() {
+    /* カーソルを再表示する */
+    std::cout << "\e[?25h" << std::flush;
+}
 
 /*!
  * @brief 新規プログレスバー領域を確保する
@@ -81,11 +87,16 @@ ProgressBar::BarBody::~BarBody() {
  */
 void ProgressBar::BarBody::start(const int num_task, int &num_done) {
 #if __linux__
-    thread_ = thread([&, num_task]() {  // 並列処理開始
-        string progress;
+    thread_ = thread([&, num_task]() {
+        /* 並列処理開始 */
+
+        /* インジケータ */
+        string indicator;
+        /* タスクの桁数 */
         const int digit = to_string(num_task).size();
         int percent = 0, previous_done = 0;
 
+        /* 開始時刻 */
         auto start = chrono::system_clock::now();
 
         do {
@@ -93,7 +104,8 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                 num_done = num_task;
             }
 
-            if (num_done == previous_done) {  // 進捗がなければ表示を更新しない
+            if (num_done == previous_done) {
+                /* 進捗がなければ表示を更新しない */
                 continue;
             }
 
@@ -104,30 +116,36 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                 percent = 100;
             }
 
-            while (percent > step_ * (size(progress) + 1) - 1) {
-                progress += "#";
+            while (percent > step_ * (size(indicator) + 1) - 1) {
+                /* 進捗に合わせて記号を並べる */
+                indicator += "#";
             }
 
             mutex_.lock();
 
             std::cout << "\r";
             for (int i = 0; i < layer_; i++) {
+                /* 表示領域にカーソルを移動する */
                 std::cout << "\e[1A";
             }
 
             if (!title_.empty()) {
+                /* タイトルが設定済みならば表示する */
                 std::cout << setfill(' ') << setw(25) << left << title_ + ": ";
             }
 
             std::cout << "[" << setfill('_') << setw(length_) << left
-                      << progress << "] "
+                      << indicator << "] "
                       << "[" << setfill(' ') << setw(digit) << right << num_done
                       << "/" << num_task << "]" << setw(5) << right << percent
                       << "%  ";
 
-            /* モニターが有効なら経過時間と推定残り時間を表示する */
             if (monitars_time_ == true) {
+                /* モニターが有効なら経過時間と推定残り時間を表示する */
+
+                /* 現時刻 */
                 auto now = chrono::system_clock::now();
+                /* 経過時間 */
                 auto pass = now - start;
                 auto sec = chrono::duration_cast<chrono::seconds>(pass).count();
                 if (sec < 3600) {
@@ -139,6 +157,7 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                               << setw(2) << right << sec % 60;
                 }
 
+                /* 残り時間を推測する */
                 auto remain = static_cast<int64_t>(
                     sec * (static_cast<double>(num_task) / num_done - 1));
                 std::cout << "\e[0K";
@@ -157,6 +176,7 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
             }
 
             for (int i = 0; i < layer_; i++) {
+                /* 最下行にカーソルを移動する */
                 std::cout << "\e[1B";
             }
 
@@ -176,9 +196,10 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
 
         mutex_.lock();
 
-        /* モニターが無効なら経過時間と推定残り時間を表示する */
         if (!monitars_time_) {
+            /* モニターが無効なら経過時間と推定残り時間を表示する */
             for (int i = 0; i < layer_; i++) {
+                /* 表示領域にカーソルを移動する */
                 std::cout << "\e[1A";
             }
 
@@ -196,28 +217,33 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
             }
 
             for (int i = 0; i < layer_; i++) {
+                /* 最下行にカーソルを移動する */
                 std::cout << "\e[1B";
             }
         }
 
         std::cout << "\r" << std::flush;
         mutex_.unlock();
-
-    });
+    }); /* 並列処理終了 */
 
 #elif _WIN32
     threadHandle_ = CreateThread(
         NULL, 0,
         [](LPVOID lpParam) -> DWORD {
+            /* 並列処理開始 */
+
             auto *param = reinterpret_cast<Param *>(lpParam);
             int num_task = param->num_task_;
             int &num_done = param->num_done_;
             auto &self = param->body_;
 
-            string progress;
+            /* インジケータ */
+            string indicator;
+            /* タスクの桁数 */
             const int digit = to_string(num_task).size();
             int percent = 0, previous_done = 0;
 
+            /* 開始時刻 */
             auto start = chrono::system_clock::now();
 
             do {
@@ -225,8 +251,8 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                     num_done = num_task;
                 }
 
-                if (num_done ==
-                    previous_done) {  // 進捗がなければ表示を更新しない
+                if (num_done == previous_done) {
+                    /* 進捗がなければ表示を更新しない */
                     continue;
                 }
 
@@ -237,31 +263,37 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                     percent = 100;
                 }
 
-                while (percent > self.step_ * (size(progress) + 1) - 1) {
-                    progress += "#";
+                while (percent > self.step_ * (size(indicator) + 1) - 1) {
+                    /* 進捗に合わせて記号を並べる */
+                    indicator += "#";
                 }
 
                 WaitForSingleObject(mutex_, INFINITE);
 
                 std::cout << "\r";
                 for (int i = 0; i < self.layer_; i++) {
+                    /* 表示領域にカーソルを移動する */
                     std::cout << "\e[1A";
                 }
 
                 if (!self.title_.empty()) {
+                    /* タイトルが設定済みならば表示する */
                     std::cout << setfill(' ') << setw(25) << left
                               << self.title_ + ": ";
                 }
 
                 std::cout << "[" << setfill('_') << setw(self.length_) << left
-                          << progress << "] "
+                          << indicator << "] "
                           << "[" << setfill(' ') << setw(digit) << right
                           << num_done << "/" << num_task << "]" << setw(5)
                           << right << percent << "%  ";
 
-                /* モニターが有効なら経過時間と推定残り時間を表示する */
                 if (self.monitars_time_ == true) {
+                    /* モニターが有効なら経過時間と推定残り時間を表示する */
+
+                    /* 現時刻 */
                     auto now = chrono::system_clock::now();
+                    /* 経過時間 */
                     auto pass = now - start;
                     auto sec =
                         chrono::duration_cast<chrono::seconds>(pass).count();
@@ -275,6 +307,7 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                                   << sec % 60;
                     }
 
+                    /* 残り時間を推測する */
                     auto remain = static_cast<int64_t>(
                         sec * (static_cast<double>(num_task) / num_done - 1));
                     std::cout << "\e[0K";
@@ -293,6 +326,7 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                 }
 
                 for (int i = 0; i < self.layer_; i++) {
+                    /* 最下行にカーソルを移動する */
                     std::cout << "\e[1B";
                 }
 
@@ -313,9 +347,10 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
 
             WaitForSingleObject(mutex_, INFINITE);
 
-            /* モニターが無効なら経過時間と推定残り時間を表示する */
             if (!self.monitars_time_) {
+                /* モニターが無効なら経過時間と推定残り時間を表示する */
                 for (int i = 0; i < self.layer_; i++) {
+                    /* 表示領域にカーソルを移動する */
                     std::cout << "\e[1A";
                 }
 
@@ -333,6 +368,7 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
                 }
 
                 for (int i = 0; i < self.layer_; i++) {
+                    /* 最下行にカーソルを移動する */
                     std::cout << "\e[1B";
                 }
             }
@@ -343,7 +379,7 @@ void ProgressBar::BarBody::start(const int num_task, int &num_done) {
             delete param;
 
             return 0;
-        },
+        }, /* 並列処理終了 */
         new Param{num_task, num_done, *(this)}, 0, NULL);
 
 #endif
@@ -381,7 +417,7 @@ void ProgressBar::BarBody::monitarTime() { monitars_time_ = true; }
  * @brief 進捗をクリアする
  */
 void ProgressBar::BarBody::clear() const {
-    string progress;
+    string indicator;
     const int digit = to_string(previous_num_task_).size();
     int num_done = 0, percent = 0;
 
@@ -395,23 +431,28 @@ void ProgressBar::BarBody::clear() const {
 
     std::cout << "\r";
     for (int i = 0; i < layer_; i++) {
+        /* 表示領域にカーソルを移動する */
         std::cout << "\e[1A";
     }
 
     if (!title_.empty()) {
+        /* タイトルが設定済みならば表示する */
         std::cout << setfill(' ') << setw(25) << left << title_ + ": ";
     }
 
-    std::cout << "[" << setfill('_') << setw(length_) << left << progress << "]"
+    std::cout << "[" << setfill('_') << setw(length_) << left << indicator
+              << "]"
               << " [" << setfill(' ') << setw(digit) << right << num_done << "/"
               << previous_num_task_ << "]" << setw(5) << right << percent
               << "%  ";
 
     if (monitars_time_ == true) {
+        /* モニターが有効なら */
         std::cout << "0:00";
     }
 
     for (int i = 0; i < layer_; i++) {
+        /* 最下行にカーソルを移動する */
         std::cout << "\e[1B";
     }
 

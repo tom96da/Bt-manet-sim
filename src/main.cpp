@@ -8,6 +8,11 @@
  * @date 2023-05-11
  */
 
+#if _WIN32
+#include <windows.h>
+
+#endif
+
 #include <fstream>
 #include <iostream>
 #include <tuple>
@@ -30,7 +35,7 @@ int main() {
     const int num_repeat = 1000;
     /* 結果 */
     vector<tuple<int, double, int64_t, vector<map<int, double>>>>
-        result_exiting, result_proposal;
+        result_convetntional, result_proposal;
 
     /* 座標記録ファイル作成 */
     auto newCsv = [&](MGR *mgr) {
@@ -69,7 +74,7 @@ int main() {
         return frequencys_acc;
     };
 
-    /* 度数分布を割る */
+    /* 度数分布を除算する */
     auto divideFrequency = [](vector<map<int, double>> frequencys,
                               const int divisor) {
         for (auto &frequency_each_zone : frequencys) {
@@ -114,10 +119,10 @@ int main() {
     auto pbar = PBar();
     auto &pb_repeat = pbar.add();
     auto &pb_proposal = pbar.add();
-    auto &pb_exiting = pbar.add();
+    auto &pb_conventional = pbar.add();
     pb_repeat.set_title("Simulation progress");
     pb_repeat.monitarTime();
-    pb_exiting.set_title("EXITING");
+    pb_conventional.set_title("CONVENTIONAL");
     pb_proposal.set_title("LONG_CONNECTION");
 
     int count_repeat = 0;
@@ -125,12 +130,12 @@ int main() {
     pb_repeat.start(num_repeat, count_repeat);
 
     for (; count_repeat < num_repeat;) {
-        pb_exiting.clear();
+        pb_conventional.clear();
         pb_proposal.clear();
 
         /*　マネージャー */
         auto mgr = new MGR{field_size};
-        mgr->setSimMode(SIMMODE::EXITING);
+        mgr->setSimMode(SIMMODE::CONVENTIONAL);
 
         /* 孤立した端末がないネットワークを構築する */
         while (true) {
@@ -181,7 +186,7 @@ int main() {
             mgr->makeMPR();
             // mgr->showMPR(0);
 
-            makingTableUntilcomplete(result_exiting, pb_exiting);
+            makingTableUntilcomplete(result_convetntional, pb_conventional);
         }
 
         mgr->clearDevice();
@@ -193,7 +198,7 @@ int main() {
             const auto [_, num_member] = mgr->flooding(45);
             if (num_member != num_node) {
                 /* 孤立するノードがあれば従来手法の結果を消してループに戻る */
-                result_exiting.pop_back();
+                result_convetntional.pop_back();
                 continue;
             }
 
@@ -227,7 +232,7 @@ int main() {
     /* 以下結果を集計・記録 */
 
     /* 従来手法平均 */
-    auto average_exiting = average(result_exiting);
+    auto average_conventional = average(result_convetntional);
     /* 提案手法平均 */
     auto average_proposal = average(result_proposal);
 
@@ -246,11 +251,11 @@ int main() {
                         << "," << get<2>(average) << std::endl;
         };
 
-    writeResult("EXITING", average_exiting);
+    writeResult("CONVENTIONAL", average_conventional);
     writeResult("PROPOSAL", average_proposal);
 
     /* 従来手法度数分布 */
-    auto &frequency_exiting = get<3>(average_exiting);
+    auto &frequency_conventional = get<3>(average_conventional);
     /* 提案手法度数分布 */
     auto &frequency_proposal = get<3>(average_proposal);
 
@@ -259,8 +264,8 @@ int main() {
                    << "number of node;" << num_node << ","
                    << "repeat;" << num_repeat << std::endl;
     file_frequency << ",central,, ,middle,, ,edge," << std::endl;
-    file_frequency << "hops,exiting,proposal, ,exiting,"
-                      "proposal, ,exiting,proposal"
+    file_frequency << "hops,conventional,proposal, ,conventional,"
+                      "proposal, ,conventional,proposal"
                    << std::endl;
 
     /* 度数分布書き込み */
@@ -279,7 +284,7 @@ int main() {
                     }
                 };
 
-            writeNumHop(frequency_exiting);
+            writeNumHop(frequency_conventional);
             writeNumHop(frequency_proposal);
 
             if (i != 2) {

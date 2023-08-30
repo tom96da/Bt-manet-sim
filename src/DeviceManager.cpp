@@ -31,7 +31,7 @@ DeviceManager::DeviceManager(const double field_size)
       bias_random_{-0.4, 0.4},
       willingness_random_{1, 5} {}
 
-/* 接続可能距離 */
+/* 最大接続距離 */
 double DeviceManager::_max_com_distance_ = MAX_COM_DISTANCE;
 
 /*!
@@ -44,28 +44,29 @@ double DeviceManager::getMaxComDistance() { return _max_com_distance_; }
  * @param sim_mode
  */
 void DeviceManager::setSimMode(const SimulationMode sim_mode) {
+    /* シミュレーションモード */
     sim_mode_ = sim_mode;
 
     switch (sim_mode_) {
-        case SIMMODE::EXITING:
-            // std::cout << "Simulation mode: EXITNG" << std::endl;
-            Device::setSimMode(Device::SimulationMode::EXITING);
+        case SIMMODE::CONVENTIONAL:
+            /* 従来手法 */
+            Device::setSimMode(Device::SimulationMode::CONVENTIONAL);
             break;
         case SIMMODE::PROPOSAL_LONG_CONNECTION:
-            // std::cout << "Simulation mode: PROPOSAL_LONG_CONNECTION"
-            //   << std::endl;
+            /* 提案手法 遠距離接続 */
             Device::setSimMode(
                 Device::SimulationMode::PROPOSAL_LONG_CONNECTION);
             break;
         case SIMMODE::PROPOSAL_LONG_MPR:
-            // std::cout << "Simulation mode: PROPOSAL_LONG_MPR" << std::endl;
+            /* 提案手法 遠距離MPR */
             Device::setSimMode(Device::SimulationMode::PROPOSAL_LONG_MPR);
             break;
         default:
-            std::cout << "Please execute after specifying "
-                      << "either EXITING or PROPOSAL_LONG_CONNECTION for the "
-                         "simulation mode."
-                      << std::endl;
+            std::cout
+                << "Please execute after specifying "
+                << "either CONVENTIONAL or PROPOSAL_LONG_CONNECTION for the "
+                   "simulation mode."
+                << std::endl;
             std::exit(EXIT_SUCCESS);
             break;
     }
@@ -90,8 +91,10 @@ DeviceManager::Node &DeviceManager::getDeviceById(const int id) {
  * @return デバイスIDのリスト
  */
 vector<int> DeviceManager::getDevicesList() const {
+    /* リスト */
     vector<int> list;
     for (auto &[id, _] : nodes_) {
+        /* 順にリストに挿入する */
         list.emplace_back(id);
     }
 
@@ -116,9 +119,11 @@ pair<double, double> &DeviceManager::getPosition(const int id) {
  */
 double DeviceManager::getDistance(const int id_1, const int id_2) {
     if (!nodes_.count(id_1)) {
+        /* デバイスが存在しなければ終了 */
         return -1.0;
     }
     if (!nodes_.count(id_2)) {
+        /* デバイスが存在しなければ終了 */
         return -1.0;
     }
 
@@ -133,6 +138,7 @@ double DeviceManager::getDistance(const int id_1, const int id_2) {
  * @param num_devices デバイス数
  */
 void DeviceManager::addDevices(const int num_devices) {
+    /* 追加する先頭のデバイスID */
     int id_next = 0;
     if (getNumDevices() > 0) {
         auto &[id_last, _] = *nodes_.rend();
@@ -140,6 +146,7 @@ void DeviceManager::addDevices(const int num_devices) {
     }
 
     for (int id = id_next; id < id_next + num_devices; id++) {
+        /* 順にデバイスを生成する */
         nodes_.emplace(id, Node(id, willingness_random_(mt_), this));
         nodes_.at(id).setBias(bias_random_(mt_), bias_random_(mt_));
         nodes_.at(id).setPositon(position_random_(mt_), position_random_(mt_));
@@ -161,15 +168,19 @@ void DeviceManager::deleteDeviceAll() {
  */
 void DeviceManager::pairDevices(const int id_1, const int id_2) {
     if (getDistance(id_1, id_2) > _max_com_distance_) {
+        /* 距離が最大接続距離より離れていたら終了 */
         return;
     }
     if (getDistance(id_1, id_2) < 0) {
+        /* デバイスが存在しなければ終了 */
         return;
     }
     if (isPaired(id_1, id_2)) {
+        /* ペアリング済みなら終了 */
         return;
     }
     if (isSameDevice(id_1, id_2)) {
+        /* 同一デバイスなら終了 */
         return;
     }
 
@@ -184,9 +195,11 @@ void DeviceManager::pairDevices(const int id_1, const int id_2) {
  */
 void DeviceManager::unpairDevices(const int id_1, const int id_2) {
     if (getDistance(id_1, id_2) < 0) {
+        /* デバイスが存在しなければ終了 */
         return;
     }
     if (isSameDevice(id_1, id_2)) {
+        /* 同一デバイスなら終了 */
         return;
     }
 
@@ -201,35 +214,43 @@ void DeviceManager::unpairDevices(const int id_1, const int id_2) {
  */
 void DeviceManager::connectDevices(const int id_1, const int id_2) {
     if (getDistance(id_1, id_2) > _max_com_distance_) {
+        /* 距離が最大接続距離より離れていたら終了 */
         return;
     }
     if (getDistance(id_1, id_2) < 0) {
+        /* デバイスが存在しなければ終了 */
         return;
     }
     if (!isPaired(id_1, id_2)) {
+        /* ペアリング未登録なら終了 */
         return;
     }
     if (isSameDevice(id_1, id_2)) {
+        /* 同一デバイスなら終了 */
         return;
     }
 
     if (getDeviceById(id_1).connect(id_2)) {
+        /* デバイス1にデバイス2を接続出来たら */
         if (!getDeviceById(id_2).connect(id_1)) {
+            /* デバイス2にデバイス1を接続できなかったら */
             getDeviceById(id_1).disconnect(id_2);
         }
     }
 }
 
 /*!
- * @brief デバイス同士の接続を切る
+ * @brief 距離が離れたデバイス同士の接続を切る
  * @param d1_id デバイスID1
  * @param d2_id デバイスID2
  */
 void DeviceManager::disconnectDevices(const int id_1, const int id_2) {
     if (getDistance(id_1, id_2) <= _max_com_distance_) {
+        /* 距離が最大接続距離より小さければ終了 */
         return;
     }
     if (getDistance(id_1, id_2) < 0) {
+        /* デバイスが存在しなければ終了 */
         return;
     }
 
@@ -238,11 +259,12 @@ void DeviceManager::disconnectDevices(const int id_1, const int id_2) {
 }
 
 /*!
- * @brief 離れたデバイスとの接続を切る
+ * @brief 距離が離れたデバイスとの接続をすべて切る
  * @param id デバイスID
  */
 void DeviceManager::disconnectDevices(const int id) {
     for (auto id_cntd : getDeviceById(id).getIdConnectedDevices()) {
+        /* 順に接続を切る */
         disconnectDevices(id, id_cntd);
     }
 }
@@ -257,24 +279,31 @@ void DeviceManager::updatePosition(const int id) {
     }
 
     double tmp;
+    /* x軸方向変位 */
     double dx = move_randn_(mt_);
+    /* y軸方向変位 */
     double dy = move_randn_(mt_);
-
+    /* 座標 */
     auto &[pos_x, pos_y] = getPosition(id);
+    /* 移動バイアス */
     auto &[bias_x, bias_y] = getBias(id);
 
     tmp = pos_x + dx + bias_x;
     if ((tmp > 0) & (tmp < field_size_)) {
+        /* エリア外に出なければ */
         pos_x = tmp;
     } else {
+        /* エリア外に出てしまうならば */
         pos_x -= (dx + bias_x);
         bias_x = -bias_x;
     }
 
     tmp = pos_y + dy + bias_y;
     if ((tmp > 0) & (tmp < field_size_)) {
+        /* エリア外に出なければ */
         pos_y = tmp;
     } else {
+        /* エリア外に出てしまうならば */
         pos_y -= (dy + bias_y);
         bias_y = -bias_y;
     }
@@ -285,6 +314,7 @@ void DeviceManager::updatePosition(const int id) {
  */
 void DeviceManager::updatePositionAll() {
     for (auto id : getDevicesList()) {
+        /* 順に差票を更新する */
         updatePosition(id);
     }
     buildNetwork();
@@ -295,6 +325,7 @@ void DeviceManager::updatePositionAll() {
  */
 void DeviceManager::clearDevice() {
     for (auto id : getDevicesList()) {
+        /* 順にクリアする */
         auto &device = getDeviceById(id);
         device.clearMPR();
         device.clearTable();
@@ -307,18 +338,21 @@ void DeviceManager::clearDevice() {
  */
 void DeviceManager::buildNetwork() {
     switch (sim_mode_) {
-        case SIMMODE::EXITING:
+        case SIMMODE::CONVENTIONAL:
         case SIMMODE::PROPOSAL_LONG_MPR:
+            /* 従来手法 */
             buildNetworkRandom();
             break;
         case SIMMODE::PROPOSAL_LONG_CONNECTION:
+            /* 提案手法 遠距離接続 */
             buildNetworkByDistance();
             break;
         default:
-            std::cout << "Please execute after specifying "
-                      << "either EXITING or PROPOSAL_LONG_CONNECTION for the "
-                         "simulation mode."
-                      << std::endl;
+            std::cout
+                << "Please execute after specifying "
+                << "either CONVENTIONAL or PROPOSAL_LONG_CONNECTION for the "
+                   "simulation mode."
+                << std::endl;
             std::exit(EXIT_SUCCESS);
             break;
     }
@@ -328,9 +362,11 @@ void DeviceManager::buildNetwork() {
  * @brief ランダムにネットワークを構築する
  */
 void DeviceManager::buildNetworkRandom() {
+    /* デバイスIDリスト */
     auto &&list_1 = getDevicesList();
 
     for (auto const id : list_1) {
+        /* 順に距離の離れた接続を切る */
         disconnectDevices(id);
     }
 
@@ -340,10 +376,12 @@ void DeviceManager::buildNetworkRandom() {
 
     for (const auto id_1 : list_1) {
         for (const auto id_2 : list_2) {
+            /* 順に接続する */
             pairDevices(id_1, id_2);
             connectDevices(id_1, id_2);
         }
 
+        /* 接続が完了したデバイスをリストから除外する */
         auto itr = find(list_2.begin(), list_2.end(), id_1);
         list_2.erase(itr);
         shuffle(list_2.begin(), list_2.end(), mt_);
@@ -354,18 +392,22 @@ void DeviceManager::buildNetworkRandom() {
  * @brief デバイス間距離が大きい順にネットワークを構築する
  */
 void DeviceManager::buildNetworkByDistance() {
+    /* デバイスIDリスト */
     auto &&list = getDevicesList();
     for (auto id : list) {
+        /* 順に距離の離れた接続を切る */
         disconnectDevices(id);
     }
 
     for (auto id_1 : list) {
         for (auto id_2 : list) {
+            /* 順にペアリングする */
             pairDevices(id_1, id_2);
         }
     }
 
     for (auto id_1 : list) {
+        /* ペアリング済みのデバイスを遠い順にリスト化する */
         auto &&id_pairs = getDeviceById(id_1).getIdPairedDevices();
         map<double, int, greater<double>> tmp;
         transform(id_pairs.begin(), id_pairs.end(), inserter(tmp, tmp.begin()),
@@ -373,6 +415,7 @@ void DeviceManager::buildNetworkByDistance() {
                       return {getDistance(id_1, id_2), id_2};
                   });
         for (auto [_, id_2] : tmp) {
+            /* 遠い順に接続する */
             connectDevices(id_1, id_2);
         }
     }
@@ -383,11 +426,13 @@ void DeviceManager::buildNetworkByDistance() {
  */
 void DeviceManager::resetNetwork() {
     for (auto id_1 : getDevicesList()) {
+        /* 順にクリアする */
         auto &device = getDeviceById(id_1);
         device.clearMPR();
         device.clearTable();
         device.clearMemory();
         for (auto &&id_2 : device.getIdPairedDevices()) {
+            /* 順にペアリング解除する */
             unpairDevices(id_1, id_2);
         }
     }
@@ -398,6 +443,7 @@ void DeviceManager::resetNetwork() {
  */
 void DeviceManager::sendHello() {
     for (auto id : getDevicesList()) {
+        /* 順に送信する */
         getDeviceById(id).sendHello();
     }
 }
@@ -407,6 +453,7 @@ void DeviceManager::sendHello() {
  */
 void DeviceManager::sendTable() {
     for (auto id : getDevicesList()) {
+        /* 順に送信する */
         getDeviceById(id).sendTable();
     }
 }
@@ -416,6 +463,7 @@ void DeviceManager::sendTable() {
  */
 void DeviceManager::makeMPR() {
     for (auto id : getDevicesList()) {
+        /* 順に作成させる */
         getDeviceById(id).makeMPR();
     }
 }
@@ -425,6 +473,7 @@ void DeviceManager::makeMPR() {
  * @param id デバイスID
  */
 void DeviceManager::showMPR(const int id) {
+    /* 出力モード */
     WriteMode write_mode = WriteMode::ARRAY;
 
     auto device_target = getDeviceById(id);
@@ -547,23 +596,8 @@ int DeviceManager::getCentralDevice() {
 int DeviceManager::makeTable() {
     int result = 0;
 
-    // auto &&list = getDevicesList();
-    // for_each(std::execution::par_unseq, list.begin(), list.end(), [&](int id)
-    // {
-    //     result += static_cast<int>(getDeviceById(id).makeTable());
-    // });
-
-    // vector<future<bool>> futures;
-    // for (auto id : getDevicesList()) {
-    //     futures.emplace_back(async(launch::async, [&, id]() -> bool {
-    //         return getDeviceById(id).makeTable();
-    //     }));
-    // }
-    // for (auto &f : futures) {
-    //     result += static_cast<int>(f.get());
-    // }
-
     for (auto id : getDevicesList()) {
+        /* 順に作成させる */
         result += static_cast<int>(getDeviceById(id).makeTable());
     }
 
@@ -572,46 +606,60 @@ int DeviceManager::makeTable() {
 
 /*!
  * @brief すべてのノードの度数分布を集計する
- * @return vector<map<int, double>> ゾーン別平均度数分布
+ * @return vector<map<int, double>> 領域別平均度数分布
  */
 vector<map<int, double>> DeviceManager::calculateTableFrequency() {
+    /* 度数分布 */
     map<int, double> frequency_central, frequency_middle, frequency_edge;
+    /* 分布するデバイス数 */
     int num_central = 0, num_middle = 0, num_edge = 0;
 
+    /* 中心点座標 */
     double center = field_size_ / 2;
+    /* 各領域面積 */
     double area_zone = pow(field_size_, 2) / 3;
+    /* 中央部半径 */
     double radius_central = sqrt(area_zone / numbers::pi);
+    /* 中間部半径 */
     double radius_middle = sqrt(2 * area_zone / numbers::pi);
 
-    auto mergeFrequency = [](map<int, double> &frequency_original,
-                             map<int, int> frequency_device) {
-        for (const auto &[num_hop, num_device] : frequency_device) {
-            frequency_original[num_hop] += num_device;
+    /* 度数分布を加算する */
+    auto mergeFrequency = [](map<int, double> &frequency_acc,
+                             map<int, int> frequency_elem) {
+        for (const auto &[num_hop, num_device] : frequency_elem) {
+            frequency_acc[num_hop] += num_device;
         }
     };
 
     for (auto id : getDevicesList()) {
+        /* 順に集計する */
         auto frequency_device = getDeviceById(id).calculateTableFrequency();
 
+        /* 座標 */
         const auto [pos_x, pos_y] = getPosition(id);
+        /* 中心点からの距離 */
         double location = hypot(pos_x - center, pos_y - center);
 
         if (location < radius_central) {
-            num_central++;
+            /* 中央部にあれば */
+            ++num_central;
             mergeFrequency(frequency_central, frequency_device);
         } else if (location < radius_middle) {
-            num_middle++;
+            /* 中間部にあれば */
+            ++num_middle;
             mergeFrequency(frequency_middle, frequency_device);
         } else {
-            num_edge++;
+            /* 周縁部にあれば */
+            ++num_edge;
             mergeFrequency(frequency_edge, frequency_device);
         }
     }
 
-    auto divideFrequency = [](map<int, double> &frequency_original,
+    /* 度数分布を除算する */
+    auto divideFrequency = [](map<int, double> &frequency_acc,
                               const int divisor) {
-        for (auto [num_hop, _] : frequency_original) {
-            frequency_original[num_hop] /= divisor;
+        for (auto [num_hop, _] : frequency_acc) {
+            frequency_acc[num_hop] /= divisor;
         }
     };
 
@@ -625,19 +673,23 @@ vector<map<int, double>> DeviceManager::calculateTableFrequency() {
 /*!
  * @brief フラッディングを開始する
  * @param id 開始デバイスのID
- * @return データ識別子
+ * @return pair<size_t, int> データ識別子, データ到達台数
  */
 pair<size_t, int> DeviceManager::flooding(const int id) {
+    /* 出力モード */
     WriteMode write_mode = WriteMode::HIDE;
 
     if (!nodes_.count(id)) {
+        /* デバイスが存在しなければ終了 */
         return {0, 0};
     }
-    auto &device_starter = getDeviceById(id);
 
+    auto &device_starter = getDeviceById(id);
     int num_devices_have_data = 0, num_step = 0;
 
     device_starter.flooding(-1);
+
+    /* データが到達したデバイスリスト */
     set<int> devices_have_data;
 
     size_t data_id = device_starter.makeFloodData();
@@ -654,9 +706,11 @@ pair<size_t, int> DeviceManager::flooding(const int id) {
 
     while (num_devices_have_data !=
            aggregateDevices(data_id, devices_have_data, write_mode)) {
+        /* フラッディングが止まるまで繰り返す */
         num_devices_have_data = devices_have_data.size();
 
         for (auto &[_, device] : nodes_) {
+            /* 順にフラッディングをさせる */
             device.flooding();
         }
 
@@ -710,11 +764,14 @@ int DeviceManager::aggregateDevices(size_t data_id) {
 int DeviceManager::aggregateDevices(size_t data_id, set<int> &devices_have_data,
                                     const WriteMode write_mode) {
     for (auto &[id, device] : nodes_) {
+        /* 順にデータを持っているか確認する */
         if (devices_have_data.count(id)) {
+            /* すでにカウント済みならスルー */
             continue;
         }
 
         if (device.hasData(data_id)) {
+            /* データを持っていればリストに挿入 */
             devices_have_data.emplace(id);
             if (static_cast<int>(write_mode) > 1) {
                 std::cout << id << ", ";
@@ -726,14 +783,16 @@ int DeviceManager::aggregateDevices(size_t data_id, set<int> &devices_have_data,
 }
 
 /*!
- * @brief
+ * @brief ルーティングテーブルに従って通信する
  * @param id_source 発信元デバイスID
  * @param id_dest 宛先デバイスのID
  */
 void DeviceManager::unicast(const int id_source, const int id_dest) {
+    /* 出力モード */
     WriteMode write_mode = WriteMode::SIMPLE;
 
     if (getDistance(id_source, id_dest) < 0) {
+        /* デバイスが存在しなければ終了 */
         return;
     }
 
@@ -747,8 +806,10 @@ void DeviceManager::unicast(const int id_source, const int id_dest) {
     num_hop++;
 
     for (int flag = 1; flag > 0;) {
+        /* 宛先に届くまで繰り返す */
         tie(id_nextHop, flag) = getDeviceById(id_nextHop).hopping();
         if (flag == 0) {
+            /* 宛先に届けばループから離脱 */
             break;
         }
 
@@ -861,8 +922,10 @@ void DeviceManager::Node::setPositon(double pos_x, double pos_y) {
  * @brief MPR集合を作成する(オーバーライド)
  */
 void DeviceManager::Node::makeMPR() {
+    /* シミュレーションモード */
     auto sim_mode = sim_mode_;
 
+    /* 隣接ノード構造体 */
     struct Neighbor {
         int id;
         int willingness;
@@ -871,11 +934,11 @@ void DeviceManager::Node::makeMPR() {
 
     MPR_.clear();
     tow_hop_neighbors_.clear();
-    /* 隣接 <id, willingness,distance> (降順) */
+    /* 隣接ノード <id, willingness, distance> (降順) */
     vector<Neighbor> neighbors;
 
     while (true) {
-        // willingness 属性のデータをメモリの末尾から探す
+        /* メモリ末尾から willingness 属性のデータを走査する */
         auto itr = find_if(memory_.rbegin(), memory_.rend(),
                            [](pair<size_t, Device::Sell> &&sell) {
                                auto &[_, data_in_sell] = sell;
@@ -883,10 +946,13 @@ void DeviceManager::Node::makeMPR() {
                                       DataAttr::WILLINGNESS;
                            });
         if (itr == memory_.rend()) {
+            /* 見つからなければループを離脱 */
             break;
         }
 
+        /* 見つかったデータの保存場所 */
         auto &[_, data_in_sell] = *itr;
+        /* 隣接ノードのデバイスID */
         auto id_neighbor = data_in_sell.getIdSender();
         auto willingness = get<int>(data_in_sell.getData());
 
@@ -897,14 +963,16 @@ void DeviceManager::Node::makeMPR() {
         data_in_sell.setDaTaAttribute(DataAttr::NONE);
     }
 
-    // neighbors を指標の降順にソート
+    /* neighbors を指標の降順にソート */
     sort(neighbors.begin(), neighbors.end(),
          [&](Neighbor &left, Neighbor &right) {
              switch (sim_mode) {
-                 case Device::SimulationMode::EXITING:
+                 case Device::SimulationMode::CONVENTIONAL:
                  case Device::SimulationMode::PROPOSAL_LONG_CONNECTION:
+                     /* 従来手法, 提案手法 遠距離接続 */
                      return left.willingness > right.willingness;
                  case Device::SimulationMode::PROPOSAL_LONG_MPR:
+                     /* 提案手法 遠距離MPR 没案 */
                      return left.distance > right.distance;
                  default:
                      return false;
@@ -912,6 +980,8 @@ void DeviceManager::Node::makeMPR() {
          });
 
     for (auto [id_neighbor, _, __] : neighbors) {
+        /* 隣接ノードのトポロジー情報から2ホップ隣接ノードをリスト化する */
+        /* メモリ末尾からトポロジー情報を走査する */
         auto itr = find_if(memory_.rbegin(), memory_.rend(),
                            [&](pair<size_t, Device::Sell> &&sell) {
                                auto &[_, data_in_sell] = sell;
@@ -920,20 +990,25 @@ void DeviceManager::Node::makeMPR() {
                                       data_in_sell.getIdSender() == id_neighbor;
                            });
         if (itr == memory_.rend()) {
+            /* 見つからなければループを離脱 */
             break;
         }
-
+        /* 見つかったデータの保存場所 */
         auto &[___, data_in_sell] = *itr;
 
         for (auto id_neighbor_cncts = get<set<int>>(data_in_sell.getData());
              auto id_tow_hop_neighbor : id_neighbor_cncts) {
+            /* 隣接ノードが接続中のノードを順に2ホップ隣接のリストに挿入する */
             if (isSelf(id_tow_hop_neighbor)) {
+                /* 地震ならスルー */
                 continue;
             }
             if (isConnected(id_tow_hop_neighbor)) {
+                /* 他の隣接ノードならスルー */
                 continue;
             }
             if (tow_hop_neighbors_.count(id_tow_hop_neighbor)) {
+                /* すでにリストにあればスルー */
                 continue;
             }
 
@@ -943,6 +1018,7 @@ void DeviceManager::Node::makeMPR() {
     }
 
     for (auto &[_, MPR] : tow_hop_neighbors_) {
+        /* 順にMPRを記録する */
         MPR_.emplace(MPR);
     }
 }

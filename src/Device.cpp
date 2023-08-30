@@ -389,7 +389,7 @@ void Device::flooding(const int flag) {
         return;
     }
 
-    /* メモリからフラッディングするデータを走査 */
+    /* メモリ末尾からフラッディングするデータを走査 */
     auto itr = find_if(memory_.rbegin(), memory_.rend(),
                        [](pair<size_t, Device::Sell> &&sell) {
                            auto &[_, data_in_sell] = sell;
@@ -446,7 +446,7 @@ pair<int, int> Device::startUnicast(const int id_dest) {
  * @return pair<int, int> 次ホップデバイスのID, 継続フラク
  */
 pair<int, int> Device::hopping() {
-    /* メモリからホップするメッセージを走査する */
+    /* メモリ末尾からホップするメッセージを走査する */
     auto itr =
         find_if(memory_.rbegin(), memory_.rend(),
                 [](pair<size_t, Device::Sell> &&sell) {
@@ -503,7 +503,7 @@ bool Device::makeTable() {
     int result = 0;
 
     while (true) {
-        /* メモリから受信したルーティングテーブルを走査する */
+        /* メモリ末尾から受信したルーティングテーブルを走査する */
         auto itr = find_if(memory_.rbegin(), memory_.rend(),
                            [](pair<size_t, Device::Sell> &&sell) {
                                auto &[_, data_in_sell] = sell;
@@ -511,7 +511,7 @@ bool Device::makeTable() {
                                       DataAttr::TABLE;
                            });
         if (itr == memory_.rend()) {
-            /* 見つからなければループを終了 */
+            /* 見つからなければループを離脱 */
             break;
         }
 
