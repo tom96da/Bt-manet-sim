@@ -484,6 +484,11 @@ pair<int, int> Device::hopping() {
 }
 
 /*!
+ * @brief MPR集合を作成する
+ */
+void Device::makeMPR() {}
+
+/*!
  * @brief MPR集合をクリアする
  */
 void Device::clearMPR() { MPR_.clear(); }
